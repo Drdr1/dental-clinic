@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth, useMember } from '../auth/AuthProvider'
+import { useAuth } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
@@ -16,7 +16,6 @@ type Props = {
 }
 
 export function SessionDialog({ patientId, plan, onClose }: Props) {
-  const { clinicId } = useMember()
   const { isDoctor } = useAuth()
   const { t } = useI18n()
   const queryClient = useQueryClient()
@@ -29,7 +28,6 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
   const save = useMutation({
     mutationFn: () =>
       recordSession({
-        clinicId,
         patientId,
         planId: plan?.id ?? null,
         notes,
@@ -39,6 +37,7 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['today'] })
       if (plan) queryClient.invalidateQueries({ queryKey: ['plan', plan.id] })
       onClose()
     },

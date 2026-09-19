@@ -1,7 +1,6 @@
 import { supabase } from '../../lib/supabase'
 
 export type NewSession = {
-  clinicId: string
   patientId: string
   planId: string | null
   notes: string
@@ -11,31 +10,18 @@ export type NewSession = {
 }
 
 /**
- * Inserts the session; the database blocks it if the plan is locked (SESSION_LOCKED)
- * unless a doctor sends an override with a reason. Then marks the finished items.
+ * One database transaction: the session and the finished items are saved together or not at all.
+ * A locked plan raises SESSION_LOCKED unless a doctor sends an override reason.
  */
 export async function recordSession(s: NewSession) {
-  const { data, error } = await supabase
-    .from('sessions')
-    .insert({
-      clinic_id: s.clinicId,
-      patient_id: s.patientId,
-      treatment_plan_id: s.planId,
-      notes: s.notes.trim() || null,
-      is_recall_visit: s.isRecallVisit,
-      lock_override: !!s.override,
-      override_reason: s.override?.reason.trim() || null,
-    })
-    .select('id')
-    .single()
+  const { data, error } = await supabase.rpc('record_session', {
+    p_patient_id: s.patientId,
+    p_notes: s.notes,
+    p_is_recall_visit: s.isRecallVisit,
+    p_treatment_plan_id: s.planId ?? undefined,
+    p_done_item_ids: s.doneItemIds,
+    p_override_reason: s.override?.reason.trim() || undefined,
+  })
   if (error) throw error
-
-  if (s.doneItemIds.length) {
-    const { error: itemsError } = await supabase
-      .from('treatment_plan_items')
-      .update({ status: 'done', done_in_session_id: data.id })
-      .in('id', s.doneItemIds)
-    if (itemsError) throw itemsError
-  }
-  return data.id
+  return data as string
 }

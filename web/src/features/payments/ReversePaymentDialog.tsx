@@ -16,6 +16,8 @@ export function ReversePaymentDialog({ payment, onClose }: { payment: Payment; o
       queryClient.invalidateQueries({ queryKey: ['ledger', payment.patient_id] })
       queryClient.invalidateQueries({ queryKey: ['patient', payment.patient_id] })
       queryClient.invalidateQueries({ queryKey: ['patients'] })
+      queryClient.invalidateQueries({ queryKey: ['plan'] })
+      queryClient.invalidateQueries({ queryKey: ['today'] })
       onClose()
     },
   })

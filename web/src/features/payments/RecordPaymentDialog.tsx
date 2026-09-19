@@ -34,6 +34,7 @@ export function RecordPaymentDialog({ planId, planTitle, patientId, outstanding,
       queryClient.invalidateQueries({ queryKey: ['ledger', patientId] })
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
       queryClient.invalidateQueries({ queryKey: ['patients'] })
+      queryClient.invalidateQueries({ queryKey: ['today'] })
     },
   })
 

@@ -11,6 +11,7 @@ const known: Array<[RegExp, MessageKey]> = [
   [/settle the active installment plan/i, 'err.activeInstallments'],
   [/Balance too small/i, 'err.balanceTooSmall'],
   [/below the amount already paid/i, 'err.belowPaid'],
+  [/no longer open on this plan/i, 'err.itemsChanged'],
   [/Failed to fetch|NetworkError/i, 'err.offline'],
 ]
 

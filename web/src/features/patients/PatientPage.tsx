@@ -29,7 +29,7 @@ export function PatientPage() {
   if (file.isPending) return <section className="page"><p className="muted">{t('common.loading')}</p></section>
   if (file.isError) return <section className="page"><ErrorNote error={file.error} onRetry={() => file.refetch()} /></section>
 
-  const { patient, plans, balances } = file.data
+  const { patient, plans, balances, perSession } = file.data
   if (!patient) {
     return (
       <section className="page">
@@ -42,6 +42,8 @@ export function PatientPage() {
   const age = ageFrom(patient.date_of_birth)
   const today = todayLocal()
   const recallOverdue = !!patient.next_recall_due && patient.next_recall_due < today
+  // Clinic rule: recall pauses during active treatment and restarts when the plan is completed.
+  const inTreatment = plans.some((p) => p.status === 'active')
 
   return (
     <section className="page patient">
@@ -73,7 +75,26 @@ export function PatientPage() {
       <div className="patient-grid">
         <section className="panel panel-wide">
           <h2>{t('patient.balance')}</h2>
-          {balances.length === 0 && <p className="muted">{t('patient.balanceEmpty')}</p>}
+          {balances.length === 0 && perSession.length === 0 && <p className="muted">{t('patient.balanceEmpty')}</p>}
+          {perSession.length > 0 && (
+            <div className="plan-card">
+              <h3>{t('patient.perSessionTitle')}</h3>
+              <ul className="work-list">
+                {perSession.map((b) => (
+                  <li key={b.treatment_plan_id}>
+                    <div>
+                      <Link to={`/plans/${b.treatment_plan_id}`} className="row-link">{b.title}</Link>
+                      <p className="muted">{t('patient.perSessionPaid', { paid: money(b.paid), total: money(b.net_total) })}</p>
+                    </div>
+                    <div className="work-meta">
+                      <strong>{t('patient.perSessionOwed', { amount: money(b.outstanding) })}</strong>
+                      <Link className="btn btn-small" to={`/plans/${b.treatment_plan_id}`}>{t('pay.open')}</Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {ledger.isError && <ErrorNote error={ledger.error} onRetry={() => ledger.refetch()} />}
           {balances.map((b) => (
             <InstallmentPlanCard
@@ -117,8 +138,10 @@ export function PatientPage() {
             <h2>{t('patient.recall')}</h2>
             <button className="btn" onClick={() => setDialog('visit')}>{t('session.titleVisit')}</button>
           </div>
-          <p className={recallOverdue ? 'danger-text' : ''}>
-            {patient.next_recall_due
+          <p className={recallOverdue && !inTreatment ? 'danger-text' : ''}>
+            {inTreatment
+              ? t('patient.recallPaused')
+              : patient.next_recall_due
               ? recallOverdue
                 ? t('patient.recallOverdue', { date: date(patient.next_recall_due) })
                 : date(patient.next_recall_due)

@@ -7,11 +7,13 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { Modal } from '../../components/Modal'
 import { PlanStatusBadge } from '../../components/PlanStatusBadge'
 import { SessionDialog } from '../sessions/SessionDialog'
+import { DirectPaymentDialog } from '../payments/DirectPaymentDialog'
+import { PaymentList } from '../payments/PaymentList'
 import { AddItemsForm } from './AddItemsForm'
 import { InstallmentSetupDialog } from './InstallmentSetupDialog'
 import { cancelInstallmentPlan, cancelItem, getPlan, setDiscount, setStatus, type PlanItem, type PlanStatus } from './api'
 
-type Dialog = 'installments' | 'revise' | 'decline' | 'cancelInstallments' | 'session' | null
+type Dialog = 'installments' | 'revise' | 'decline' | 'cancelInstallments' | 'session' | 'pay' | null
 
 export function PlanPage() {
   const { planId = '' } = useParams()
@@ -47,7 +49,7 @@ export function PlanPage() {
   if (q.isError) return <section className="page"><ErrorNote error={q.error} onRetry={() => q.refetch()} /></section>
   if (!q.data) return <section className="page"><p className="empty">{t('plan.notFound')}</p></section>
 
-  const { plan, items, patient, installments, procedures, sessions } = q.data
+  const { plan, items, patient, installments, procedures, sessions, directPayments, staffNames } = q.data
   const st = plan.status as PlanStatus
   const live = items.filter((i) => i.status !== 'cancelled')
   const subtotal = live.reduce((s, i) => s + i.price, 0)
@@ -58,6 +60,8 @@ export function PlanPage() {
     [i.procedure_id ? procName.get(i.procedure_id) : null, i.description, i.tooth_number ? t('plan.tooth', { n: i.tooth_number }) : null]
       .filter(Boolean).join(' — ')
   const openItems = live.filter((i) => i.status === 'planned')
+  const directPaid = directPayments.reduce((sum, p) => sum + p.amount, 0)
+  const directRemaining = Math.max(0, Math.round((net - directPaid) * 100) / 100)
   const needsRevision = !!installments && Math.abs((installments.net_total ?? 0) - net) > 0.001
 
   return (
@@ -175,7 +179,24 @@ export function PlanPage() {
 
       <section className="panel">
         <h2>{t('patient.balance')}</h2>
-        {!installments && <p className="muted">{t('plan.noInstallments')}</p>}
+        {!installments && (
+          <>
+            <p className="muted">{t('plan.noInstallments')}</p>
+            {(st === 'active' || st === 'completed') && (
+              <>
+                <dl className="figures">
+                  <div><dt>{t('plan.net')}</dt><dd>{money(net)}</dd></div>
+                  <div><dt>{t('patient.paid')}</dt><dd>{money(directPaid)}</dd></div>
+                  <div><dt>{t('patient.outstanding')}</dt><dd>{money(directRemaining)}</dd></div>
+                </dl>
+                {directRemaining > 0 && (
+                  <div><button className="btn btn-primary" onClick={() => setDialog('pay')}>{t('pay.open')}</button></div>
+                )}
+              </>
+            )}
+            {directPayments.length > 0 && <PaymentList payments={directPayments} staffNames={staffNames} />}
+          </>
+        )}
         {installments && (
           <>
             <dl className="figures">
@@ -235,6 +256,10 @@ export function PlanPage() {
         <SessionDialog patientId={plan.patient_id}
           plan={{ id: planId, title: plan.title, openItems: openItems.map((i) => ({ id: i.id, label: itemLabel(i) })) }}
           onClose={() => setDialog(null)} />
+      )}
+      {dialog === 'pay' && (
+        <DirectPaymentDialog patientId={plan.patient_id} planId={planId} planTitle={plan.title}
+          remaining={directRemaining} onClose={() => setDialog(null)} />
       )}
       {dialog === 'decline' && (
         <Modal title={t('plan.decline')} onClose={() => setDialog(null)}>

@@ -4,6 +4,7 @@ import type { Tables, TablesInsert } from '../../types/database'
 export type Patient = Tables<'patients'>
 export type PlanSummary = Tables<'installment_plan_summary'>
 export type PlanOverview = Tables<'treatment_plan_overview'>
+export type PlanBalance = Tables<'treatment_plan_balance'>
 
 export type PatientRow = Pick<Patient, 'id' | 'full_name' | 'phone' | 'medical_alerts'> & {
   outstanding: number
@@ -35,21 +36,16 @@ export async function searchPatients(clinicId: string, q: string): Promise<Patie
   if (error) throw error
   if (!patients.length) return []
 
-  // Balances for the patients on screen, in one query.
-  const { data: plans, error: plansError } = await supabase
-    .from('installment_plan_summary')
+  // Balances for the patients on screen, in one query: installments and pay-per-session together.
+  const { data: balances, error: balancesError } = await supabase
+    .from('patient_balance')
     .select('patient_id, outstanding, overdue_count')
-    .eq('status', 'active')
     .in('patient_id', patients.map((p) => p.id))
-  if (plansError) throw plansError
+  if (balancesError) throw balancesError
 
   const totals = new Map<string, { outstanding: number; overdueCount: number }>()
-  for (const plan of plans) {
-    if (!plan.patient_id) continue
-    const cur = totals.get(plan.patient_id) ?? { outstanding: 0, overdueCount: 0 }
-    cur.outstanding += plan.outstanding ?? 0
-    cur.overdueCount += plan.overdue_count ?? 0
-    totals.set(plan.patient_id, cur)
+  for (const b of balances) {
+    if (b.patient_id) totals.set(b.patient_id, { outstanding: b.outstanding ?? 0, overdueCount: b.overdue_count ?? 0 })
   }
 
   return patients.map((p) => ({ ...p, ...(totals.get(p.id) ?? { outstanding: 0, overdueCount: 0 }) }))
@@ -74,14 +70,17 @@ export async function createPatient(values: TablesInsert<'patients'>) {
 }
 
 export async function getPatientFile(patientId: string) {
-  const [patient, plans, balances] = await Promise.all([
+  const [patient, plans, balances, perSession] = await Promise.all([
     supabase.from('patients').select('*').eq('id', patientId).maybeSingle(),
     supabase.from('treatment_plan_overview').select('*').eq('patient_id', patientId)
       .order('presented_at', { ascending: false, nullsFirst: true }),
     supabase.from('installment_plan_summary').select('*').eq('patient_id', patientId).eq('status', 'active'),
+    supabase.from('treatment_plan_balance').select('*').eq('patient_id', patientId)
+      .eq('billing', 'per_session').gt('outstanding', 0),
   ])
   if (patient.error) throw patient.error
   if (plans.error) throw plans.error
   if (balances.error) throw balances.error
-  return { patient: patient.data, plans: plans.data, balances: balances.data }
+  if (perSession.error) throw perSession.error
+  return { patient: patient.data, plans: plans.data, balances: balances.data, perSession: perSession.data }
 }

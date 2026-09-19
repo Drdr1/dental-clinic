@@ -10,15 +10,19 @@ export async function getPlan(planId: string) {
   if (error) throw error
   if (!plan) return null
 
-  const [items, patient, summary, procedures, sessions] = await Promise.all([
+  const [items, patient, summary, procedures, sessions, payments, staff] = await Promise.all([
     supabase.from('treatment_plan_items').select('*').eq('plan_id', planId).order('created_at'),
     supabase.from('patients').select('id, full_name, medical_alerts').eq('id', plan.patient_id).single(),
     supabase.from('installment_plan_summary').select('*').eq('treatment_plan_id', planId).eq('status', 'active').maybeSingle(),
     supabase.from('procedures').select('id, name, default_price').eq('clinic_id', plan.clinic_id).eq('active', true).order('name'),
     supabase.from('sessions').select('id, performed_at, notes, lock_override, override_reason')
       .eq('treatment_plan_id', planId).order('performed_at', { ascending: false }),
+    // Pay-per-session payments: linked to the plan but not to an installment plan.
+    supabase.from('payments').select('*').eq('treatment_plan_id', planId).is('installment_plan_id', null)
+      .order('receipt_no', { ascending: false }),
+    supabase.from('clinic_members').select('user_id, display_name').eq('clinic_id', plan.clinic_id),
   ])
-  for (const r of [items, patient, summary, procedures, sessions]) if (r.error) throw r.error
+  for (const r of [items, patient, summary, procedures, sessions, payments, staff]) if (r.error) throw r.error
 
   return {
     plan,
@@ -27,6 +31,8 @@ export async function getPlan(planId: string) {
     installments: summary.data,
     procedures: procedures.data ?? [],
     sessions: sessions.data ?? [],
+    directPayments: payments.data ?? [],
+    staffNames: new Map((staff.data ?? []).map((m) => [m.user_id, m.display_name])),
   }
 }
 

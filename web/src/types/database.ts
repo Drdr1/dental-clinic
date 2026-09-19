@@ -279,6 +279,13 @@ export type Database = {
             foreignKeyName: "form_requests_treatment_plan_id_clinic_id_fkey"
             columns: ["treatment_plan_id", "clinic_id"]
             isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "form_requests_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
             referencedRelation: "treatment_plan_overview"
             referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
@@ -370,6 +377,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "form_templates"
             referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "form_submissions_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
           {
             foreignKeyName: "form_submissions_treatment_plan_id_clinic_id_fkey"
@@ -627,6 +641,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "recall_list"
             referencedColumns: ["patient_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "installment_plans_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
           {
             foreignKeyName: "installment_plans_treatment_plan_id_clinic_id_fkey"
@@ -1114,6 +1135,13 @@ export type Database = {
             foreignKeyName: "payments_treatment_plan_id_clinic_id_fkey"
             columns: ["treatment_plan_id", "clinic_id"]
             isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "payments_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
             referencedRelation: "treatment_plan_overview"
             referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
@@ -1250,6 +1278,13 @@ export type Database = {
             foreignKeyName: "sessions_treatment_plan_id_clinic_id_fkey"
             columns: ["treatment_plan_id", "clinic_id"]
             isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "sessions_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
             referencedRelation: "treatment_plan_overview"
             referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
@@ -1320,6 +1355,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "treatment_plan_items_plan_id_clinic_id_fkey"
+            columns: ["plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
           {
             foreignKeyName: "treatment_plan_items_plan_id_clinic_id_fkey"
@@ -1533,6 +1575,13 @@ export type Database = {
             foreignKeyName: "installment_plans_treatment_plan_id_clinic_id_fkey"
             columns: ["treatment_plan_id", "clinic_id"]
             isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "installment_plans_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
             referencedRelation: "treatment_plan_overview"
             referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
@@ -1693,6 +1742,39 @@ export type Database = {
           },
         ]
       }
+      patient_balance: {
+        Row: {
+          clinic_id: string | null
+          outstanding: number | null
+          overdue_amount: number | null
+          overdue_count: number | null
+          patient_id: string | null
+          per_session_outstanding: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plans_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_plans_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "treatment_plans_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "recall_list"
+            referencedColumns: ["patient_id", "clinic_id"]
+          },
+        ]
+      }
       patient_payment_reliability: {
         Row: {
           avg_days_after_due: number | null
@@ -1733,6 +1815,46 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clinics"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_plan_balance: {
+        Row: {
+          billing: string | null
+          clinic_id: string | null
+          installment_plan_id: string | null
+          net_total: number | null
+          outstanding: number | null
+          overdue_amount: number | null
+          overdue_count: number | null
+          paid: number | null
+          patient_id: string | null
+          sessions_locked: boolean | null
+          status: Database["public"]["Enums"]["plan_status"] | null
+          title: string | null
+          treatment_plan_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plans_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_plans_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "treatment_plans_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "recall_list"
+            referencedColumns: ["patient_id", "clinic_id"]
           },
         ]
       }
@@ -1888,6 +2010,17 @@ export type Database = {
           p_installment_plan_id: string
           p_method: Database["public"]["Enums"]["payment_method"]
           p_note?: string
+        }
+        Returns: string
+      }
+      record_session: {
+        Args: {
+          p_done_item_ids?: string[]
+          p_is_recall_visit: boolean
+          p_notes: string
+          p_override_reason?: string
+          p_patient_id: string
+          p_treatment_plan_id?: string
         }
         Returns: string
       }
