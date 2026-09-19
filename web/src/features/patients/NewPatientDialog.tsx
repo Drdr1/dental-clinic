@@ -1,3 +1,4 @@
+import { todayLocal } from '../../lib/dates'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -103,7 +104,7 @@ export function NewPatientDialog({ onClose }: { onClose: () => void }) {
           </label>
           <label className="field">
             <span>{t('patientForm.dob')}</span>
-            <input name="dob" type="date" max={new Date().toISOString().slice(0, 10)} />
+            <input name="dob" type="date" max={todayLocal()} />
           </label>
         </div>
 

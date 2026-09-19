@@ -235,3 +235,76 @@ a { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- Payments ---------- */
+.warn-text { color: var(--warn); }
+.badge-warn { background: #fdf1e3; color: var(--warn); }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-danger:hover { background: #911c13; }
+.danger-link { color: var(--danger); }
+
+.panel-wide { grid-column: 1 / -1; }
+.plan-card { display: grid; gap: 14px; padding-top: 16px; border-top: 1px solid var(--line); }
+.panel > h2 + .plan-card, .panel > h2 + p + .plan-card { padding-top: 0; border-top: 0; }
+.plan-card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.panel-wide .figures { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+
+.disclosure { border: 1px solid var(--line); border-radius: var(--r-control); }
+.disclosure > summary {
+  cursor: pointer; padding: 10px 14px; font-weight: 500; color: var(--ink-soft);
+  list-style-position: inside;
+}
+.disclosure > summary:hover { color: var(--ink); }
+.disclosure[open] > summary { border-bottom: 1px solid var(--line); }
+.disclosure .table-wrap { border: 0; border-radius: 0; }
+.table-compact th, .table-compact td { padding: 8px 14px; }
+.partial-note { font-size: var(--step--1); color: var(--ink-soft); margin-inline-start: 8px; }
+
+.payment-list { list-style: none; margin: 0; padding: 0; }
+.payment-list li { padding: 10px 14px; border-top: 1px solid var(--line); display: grid; gap: 2px; }
+.payment-list li:first-child { border-top: 0; }
+.payment-main { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; }
+.payment-amount { font-weight: 600; }
+.payment-sub { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: var(--step--1); }
+.payment-actions { margin-inline-start: auto; display: flex; gap: 14px; align-items: center; }
+.payment-actions .link-btn { padding: 0; font-size: inherit; }
+.is-void .payment-amount { text-decoration: line-through; color: var(--ink-soft); }
+
+.dialog-form { display: grid; gap: 16px; }
+.done-line { font-size: var(--step-1); }
+.allocation { background: var(--paper); border-radius: var(--r-control); padding: 12px 14px; display: grid; gap: 6px; }
+.allocation-title { font-size: var(--step--1); color: var(--ink-soft); font-weight: 500; }
+.allocation ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.allocation li { display: flex; justify-content: space-between; gap: 12px; }
+
+/* ---------- Receipt ---------- */
+.receipt-page { min-height: 100vh; display: grid; justify-items: center; align-content: start; gap: 20px; padding: 32px 16px; }
+.receipt {
+  width: min(380px, 100%); background: var(--surface); color: #000;
+  border: 1px solid var(--line); border-radius: var(--r-panel); padding: 24px 22px; display: grid; gap: 16px;
+}
+.receipt-head { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: var(--step-1); }
+.receipt-mark { width: 24px; height: 24px; color: var(--gum); }
+.receipt h1 { font-size: var(--step-1); text-align: center; font-weight: 600; }
+.receipt-lines { margin: 0; display: grid; gap: 6px; }
+.receipt-lines div { display: flex; justify-content: space-between; gap: 12px; }
+.receipt-lines dt { color: #444; }
+.receipt-lines dd { margin: 0; font-weight: 500; text-align: end; }
+.receipt-amount {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-block: 2px solid #000; padding: 10px 0;
+}
+.receipt-amount strong { font-size: var(--step-3); }
+.receipt-balance { font-size: var(--step--1); text-align: center; }
+.receipt-foot { display: flex; justify-content: space-between; gap: 12px; font-size: var(--step--1); padding-top: 24px; }
+.signature { min-width: 110px; border-top: 1px solid #000; text-align: center; padding-top: 4px; }
+.receipt-actions { display: flex; gap: 10px; }
+
+@media print {
+  @page { margin: 8mm; }
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .receipt-page { padding: 0; min-height: 0; }
+  .receipt { border: 0; border-radius: 0; padding: 0; width: 72mm; }
+  .receipt-mark { color: #000; }
+}

@@ -54,7 +54,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         if (vars) for (const [k, v] of Object.entries(vars)) text = text.replaceAll(`{${k}}`, String(v))
         return text
       },
-      money: (v) => (v == null ? '—' : `${moneyFmt.format(v)} ${currency}`),
+      // Isolate the number (U+2066…U+2069) so a minus sign stays attached in right-to-left text.
+      money: (v) => (v == null ? '—' : `\u2066${moneyFmt.format(v)}\u2069 ${currency}`),
       // Dates from Postgres `date` columns are plain YYYY-MM-DD; parse as local noon to avoid TZ shifts.
       date: (v) => (v ? dateFmt.format(new Date(v.length === 10 ? `${v}T12:00:00` : v)) : '—'),
     }

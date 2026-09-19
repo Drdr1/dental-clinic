@@ -1,16 +1,26 @@
+import { todayLocal } from '../../lib/dates'
 import { Link, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
 import { ageFrom, whatsappLink } from '../../lib/phone'
 import { ErrorNote } from '../../components/ErrorNote'
 import { PlanStatusBadge } from '../../components/PlanStatusBadge'
+import { useMember } from '../auth/AuthProvider'
+import { getPatientLedger } from '../payments/api'
+import { InstallmentPlanCard } from '../payments/InstallmentPlanCard'
 import { getPatientFile } from './api'
 
 export function PatientPage() {
   const { id = '' } = useParams()
   const { t, money, date } = useI18n()
 
+  const { clinicId } = useMember()
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
+  const ledger = useQuery({
+    queryKey: ['ledger', id],
+    queryFn: () => getPatientLedger(id, clinicId),
+    enabled: !!id,
+  })
 
   if (file.isPending) return <section className="page"><p className="muted">{t('common.loading')}</p></section>
   if (file.isError) return <section className="page"><ErrorNote error={file.error} onRetry={() => file.refetch()} /></section>
@@ -26,7 +36,7 @@ export function PatientPage() {
   }
 
   const age = ageFrom(patient.date_of_birth)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayLocal()
   const recallOverdue = !!patient.next_recall_due && patient.next_recall_due < today
 
   return (
@@ -57,26 +67,21 @@ export function PatientPage() {
       )}
 
       <div className="patient-grid">
-        <section className="panel">
+        <section className="panel panel-wide">
           <h2>{t('patient.balance')}</h2>
           {balances.length === 0 && <p className="muted">{t('patient.balanceEmpty')}</p>}
-          {balances.map((b) => {
-            const plan = plans.find((p) => p.treatment_plan_id === b.treatment_plan_id)
-            return (
-              <div key={b.installment_plan_id} className={`balance ${b.sessions_locked ? 'is-locked' : ''}`}>
-                <h3>{plan?.title}</h3>
-                <dl className="figures">
-                  <div><dt>{t('patient.outstanding')}</dt><dd>{money(b.outstanding)}</dd></div>
-                  <div><dt>{t('patient.paid')}</dt><dd>{money(b.total_paid)}</dd></div>
-                  <div className={(b.overdue_amount ?? 0) > 0 ? 'is-overdue' : ''}>
-                    <dt>{t('patient.overdueAmount')}</dt><dd>{money(b.overdue_amount)}</dd>
-                  </div>
-                  <div><dt>{t('patient.nextDue')}</dt><dd>{date(b.next_due_date)}</dd></div>
-                </dl>
-                {b.sessions_locked && <p className="lock-note">{t('patient.locked')}</p>}
-              </div>
-            )
-          })}
+          {ledger.isError && <ErrorNote error={ledger.error} onRetry={() => ledger.refetch()} />}
+          {balances.map((b) => (
+            <InstallmentPlanCard
+              key={b.installment_plan_id}
+              summary={b}
+              planTitle={plans.find((p) => p.treatment_plan_id === b.treatment_plan_id)?.title ?? ''}
+              patientId={id}
+              schedule={(ledger.data?.installments ?? []).filter((r) => r.installment_plan_id === b.installment_plan_id)}
+              payments={(ledger.data?.payments ?? []).filter((p) => p.installment_plan_id === b.installment_plan_id)}
+              staffNames={ledger.data?.staffNames ?? new Map()}
+            />
+          ))}
         </section>
 
         <section className="panel">
