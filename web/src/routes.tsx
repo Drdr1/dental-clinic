@@ -5,6 +5,7 @@ import { AppShell } from './components/AppShell'
 import { PatientsPage } from './features/patients/PatientsPage'
 import { PatientPage } from './features/patients/PatientPage'
 import { ReceiptPage } from './features/payments/ReceiptPage'
+import { PlanPage } from './features/plans/PlanPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/patients" replace /> },
           { path: 'patients', element: <PatientsPage /> },
           { path: 'patients/:id', element: <PatientPage /> },
+          { path: 'plans/:planId', element: <PlanPage /> },
         ],
       },
     ],

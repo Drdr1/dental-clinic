@@ -1,5 +1,6 @@
 import { todayLocal } from '../../lib/dates'
 import { Link, useParams } from 'react-router'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
 import { ageFrom, whatsappLink } from '../../lib/phone'
@@ -8,6 +9,8 @@ import { PlanStatusBadge } from '../../components/PlanStatusBadge'
 import { useMember } from '../auth/AuthProvider'
 import { getPatientLedger } from '../payments/api'
 import { InstallmentPlanCard } from '../payments/InstallmentPlanCard'
+import { NewPlanDialog } from '../plans/NewPlanDialog'
+import { SessionDialog } from '../sessions/SessionDialog'
 import { getPatientFile } from './api'
 
 export function PatientPage() {
@@ -15,6 +18,7 @@ export function PatientPage() {
   const { t, money, date } = useI18n()
 
   const { clinicId } = useMember()
+  const [dialog, setDialog] = useState<'plan' | 'visit' | null>(null)
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
   const ledger = useQuery({
     queryKey: ['ledger', id],
@@ -85,13 +89,16 @@ export function PatientPage() {
         </section>
 
         <section className="panel">
-          <h2>{t('patient.plans')}</h2>
+          <div className="panel-head">
+            <h2>{t('patient.plans')}</h2>
+            <button className="btn" onClick={() => setDialog('plan')}>{t('plan.new')}</button>
+          </div>
           {plans.length === 0 && <p className="muted">{t('patient.plansEmpty')}</p>}
           <ul className="plan-list">
             {plans.map((p) => (
               <li key={p.treatment_plan_id}>
                 <div className="plan-line">
-                  <span className="plan-title">{p.title}</span>
+                  <Link to={`/plans/${p.treatment_plan_id}`} className="plan-title row-link">{p.title}</Link>
                   <PlanStatusBadge status={p.status} />
                 </div>
                 <div className="plan-sub">
@@ -106,7 +113,10 @@ export function PatientPage() {
         </section>
 
         <section className="panel">
-          <h2>{t('patient.recall')}</h2>
+          <div className="panel-head">
+            <h2>{t('patient.recall')}</h2>
+            <button className="btn" onClick={() => setDialog('visit')}>{t('session.titleVisit')}</button>
+          </div>
           <p className={recallOverdue ? 'danger-text' : ''}>
             {patient.next_recall_due
               ? recallOverdue
@@ -116,6 +126,9 @@ export function PatientPage() {
           </p>
         </section>
       </div>
+
+      {dialog === 'plan' && <NewPlanDialog patientId={id} onClose={() => setDialog(null)} />}
+      {dialog === 'visit' && <SessionDialog patientId={id} plan={null} onClose={() => setDialog(null)} />}
     </section>
   )
 }

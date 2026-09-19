@@ -7,6 +7,10 @@ const known: Array<[RegExp, MessageKey]> = [
   [/already reversed/i, 'err.alreadyReversed'],
   [/cannot reverse a reversal/i, 'err.reverseReversal'],
   [/SESSION_LOCKED/i, 'err.sessionLocked'],
+  [/cannot move from/i, 'err.badTransition'],
+  [/settle the active installment plan/i, 'err.activeInstallments'],
+  [/Balance too small/i, 'err.balanceTooSmall'],
+  [/below the amount already paid/i, 'err.belowPaid'],
   [/Failed to fetch|NetworkError/i, 'err.offline'],
 ]
 

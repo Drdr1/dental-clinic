@@ -308,3 +308,48 @@ a { color: var(--ink); }
   .receipt { border: 0; border-radius: 0; padding: 0; width: 72mm; }
   .receipt-mark { color: #000; }
 }
+
+/* ---------- Treatment plans ---------- */
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.panel-head .btn { min-height: 34px; padding-inline: 12px; font-size: var(--step--1); }
+.title-block { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.row-actions { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.plan .panel { max-width: 100%; }
+
+.totals { margin: 0; display: grid; gap: 6px; justify-self: end; min-width: min(320px, 100%); }
+.totals div { display: flex; justify-content: space-between; gap: 24px; align-items: center; }
+.totals dt { color: var(--ink-soft); }
+.totals dd { margin: 0; font-weight: 500; }
+.totals-net { border-top: 1px solid var(--line); padding-top: 8px; }
+.totals-net dd, .totals-net dt { font-weight: 650; color: var(--ink); font-size: var(--step-1); }
+.inline-number {
+  width: 110px; min-height: 34px; padding: 4px 8px; text-align: end;
+  border: 1px solid var(--line-strong); border-radius: var(--r-control); font: inherit;
+}
+
+.add-items { display: grid; gap: 14px; padding: 16px; background: var(--paper); border-radius: var(--r-control); }
+
+/* Tooth chart: the clinical centrepiece of plan building. Always drawn left-to-right. */
+.tooth-chart { display: grid; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.tooth-side { display: flex; justify-content: space-between; font-size: var(--step--1); color: var(--ink-soft); }
+.tooth-row { display: grid; grid-template-columns: repeat(16, minmax(34px, 1fr)); gap: 4px; min-width: 600px; }
+.tooth-row + .tooth-row { padding-top: 6px; border-top: 2px solid var(--line-strong); }
+.tooth {
+  min-height: 40px; border: 1px solid var(--line-strong); background: var(--surface);
+  border-radius: 10px 10px 14px 14px; font: inherit; font-size: var(--step--1); font-weight: 500;
+  color: var(--ink); cursor: pointer;
+}
+.tooth-row:last-child .tooth { border-radius: 14px 14px 10px 10px; }
+.tooth.is-midline { margin-inline-end: 8px; }
+.tooth.is-marked { background: var(--gum-soft); border-color: #e8b7c6; }
+.tooth.is-selected { background: var(--ink); border-color: var(--ink); color: #fff; }
+.tooth:hover:not(.is-selected) { border-color: var(--ink-soft); }
+
+.schedule-preview { max-height: 220px; overflow-y: auto; }
+
+.checklist { border: 1px solid var(--line); border-radius: var(--r-control); padding: 10px 14px; margin: 0; display: grid; gap: 8px; }
+.checklist legend { font-size: var(--step--1); font-weight: 500; color: var(--ink-soft); padding-inline: 4px; }
+.check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.check input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--ink); flex: none; }
+.lock-note { display: grid; gap: 10px; }
