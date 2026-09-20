@@ -253,6 +253,7 @@ export type Database = {
         Row: {
           active: boolean
           clinic_id: string
+          commission_percent: number
           created_at: string
           display_name: string
           role: Database["public"]["Enums"]["member_role"]
@@ -261,6 +262,7 @@ export type Database = {
         Insert: {
           active?: boolean
           clinic_id: string
+          commission_percent?: number
           created_at?: string
           display_name: string
           role: Database["public"]["Enums"]["member_role"]
@@ -269,6 +271,7 @@ export type Database = {
         Update: {
           active?: boolean
           clinic_id?: string
+          commission_percent?: number
           created_at?: string
           display_name?: string
           role?: Database["public"]["Enums"]["member_role"]
@@ -288,6 +291,7 @@ export type Database = {
         Row: {
           cash_float: number
           closes_at: string
+          commission_basis: string
           created_at: string
           currency: string
           grace_days: number
@@ -302,6 +306,7 @@ export type Database = {
         Insert: {
           cash_float?: number
           closes_at?: string
+          commission_basis?: string
           created_at?: string
           currency?: string
           grace_days?: number
@@ -316,6 +321,7 @@ export type Database = {
         Update: {
           cash_float?: number
           closes_at?: string
+          commission_basis?: string
           created_at?: string
           currency?: string
           grace_days?: number
@@ -1317,9 +1323,12 @@ export type Database = {
           medical_alerts: string | null
           next_recall_due: string | null
           notes: string | null
+          payer_id: string | null
           phone: string
           recall_interval_months: number | null
           recall_type: string
+          source: string | null
+          source_note: string | null
           whatsapp_phone: string | null
         }
         Insert: {
@@ -1334,9 +1343,12 @@ export type Database = {
           medical_alerts?: string | null
           next_recall_due?: string | null
           notes?: string | null
+          payer_id?: string | null
           phone: string
           recall_interval_months?: number | null
           recall_type?: string
+          source?: string | null
+          source_note?: string | null
           whatsapp_phone?: string | null
         }
         Update: {
@@ -1351,14 +1363,65 @@ export type Database = {
           medical_alerts?: string | null
           next_recall_due?: string | null
           notes?: string | null
+          payer_id?: string | null
           phone?: string
           recall_interval_months?: number | null
           recall_type?: string
+          source?: string | null
+          source_note?: string | null
           whatsapp_phone?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "patients_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patients_payer_id_clinic_id_fkey"
+            columns: ["payer_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id", "clinic_id"]
+          },
+        ]
+      }
+      payers: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          created_at: string
+          discount_percent: number
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payers_clinic_id_fkey"
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
@@ -2024,6 +2087,8 @@ export type Database = {
           id: string
           notes: string | null
           patient_id: string
+          payer_id: string | null
+          payer_percent: number | null
           presented_at: string | null
           status: Database["public"]["Enums"]["plan_status"]
           title: string
@@ -2039,6 +2104,8 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id: string
+          payer_id?: string | null
+          payer_percent?: number | null
           presented_at?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           title: string
@@ -2054,6 +2121,8 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id?: string
+          payer_id?: string | null
+          payer_percent?: number | null
           presented_at?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           title?: string
@@ -2079,6 +2148,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "recall_list"
             referencedColumns: ["patient_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "treatment_plans_payer_id_clinic_id_fkey"
+            columns: ["payer_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id", "clinic_id"]
           },
         ]
       }
@@ -2653,6 +2729,17 @@ export type Database = {
         }
         Returns: string
       }
+      doctor_earnings: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: {
+          base_amount: number
+          basis: string
+          display_name: string
+          earned: number
+          percent: number
+          user_id: string
+        }[]
+      }
       finance_summary: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: Json
@@ -2667,6 +2754,14 @@ export type Database = {
       }
       is_doctor: { Args: { p_clinic: string }; Returns: boolean }
       is_member: { Args: { p_clinic: string }; Returns: boolean }
+      patient_sources: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: {
+          collected: number
+          patients: number
+          source: string
+        }[]
+      }
       plan_net_total: { Args: { p_plan: string }; Returns: number }
       prescription_conflicts: {
         Args: { p_drugs: string[]; p_patient: string }

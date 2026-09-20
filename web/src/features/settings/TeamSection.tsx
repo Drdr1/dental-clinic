@@ -113,6 +113,23 @@ function PasswordDialog({ userId, name, onClose }: { userId: string; name: strin
   )
 }
 
+function CommissionInput({ clinicId, userId, value }: { clinicId: string; userId: string; value: number }) {
+  const { t } = useI18n()
+  const qc = useQueryClient()
+  const save = useMutation({
+    mutationFn: (v: number) => updateMember(clinicId, userId, { commission_percent: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['team'] }),
+  })
+  return (
+    <span className="inline-controls">
+      <input className="cell-input num-input" type="number" min={0} max={100} step={1} dir="ltr"
+        defaultValue={value} aria-label={t('team.commission')}
+        onBlur={(e) => { const v = Number(e.target.value); if (v !== value && v >= 0 && v <= 100) save.mutate(v) }} />
+      <span className="muted">%</span>
+    </span>
+  )
+}
+
 export function TeamSection() {
   const { clinicId } = useMember()
   const { session } = useAuth()
@@ -145,6 +162,7 @@ export function TeamSection() {
                 <th>{t('team.name')}</th>
                 <th>{t('login.email')}</th>
                 <th>{t('team.role')}</th>
+                <th>{t('team.commission')}</th>
                 <th>{t('team.lastSignIn')}</th>
                 <th />
               </tr>
@@ -166,6 +184,11 @@ export function TeamSection() {
                         </select>
                       )}
                       {!m.active && <span className="badge badge-muted"> {t('team.inactive')}</span>}
+                    </td>
+                    <td>
+                      {m.role === 'receptionist' ? <span className="muted">—</span> : (
+                        <CommissionInput clinicId={clinicId} userId={m.user_id} value={m.commission_percent ?? 0} />
+                      )}
                     </td>
                     <td className="muted">{m.last_sign_in ? date(m.last_sign_in) : t('team.never')}</td>
                     <td className="num">

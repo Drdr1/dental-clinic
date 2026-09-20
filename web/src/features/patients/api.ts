@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabase'
-import type { Tables, TablesInsert } from '../../types/database'
+import type { Tables, TablesInsert, TablesUpdate } from '../../types/database'
 
 export type Patient = Tables<'patients'>
 export type PlanSummary = Tables<'installment_plan_summary'>
@@ -61,6 +61,20 @@ export async function findByPhone(clinicId: string, phone: string) {
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+export type Payer = { id: string; name: string; discount_percent: number }
+
+export async function getPayers(clinicId: string): Promise<Payer[]> {
+  const { data, error } = await supabase.from('payers').select('id, name, discount_percent')
+    .eq('clinic_id', clinicId).eq('active', true).order('name')
+  if (error) throw error
+  return data
+}
+
+export async function updatePatient(id: string, values: TablesUpdate<'patients'>) {
+  const { error } = await supabase.from('patients').update(values).eq('id', id)
+  if (error) throw error
 }
 
 export async function createPatient(values: TablesInsert<'patients'>) {

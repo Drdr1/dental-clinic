@@ -40,6 +40,21 @@ export async function getTrend(clinicId: string, n = 6): Promise<MonthPoint[]> {
   return results.map((s, i) => ({ month: ranges[i].month, income: s.income, expenses: s.expenses, net: s.net }))
 }
 
+export type DoctorEarning = { user_id: string; display_name: string; percent: number; base_amount: number; earned: number; basis: string }
+export type SourceRow = { source: string; patients: number; collected: number }
+
+export async function getDoctorEarnings(clinicId: string, from: string, to: string): Promise<DoctorEarning[]> {
+  const { data, error } = await supabase.rpc('doctor_earnings', { p_clinic: clinicId, p_from: from, p_to: to })
+  if (error) throw error
+  return (data ?? []) as DoctorEarning[]
+}
+
+export async function getPatientSources(clinicId: string, from: string, to: string): Promise<SourceRow[]> {
+  const { data, error } = await supabase.rpc('patient_sources', { p_clinic: clinicId, p_from: from, p_to: to })
+  if (error) throw error
+  return (data ?? []) as SourceRow[]
+}
+
 export async function getExpenses(clinicId: string, from: string, to: string): Promise<Expense[]> {
   const { data, error } = await supabase.from('expenses').select('*').eq('clinic_id', clinicId)
     .gte('spent_on', from).lte('spent_on', to)

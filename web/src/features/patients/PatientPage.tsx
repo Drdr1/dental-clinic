@@ -21,6 +21,7 @@ import { getPatientFile } from './api'
 import { Timeline } from './Timeline'
 import { ToothHistory } from './ToothHistory'
 import { PatientFiles } from '../files/PatientFiles'
+import { PatientForm } from './PatientForm'
 import { getUpcomingForPatient } from '../appointments/api'
 
 export function PatientPage() {
@@ -28,7 +29,7 @@ export function PatientPage() {
   const { t, money, date } = useI18n()
 
   const { clinicId } = useMember()
-  const [dialog, setDialog] = useState<'plan' | 'visit' | null>(null)
+  const [dialog, setDialog] = useState<'plan' | 'visit' | 'edit' | null>(null)
   const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files'>('overview')
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
   const upcoming = useQuery({ queryKey: ['appointments', id], queryFn: () => getUpcomingForPatient(id), enabled: !!id })
@@ -78,6 +79,7 @@ export function PatientPage() {
           <a className="btn" href={whatsappLink(patient.whatsapp_phone ?? patient.phone)} target="_blank" rel="noreferrer">
             {t('patient.whatsapp')}
           </a>
+          <button className="btn" onClick={() => setDialog('edit')}>{t('patientForm.edit')}</button>
         </div>
       </header>
 
@@ -217,6 +219,14 @@ export function PatientPage() {
         )}
       </div>
 
+      {dialog === 'edit' && (
+        <PatientForm onClose={() => setDialog(null)} patient={{
+          id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
+          gender: patient.gender, date_of_birth: patient.date_of_birth, medical_alerts: patient.medical_alerts,
+          source: patient.source, source_note: patient.source_note, payer_id: patient.payer_id,
+          recall_interval_months: patient.recall_interval_months,
+        }} />
+      )}
       {dialog === 'plan' && <NewPlanDialog patientId={id} onClose={() => setDialog(null)} />}
       {dialog === 'visit' && <SessionDialog patientId={id} plan={null} onClose={() => setDialog(null)} />}
     </section>

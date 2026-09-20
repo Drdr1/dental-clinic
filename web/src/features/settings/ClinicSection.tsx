@@ -64,6 +64,15 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
         <small className="hint">{t('settings.cashFloatHint')}</small>
       </label>
 
+      <label className="field">
+        <span>{t('settings.commissionBasis')}</span>
+        <select value={s.commission_basis} onChange={(e) => set('commission_basis', e.target.value)}>
+          <option value="work">{t('settings.basisWork')}</option>
+          <option value="collection">{t('settings.basisCollection')}</option>
+        </select>
+        <small className="hint">{t('settings.commissionBasisHint')}</small>
+      </label>
+
       <h3>{t('settings.installmentRules')}</h3>
       <div className="field-row">
         <label className="field">

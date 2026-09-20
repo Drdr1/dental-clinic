@@ -8,7 +8,7 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { toIsoDate, todayLocal } from '../../lib/dates'
 import { PAYMENT_METHODS, type PaymentMethod } from '../payments/api'
 import { methodKey } from '../payments/labels'
-import { CATEGORIES, addExpense, getExpenses, getSummary, getTrend, voidExpense, type Expense, type ExpenseCategory } from './api'
+import { CATEGORIES, addExpense, getDoctorEarnings, getExpenses, getPatientSources, getSummary, getTrend, voidExpense, type Expense, type ExpenseCategory } from './api'
 import { TrendChart } from './TrendChart'
 
 function monthRange(offset: number) {
@@ -97,6 +97,12 @@ export function FinancePage() {
     enabled: enabled && !!prevRange,
   })
   const trend = useQuery({ queryKey: ['finance', 'trend', clinicId], queryFn: () => getTrend(clinicId), enabled })
+  const earnings = useQuery({
+    queryKey: ['finance', 'earnings', clinicId, range], queryFn: () => getDoctorEarnings(clinicId, range.from, range.to), enabled,
+  })
+  const sources = useQuery({
+    queryKey: ['finance', 'sources', clinicId, range], queryFn: () => getPatientSources(clinicId, range.from, range.to), enabled,
+  })
   const expenses = useQuery({ queryKey: ['finance', 'expenses', clinicId, range], queryFn: () => getExpenses(clinicId, range.from, range.to), enabled })
 
   if (!enabled) return <section className="page"><p className="empty">{t('fin.ownerOnly')}</p></section>
@@ -183,6 +189,53 @@ export function FinancePage() {
           <TrendChart points={trend.data} />
         </section>
       )}
+
+      <div className="patient-grid">
+        {(earnings.data?.length ?? 0) > 0 && (
+          <section className="panel">
+            <h2>{t('fin.doctorEarnings')}</h2>
+            <p className="muted small">
+              {earnings.data![0].basis === 'work' ? t('settings.basisWork') : t('settings.basisCollection')}
+            </p>
+            <div className="table-wrap">
+              <table className="table table-compact">
+                <thead><tr><th>{t('team.name')}</th><th className="num">{t('fin.base')}</th><th className="num">%</th><th className="num">{t('fin.earned')}</th></tr></thead>
+                <tbody>
+                  {earnings.data!.map((d) => (
+                    <tr key={d.user_id}>
+                      <td>{d.display_name}</td>
+                      <td className="num">{money(d.base_amount)}</td>
+                      <td className="num muted">{d.percent}%</td>
+                      <td className="num"><strong>{money(d.earned)}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {(sources.data?.length ?? 0) > 0 && (
+          <section className="panel">
+            <h2>{t('fin.sources')}</h2>
+            <p className="muted small">{t('fin.sourcesHint')}</p>
+            <div className="table-wrap">
+              <table className="table table-compact">
+                <thead><tr><th>{t('patientForm.source')}</th><th className="num">{t('fin.newPatients')}</th><th className="num">{t('fin.income')}</th></tr></thead>
+                <tbody>
+                  {sources.data!.map((s2) => (
+                    <tr key={s2.source}>
+                      <td>{t(`source.${s2.source}` as MessageKey)}</td>
+                      <td className="num">{s2.patients}</td>
+                      <td className="num">{money(s2.collected)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+      </div>
 
       <section className="panel">
         <h2>{t('fin.expenseList')}</h2>

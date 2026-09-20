@@ -7,7 +7,7 @@ import { useDebounced } from '../../lib/useDebounced'
 import { ErrorNote } from '../../components/ErrorNote'
 import { Skeleton } from '../../components/Skeleton'
 import { searchPatients } from './api'
-import { NewPatientDialog } from './NewPatientDialog'
+import { PatientForm } from './PatientForm'
 
 export function PatientsPage() {
   const { clinicId } = useMember()
@@ -82,7 +82,7 @@ export function PatientsPage() {
         </div>
       )}
 
-      {adding && <NewPatientDialog onClose={() => setAdding(false)} />}
+      {adding && <PatientForm onClose={() => setAdding(false)} />}
     </section>
   )
 }

@@ -5,6 +5,8 @@ export type PlanItem = Tables<'treatment_plan_items'>
 export type Procedure = Pick<Tables<'procedures'>, 'id' | 'name' | 'default_price'>
 export type PlanStatus = 'draft' | 'presented' | 'declined' | 'active' | 'completed' | 'cancelled'
 
+export type PatientPayer = { id: string; name: string; discount_percent: number } | null
+
 export async function getPlan(planId: string) {
   const { data: plan, error } = await supabase.from('treatment_plans').select('*').eq('id', planId).maybeSingle()
   if (error) throw error
@@ -12,7 +14,8 @@ export async function getPlan(planId: string) {
 
   const [items, patient, summary, procedures, sessions, payments, staff] = await Promise.all([
     supabase.from('treatment_plan_items').select('*').eq('plan_id', planId).order('created_at'),
-    supabase.from('patients').select('id, full_name, medical_alerts').eq('id', plan.patient_id).single(),
+    supabase.from('patients').select('id, full_name, medical_alerts, payer_id, payers(id, name, discount_percent)')
+      .eq('id', plan.patient_id).single(),
     supabase.from('installment_plan_summary').select('*').eq('treatment_plan_id', planId).eq('status', 'active').maybeSingle(),
     supabase.from('procedures').select('id, name, default_price').eq('clinic_id', plan.clinic_id).eq('active', true).order('name'),
     supabase.from('sessions').select('id, performed_at, notes, lock_override, override_reason')
@@ -70,8 +73,10 @@ export async function cancelItem(itemId: string) {
   if (error) throw error
 }
 
-export async function setDiscount(planId: string, discount: number) {
-  const { error } = await supabase.from('treatment_plans').update({ discount }).eq('id', planId)
+export async function setDiscount(planId: string, discount: number, payer?: { id: string; percent: number } | null) {
+  const { error } = await supabase.from('treatment_plans')
+    .update(payer ? { discount, payer_id: payer.id, payer_percent: payer.percent } : { discount })
+    .eq('id', planId)
   if (error) throw error
 }
 

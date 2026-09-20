@@ -40,7 +40,10 @@ export function PlanPage() {
     onSuccess: () => { setDialog(null); setReason(''); refresh() },
   })
   const removeItem = useMutation({ mutationFn: cancelItem, onSuccess: refresh })
-  const discount = useMutation({ mutationFn: (v: number) => setDiscount(planId, v), onSuccess: refresh })
+  const discount = useMutation({
+    mutationFn: (a: { value: number; payer?: { id: string; percent: number } | null }) => setDiscount(planId, a.value, a.payer),
+    onSuccess: refresh,
+  })
   const stopInstallments = useMutation({
     mutationFn: (id: string) => cancelInstallmentPlan(id, reason),
     onSuccess: () => { setDialog(null); setReason(''); refresh() },
@@ -56,6 +59,8 @@ export function PlanPage() {
   const subtotal = live.reduce((s, i) => s + i.price, 0)
   const net = subtotal - plan.discount
   const editable = st === 'draft' || st === 'presented' || st === 'active'
+  const payerRaw = (patient as { payers?: unknown } | null)?.payers
+  const payer = (Array.isArray(payerRaw) ? payerRaw[0] : payerRaw) as { id: string; name: string; discount_percent: number } | null | undefined
   const procName = new Map(procedures.map((p) => [p.id, p.name]))
   const itemLabel = (i: PlanItem) =>
     [i.procedure_id ? procName.get(i.procedure_id) : null, i.description, i.tooth_number ? t('plan.tooth', { n: i.tooth_number }) : null]
@@ -160,13 +165,25 @@ export function PlanPage() {
                   defaultValue={plan.discount}
                   onBlur={(e) => {
                     const v = Number(e.target.value)
-                    if (Number.isFinite(v) && v >= 0 && v !== plan.discount) discount.mutate(v)
+                    if (Number.isFinite(v) && v >= 0 && v !== plan.discount) discount.mutate({ value: v })
                   }} />
               ) : money(plan.discount)}
             </dd>
           </div>
           <div className="totals-net"><dt>{t('plan.net')}</dt><dd>{money(net)}</dd></div>
         </dl>
+        {payer && editable && !installments && Math.abs(plan.discount - Math.round(subtotal * payer.discount_percent) / 100) > 0.01 && (
+          <p className="payer-note">
+            {t('plan.payerAvailable', { name: payer.name, percent: payer.discount_percent })}{' '}
+            <button className="link-btn" disabled={discount.isPending}
+              onClick={() => discount.mutate({
+                value: Math.round(subtotal * payer.discount_percent) / 100,
+                payer: { id: payer.id, percent: payer.discount_percent },
+              })}>
+              {t('plan.applyPayer')}
+            </button>
+          </p>
+        )}
         {discount.isError && <ErrorNote error={discount.error} />}
 
         {editable && (

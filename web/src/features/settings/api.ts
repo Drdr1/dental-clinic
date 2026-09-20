@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 export type ClinicSettings = {
   name: string
   cash_float: number
+  commission_basis: string
   grace_days: number
   lock_threshold: number
   opens_at: string
@@ -12,7 +13,7 @@ export type ClinicSettings = {
 
 export async function getSettings(clinicId: string) {
   const [clinic, procedures, chairs] = await Promise.all([
-    supabase.from('clinics').select('name, cash_float, grace_days, lock_threshold, opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
+    supabase.from('clinics').select('name, cash_float, commission_basis, grace_days, lock_threshold, opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
     supabase.from('procedures').select('id, name, default_price, default_duration_min, active').eq('clinic_id', clinicId).order('name'),
     supabase.from('chairs').select('id, name, active').eq('clinic_id', clinicId).order('name'),
   ])
@@ -50,6 +51,7 @@ export type TeamMember = {
   display_name: string
   role: 'owner' | 'doctor' | 'receptionist'
   active: boolean
+  commission_percent?: number
   email: string
   last_sign_in: string | null
   created_at: string
@@ -61,7 +63,11 @@ export async function getTeam(clinicId: string): Promise<TeamMember[]> {
   return (data ?? []) as TeamMember[]
 }
 
-export async function updateMember(clinicId: string, userId: string, patch: { role?: 'doctor' | 'receptionist'; active?: boolean }) {
+export async function updateMember(
+  clinicId: string,
+  userId: string,
+  patch: { role?: 'doctor' | 'receptionist'; active?: boolean; commission_percent?: number },
+) {
   const { data, error } = await supabase.from('clinic_members').update(patch)
     .eq('clinic_id', clinicId).eq('user_id', userId).select('user_id')
   if (error) throw error
