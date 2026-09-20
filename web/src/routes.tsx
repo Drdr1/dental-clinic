@@ -9,6 +9,7 @@ import { PlanPage } from './features/plans/PlanPage'
 import { TodayPage } from './features/today/TodayPage'
 import { AppointmentsPage } from './features/appointments/AppointmentsPage'
 import { SettingsPage } from './features/settings/SettingsPage'
+import { LabsPage } from './features/labs/LabsPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
           { path: 'today', element: <TodayPage /> },
           { path: 'appointments', element: <AppointmentsPage /> },
           { path: 'settings', element: <SettingsPage /> },
+          { path: 'labs', element: <LabsPage /> },
           { path: 'patients', element: <PatientsPage /> },
           { path: 'patients/:id', element: <PatientPage /> },
           { path: 'plans/:planId', element: <PlanPage /> },

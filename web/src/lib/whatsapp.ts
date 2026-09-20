@@ -23,6 +23,9 @@ export const templates = {
   appointment: (a: { name: string; clinic: string; startsAt: string }) =>
     `أهلًا ${firstName(a.name)}، ده تأكيد لميعادك في ${a.clinic}: ${when.format(new Date(a.startsAt))}. لو محتاج تغيّر الميعاد كلمنا. في انتظارك!`,
 
+  labChase: (a: { clinic: string; description: string; patient: string; sentOn: string; expectedOn: string }) =>
+    `السلام عليكم، ده ${a.clinic}. بخصوص شغل (${a.description}) للمريض ${a.patient}، اتبعت يوم ${fmtDate(a.sentOn)} وكان ميعاد تسليمه ${fmtDate(a.expectedOn)}. ياريت تبلغونا هيوصل إمتى. شكرًا!`,
+
   nextSession: (a: { name: string; clinic: string; plan: string }) =>
     `أهلًا ${firstName(a.name)}، ده ${a.clinic}. خطة العلاج بتاعتك (${a.plan}) لسه فيها جلسات، تحب نحجزلك الجلسة الجاية؟`,
 }

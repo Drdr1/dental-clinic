@@ -441,3 +441,12 @@ tr.is-inactive .cell-input { color: var(--ink-soft); }
 .credentials div { display: flex; gap: 12px; }
 .credentials dt { color: var(--ink-soft); min-width: 80px; }
 .credentials dd { margin: 0; font-weight: 600; user-select: all; }
+
+/* ---------- Lab ---------- */
+.segmented { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; width: fit-content; flex-wrap: wrap; }
+.segmented button { border: 0; background: none; font: inherit; padding: 6px 14px; border-radius: 999px; color: var(--ink-soft); cursor: pointer; }
+.segmented button.is-active { background: var(--ink); color: #fff; }
+.lab-list .plan-line { justify-content: flex-start; flex-wrap: wrap; }
+.lab-dates { font-size: var(--step--1); }
+.inline-controls { display: flex; gap: 8px; align-items: center; }
+.inline-controls select { flex: 1; }

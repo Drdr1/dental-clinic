@@ -61,7 +61,10 @@ export function TodayPage() {
 
       {labs.length > 0 && (
         <section className="panel panel-alert">
-          <h2>{t('today.labs', { n: labs.length })}</h2>
+          <div className="panel-head">
+            <h2>{t('today.labs', { n: labs.length })}</h2>
+            <Link className="btn" to="/labs">{t('today.openLabs')}</Link>
+          </div>
           <ul className="work-list">
             {labs.map((l) => (
               <li key={l.id}>
