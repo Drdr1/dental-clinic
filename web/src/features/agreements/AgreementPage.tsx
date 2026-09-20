@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
+import { closeOrBack } from '../../lib/closeTab'
 import { ErrorNote } from '../../components/ErrorNote'
 import { SignaturePad } from '../../components/SignaturePad'
 import { ToothMark } from '../../components/ToothMark'
@@ -114,7 +115,7 @@ export function AgreementPage() {
           </select>
         )}
         <button className="btn btn-primary" onClick={() => window.print()}>{t('receipt.print')}</button>
-        <button className="btn" onClick={() => window.close()}>{t('common.close')}</button>
+        <button className="btn" onClick={closeOrBack}>{t('common.close')}</button>
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
+import { closeOrBack } from '../../lib/closeTab'
 import { ErrorNote } from '../../components/ErrorNote'
 import { ToothMark } from '../../components/ToothMark'
 import { getReceipt } from './api'
@@ -70,7 +71,7 @@ export function ReceiptPage() {
 
       <div className="receipt-actions no-print">
         <button className="btn btn-primary" onClick={() => window.print()}>{t('receipt.print')}</button>
-        <button className="btn" onClick={() => window.close()}>{t('common.close')}</button>
+        <button className="btn" onClick={closeOrBack}>{t('common.close')}</button>
       </div>
     </div>
   )
