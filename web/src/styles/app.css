@@ -472,3 +472,60 @@ tr.is-void-row td:last-child { text-decoration: none; }
 .fin-net.is-negative strong { color: var(--danger); }
 .totals.wide { justify-self: stretch; min-width: 0; }
 .totals dd { white-space: nowrap; }
+
+/* ---------- Signature, public form, agreement ---------- */
+.sig { display: grid; gap: 6px; }
+.sig-canvas { width: 100%; height: 170px; border: 1px dashed var(--line-strong); border-radius: var(--r-control); background: #fff; touch-action: none; cursor: crosshair; }
+.sig-foot { display: flex; justify-content: space-between; font-size: var(--step--1); }
+.sig-image { max-width: 280px; max-height: 110px; display: block; }
+.signed-block { border-top: 1px solid var(--line); padding-top: 12px; }
+
+.public-form { min-height: 100vh; display: grid; justify-items: center; align-content: start; padding: 24px 14px 48px; }
+.public-card { width: min(640px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 22px 20px; display: grid; gap: 18px; }
+.public-head { display: flex; align-items: center; gap: 10px; }
+.public-head .link-btn { margin-inline-start: auto; }
+.public-card h1 { font-size: var(--step-2); }
+.question { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.question legend { font-weight: 500; margin-bottom: 8px; }
+.question textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-control); font: inherit; }
+.choice-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer; min-height: 44px; }
+.choice input { accent-color: var(--ink); width: 18px; height: 18px; }
+.choice.is-on { border-color: var(--ink); background: #e7efed; }
+.consent-text { padding: 14px; background: var(--paper); border-radius: var(--r-control); line-height: 1.9; }
+.done-block { text-align: center; padding: 30px 0; display: grid; gap: 8px; }
+.link-box { width: 100%; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-control); font: inherit; font-size: var(--step--1); }
+.answers { margin: 0; display: grid; gap: 10px; }
+.answers dt { color: var(--ink-soft); font-size: var(--step--1); }
+.answers dd { margin: 0; font-weight: 500; }
+
+.agreement { width: min(760px, 100%); background: var(--surface); color: #000; border: 1px solid var(--line); border-radius: var(--r-panel); padding: 32px 36px; display: grid; gap: 14px; }
+.agreement h1 { text-align: center; font-size: var(--step-2); }
+.agreement h2 { font-size: var(--step-0); margin-top: 8px; }
+.center { text-align: center; }
+.doc-table td { border-bottom: 1px solid #ddd; }
+.doc-total td { font-weight: 650; border-top: 2px solid #000; }
+.clauses { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; line-height: 1.8; }
+.doc-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 18px; }
+.doc-signatures > div { display: grid; gap: 8px; align-content: start; }
+.sig-line { border-bottom: 1px solid #000; height: 60px; }
+.print-only { display: none; }
+@media print {
+  .agreement { border: 0; padding: 0; width: 100%; }
+  .print-only { display: block; }
+  .agreement .sig-canvas { display: none; }
+}
+.doc-signatures input { width: 100%; min-height: 40px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-control); font: inherit; }
+
+/* Agreement on paper: A4, compact, terms + signatures never split across pages. */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  .agreement { gap: 8px; font-size: 12px; }
+  .agreement h1 { font-size: 18px; }
+  .agreement h2 { margin-top: 4px; }
+  .agreement .doc-table td { padding: 4px 8px; }
+  .agreement .clauses { gap: 2px; line-height: 1.6; }
+  .doc-keep { break-inside: avoid; page-break-inside: avoid; }
+  .doc-signatures { margin-top: 10px; }
+  .sig-line { height: 44px; }
+}

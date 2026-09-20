@@ -12,6 +12,7 @@ import { InstallmentPlanCard } from '../payments/InstallmentPlanCard'
 import { NewPlanDialog } from '../plans/NewPlanDialog'
 import { PatientAppointments } from '../appointments/PatientAppointments'
 import { PatientLabCases } from '../labs/PatientLabCases'
+import { PatientForms } from '../forms/PatientForms'
 import { SessionDialog } from '../sessions/SessionDialog'
 import { getPatientFile } from './api'
 
@@ -138,6 +139,10 @@ export function PatientPage() {
             ))}
           </ul>
         </section>
+
+        <PatientForms patient={{
+          id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
+        }} />
 
         <PatientLabCases patient={{
           id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,

@@ -26,9 +26,14 @@ export function InstallmentPlanCard({ summary, planTitle, patientId, schedule, p
     <article className={`plan-card ${summary.sessions_locked ? 'is-locked' : ''}`}>
       <header className="plan-card-head">
         <h3>{planTitle}</h3>
-        {outstanding > 0 && (
-          <button className="btn btn-primary" onClick={() => setPaying(true)}>{t('pay.open')}</button>
-        )}
+        <span className="head-actions">
+          {summary.installment_plan_id && (
+            <a className="btn" href={`/agreements/${summary.installment_plan_id}`} target="_blank" rel="noreferrer">{t('agr.open')}</a>
+          )}
+          {outstanding > 0 && (
+            <button className="btn btn-primary" onClick={() => setPaying(true)}>{t('pay.open')}</button>
+          )}
+        </span>
       </header>
 
       <dl className="figures">

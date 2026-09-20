@@ -12,13 +12,18 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { LabsPage } from './features/labs/LabsPage'
 import { MaterialsPage } from './features/materials/MaterialsPage'
 import { FinancePage } from './features/finance/FinancePage'
+import { PublicFormPage } from './features/forms/PublicFormPage'
+import { AgreementPage } from './features/agreements/AgreementPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  // Public: the patient's form link, no login.
+  { path: '/f/:token', element: <PublicFormPage /> },
   {
     element: <RequireAuth />,
     children: [
       { path: 'receipts/:id', element: <ReceiptPage /> },
+      { path: 'agreements/:planId', element: <AgreementPage /> },
       {
         element: <AppShell />,
         children: [
