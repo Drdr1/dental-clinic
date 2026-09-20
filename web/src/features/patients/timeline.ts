@@ -87,5 +87,5 @@ export async function getTimeline(patientId: string): Promise<TimelineEvent[]> {
       details: [p.title], link: `/plans/${p.id}` })
   }
 
-  return events.sort((a, b) => b.at.localeCompare(a.at))
+  return events.filter((e) => !!e.at).sort((a, b) => b.at.localeCompare(a.at))
 }

@@ -662,6 +662,28 @@ export const en = {
   'timeline.form': 'Form signed',
   'timeline.plan': 'Treatment plan created',
   'timeline.override': 'Doctor override: {reason}',
+
+  'tooth.title': 'Tooth chart',
+  'tooth.done': 'Treated',
+  'tooth.planned': 'Planned',
+  'tooth.showAll': 'Show all teeth',
+  'tooth.empty': 'No tooth-specific work recorded yet.',
+  'tooth.noneOnTooth': 'Nothing recorded on tooth {n}.',
+
+  'file.title': 'X-rays & photos',
+  'file.add': 'Add files',
+  'file.uploading': 'Uploading…',
+  'file.kindLabel': 'Type',
+  'file.kind.xray': 'X-ray',
+  'file.kind.photo': 'Photo',
+  'file.kind.document': 'Document',
+  'file.caption': 'Caption',
+  'file.captionHint': 'For example: periapical 36, before treatment',
+  'file.hint': 'Images are shrunk automatically before upload. Only this clinic can open them.',
+  'file.empty': 'No X-rays or photos yet.',
+  'file.openFull': 'Open full size',
+  'file.delete': 'Delete',
+  'file.deleteConfirm': 'Delete this file permanently?',
 } as const
 
 export type MessageKey = keyof typeof en

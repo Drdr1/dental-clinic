@@ -28,7 +28,7 @@ export function Timeline({ patientId }: { patientId: string }) {
           <div className="tl-body">
             <div className="tl-head">
               <strong>{t(e.title as Parameters<typeof t>[0])}</strong>
-              <span className="muted">{date(e.at)}{e.at.includes('T') && !e.at.endsWith('T09:00:00') ? ` · ${fmt.format(new Date(e.at))}` : ''}</span>
+              <span className="muted">{date(e.at)}{(e.at ?? '').includes('T') && !e.at.endsWith('T09:00:00') ? ` · ${fmt.format(new Date(e.at))}` : ''}</span>
               {e.link && <Link to={e.link} className="tl-link">{t('timeline.open')}</Link>}
             </div>
             {e.details.length > 0 && <p className="tl-details">{e.details.join(' · ')}</p>}

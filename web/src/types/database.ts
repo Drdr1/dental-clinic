@@ -1233,34 +1233,43 @@ export type Database = {
       patient_files: {
         Row: {
           caption: string | null
+          caption_updated_at: string | null
           clinic_id: string
           created_at: string
           id: string
           kind: Database["public"]["Enums"]["file_kind"]
+          mime_type: string | null
           patient_id: string
           session_id: string | null
+          size_bytes: number | null
           storage_path: string
           uploaded_by: string | null
         }
         Insert: {
           caption?: string | null
+          caption_updated_at?: string | null
           clinic_id: string
           created_at?: string
           id?: string
           kind: Database["public"]["Enums"]["file_kind"]
+          mime_type?: string | null
           patient_id: string
           session_id?: string | null
+          size_bytes?: number | null
           storage_path: string
           uploaded_by?: string | null
         }
         Update: {
           caption?: string | null
+          caption_updated_at?: string | null
           clinic_id?: string
           created_at?: string
           id?: string
           kind?: Database["public"]["Enums"]["file_kind"]
+          mime_type?: string | null
           patient_id?: string
           session_id?: string | null
+          size_bytes?: number | null
           storage_path?: string
           uploaded_by?: string | null
         }

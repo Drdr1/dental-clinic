@@ -19,6 +19,8 @@ import { PatientPrescriptions } from '../prescriptions/PatientPrescriptions'
 import { SessionDialog } from '../sessions/SessionDialog'
 import { getPatientFile } from './api'
 import { Timeline } from './Timeline'
+import { ToothHistory } from './ToothHistory'
+import { PatientFiles } from '../files/PatientFiles'
 import { getUpcomingForPatient } from '../appointments/api'
 
 export function PatientPage() {
@@ -127,6 +129,11 @@ export function PatientPage() {
 
         {tab === 'treatment' && (
           <>
+            <section className="panel panel-wide">
+              <h2>{t('tooth.title')}</h2>
+              <ToothHistory patientId={id} />
+            </section>
+
             <section className="panel">
               <div className="panel-head">
                 <h2>{t('patient.plans')}</h2>
@@ -201,9 +208,12 @@ export function PatientPage() {
         )}
 
         {tab === 'files' && (
-          <PatientForms patient={{
-            id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
-          }} />
+          <>
+            <PatientFiles patientId={id} />
+            <PatientForms patient={{
+              id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
+            }} />
+          </>
         )}
       </div>
 
