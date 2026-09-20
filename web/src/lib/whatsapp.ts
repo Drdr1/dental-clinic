@@ -26,6 +26,9 @@ export const templates = {
   labChase: (a: { clinic: string; description: string; patient: string; sentOn: string; expectedOn: string }) =>
     `السلام عليكم، ده ${a.clinic}. بخصوص شغل (${a.description}) للمريض ${a.patient}، اتبعت يوم ${fmtDate(a.sentOn)} وكان ميعاد تسليمه ${fmtDate(a.expectedOn)}. ياريت تبلغونا هيوصل إمتى. شكرًا!`,
 
+  orderMaterial: (a: { clinic: string; material: string; unit: string }) =>
+    `السلام عليكم، ده ${a.clinic}. محتاجين نطلب ${a.material}${a.unit ? ` (${a.unit})` : ''}. ياريت تبلغونا بالسعر والمتاح وميعاد التوصيل. شكرًا!`,
+
   nextSession: (a: { name: string; clinic: string; plan: string }) =>
     `أهلًا ${firstName(a.name)}، ده ${a.clinic}. خطة العلاج بتاعتك (${a.plan}) لسه فيها جلسات، تحب نحجزلك الجلسة الجاية؟`,
 }

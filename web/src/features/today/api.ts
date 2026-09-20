@@ -1,9 +1,10 @@
 import { supabase } from '../../lib/supabase'
 import { todayLocal } from '../../lib/dates'
 import { getDay } from '../appointments/api'
+import { getLowStock } from '../materials/api'
 
 export async function getToday(clinicId: string) {
-  const [agenda, recall, labs, unscheduled, appointments] = await Promise.all([
+  const [agenda, recall, labs, unscheduled, appointments, lowStock] = await Promise.all([
     supabase.from('installment_agenda').select('*').eq('clinic_id', clinicId).order('due_date'),
     supabase.from('recall_list').select('*').eq('clinic_id', clinicId).eq('has_upcoming_appointment', false)
       .order('next_recall_due'),
@@ -11,6 +12,7 @@ export async function getToday(clinicId: string) {
       .is('received_on', null).is('cancelled_at', null).order('expected_on'),
     supabase.from('unscheduled_treatment').select('*').eq('clinic_id', clinicId).order('accepted_at'),
     getDay(clinicId, todayLocal()),
+    getLowStock(clinicId),
   ])
   for (const r of [agenda, recall, labs, unscheduled]) if (r.error) throw r.error
 
@@ -30,5 +32,6 @@ export async function getToday(clinicId: string) {
     unscheduled: unscheduled.data ?? [],
     planTitles: titles,
     appointments,
+    lowStock,
   }
 }

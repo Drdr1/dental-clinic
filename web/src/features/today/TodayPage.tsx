@@ -19,12 +19,12 @@ export function TodayPage() {
   if (q.isPending) return <section className="page"><p className="muted">{t('common.loading')}</p></section>
   if (q.isError) return <section className="page"><ErrorNote error={q.error} onRetry={() => q.refetch()} /></section>
 
-  const { agenda, recall, labs, unscheduled, planTitles, appointments } = q.data
+  const { agenda, recall, labs, unscheduled, planTitles, appointments, lowStock } = q.data
   const sortedAgenda = [...agenda].sort(
     (a, b) => agendaOrder.indexOf(a.status ?? '') - agendaOrder.indexOf(b.status ?? '') ||
       (a.due_date ?? '').localeCompare(b.due_date ?? ''),
   )
-  const nothing = !agenda.length && !recall.length && !labs.length && !unscheduled.length && !appointments.length
+  const nothing = !agenda.length && !recall.length && !labs.length && !unscheduled.length && !appointments.length && !lowStock.length
 
   return (
     <section className="page today">
@@ -157,6 +157,31 @@ export function TodayPage() {
                     </a>
                   )}
                 </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {lowStock.length > 0 && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>{t('today.lowStock', { n: lowStock.length })}</h2>
+            <Link className="btn" to="/materials">{t('today.openMaterials')}</Link>
+          </div>
+          <ul className="work-list">
+            {lowStock.map((m) => (
+              <li key={m.material_id}>
+                <div>
+                  <strong>{m.name}</strong>
+                  <p className="muted">{t('today.stockLeft', { n: m.on_hand ?? 0, unit: m.unit ?? '', min: m.min_stock ?? 0 })}</p>
+                </div>
+                {m.supplier_phone && (
+                  <a className="btn btn-small" target="_blank" rel="noreferrer"
+                    href={waMessage(m.supplier_phone, templates.orderMaterial({ clinic: clinicName, material: m.name ?? '', unit: m.unit ?? '' }))}>
+                    {t('mat.order')}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

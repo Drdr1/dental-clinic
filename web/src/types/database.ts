@@ -249,6 +249,86 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          lab_case_id: string | null
+          material_movement_id: string | null
+          method: Database["public"]["Enums"]["payment_method"] | null
+          note: string | null
+          paid_to: string | null
+          spent_on: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lab_case_id?: string | null
+          material_movement_id?: string | null
+          method?: Database["public"]["Enums"]["payment_method"] | null
+          note?: string | null
+          paid_to?: string | null
+          spent_on: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lab_case_id?: string | null
+          material_movement_id?: string | null
+          method?: Database["public"]["Enums"]["payment_method"] | null
+          note?: string | null
+          paid_to?: string | null
+          spent_on?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_lab_case_id_fkey"
+            columns: ["lab_case_id"]
+            isOneToOne: true
+            referencedRelation: "lab_case_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_lab_case_id_fkey"
+            columns: ["lab_case_id"]
+            isOneToOne: true
+            referencedRelation: "lab_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_material_movement_id_fkey"
+            columns: ["material_movement_id"]
+            isOneToOne: true
+            referencedRelation: "material_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_requests: {
         Row: {
           clinic_id: string
@@ -895,6 +975,121 @@ export type Database = {
           },
         ]
       }
+      material_movements: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: Database["public"]["Enums"]["movement_kind"]
+          material_id: string
+          note: string | null
+          occurred_on: string
+          plan_item_id: string | null
+          quantity: number
+          total_cost: number | null
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["movement_kind"]
+          material_id: string
+          note?: string | null
+          occurred_on?: string
+          plan_item_id?: string | null
+          quantity: number
+          total_cost?: number | null
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["movement_kind"]
+          material_id?: string
+          note?: string | null
+          occurred_on?: string
+          plan_item_id?: string | null
+          quantity?: number
+          total_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_movements_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_movements_material_id_clinic_id_fkey"
+            columns: ["material_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "material_stock"
+            referencedColumns: ["material_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "material_movements_material_id_clinic_id_fkey"
+            columns: ["material_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "material_movements_plan_item_id_fkey"
+            columns: ["plan_item_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          created_at: string
+          id: string
+          min_stock: number
+          name: string
+          supplier_name: string | null
+          supplier_phone: string | null
+          unit: string
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name: string
+          supplier_name?: string | null
+          supplier_phone?: string | null
+          unit?: string
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name?: string
+          supplier_name?: string | null
+          supplier_phone?: string | null
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_files: {
         Row: {
           caption: string | null
@@ -1198,6 +1393,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "unscheduled_treatment"
             referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+        ]
+      }
+      procedure_materials: {
+        Row: {
+          clinic_id: string
+          material_id: string
+          procedure_id: string
+          quantity: number
+        }
+        Insert: {
+          clinic_id: string
+          material_id: string
+          procedure_id: string
+          quantity: number
+        }
+        Update: {
+          clinic_id?: string
+          material_id?: string
+          procedure_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedure_materials_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procedure_materials_material_id_clinic_id_fkey"
+            columns: ["material_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "material_stock"
+            referencedColumns: ["material_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "procedure_materials_material_id_clinic_id_fkey"
+            columns: ["material_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "procedure_materials_procedure_id_clinic_id_fkey"
+            columns: ["procedure_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id", "clinic_id"]
           },
         ]
       }
@@ -1782,6 +2027,31 @@ export type Database = {
           },
         ]
       }
+      material_stock: {
+        Row: {
+          active: boolean | null
+          clinic_id: string | null
+          is_low: boolean | null
+          last_purchase_on: string | null
+          last_unit_cost: number | null
+          material_id: string | null
+          min_stock: number | null
+          name: string | null
+          on_hand: number | null
+          supplier_name: string | null
+          supplier_phone: string | null
+          unit: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_balance: {
         Row: {
           clinic_id: string | null
@@ -2035,6 +2305,10 @@ export type Database = {
         }
         Returns: string
       }
+      finance_summary: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: Json
+      }
       get_form_by_token: { Args: { p_token: string }; Returns: Json }
       has_role: {
         Args: {
@@ -2065,6 +2339,17 @@ export type Database = {
         }
         Returns: string
       }
+      record_purchase: {
+        Args: {
+          p_material_id: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_note?: string
+          p_occurred_on?: string
+          p_quantity: number
+          p_total_cost: number
+        }
+        Returns: string
+      }
       record_session: {
         Args: {
           p_done_item_ids?: string[]
@@ -2074,6 +2359,14 @@ export type Database = {
           p_patient_id: string
           p_treatment_plan_id?: string
         }
+        Returns: string
+      }
+      record_stock_count: {
+        Args: { p_counted: number; p_material_id: string }
+        Returns: number
+      }
+      record_usage: {
+        Args: { p_material_id: string; p_note?: string; p_quantity: number }
         Returns: string
       }
       reverse_payment: {
@@ -2117,9 +2410,19 @@ export type Database = {
         | "done"
         | "cancelled"
         | "no_show"
+      expense_category:
+        | "rent"
+        | "salaries"
+        | "materials"
+        | "lab"
+        | "utilities"
+        | "maintenance"
+        | "marketing"
+        | "other"
       file_kind: "xray" | "photo" | "document"
       installment_plan_status: "active" | "completed" | "cancelled"
       member_role: "owner" | "doctor" | "receptionist"
+      movement_kind: "purchase" | "usage" | "auto_usage" | "adjustment"
       payment_method: "cash" | "card" | "instapay" | "wallet" | "bank_transfer"
       plan_item_status: "planned" | "done" | "cancelled"
       plan_status:
@@ -2267,9 +2570,20 @@ export const Constants = {
         "cancelled",
         "no_show",
       ],
+      expense_category: [
+        "rent",
+        "salaries",
+        "materials",
+        "lab",
+        "utilities",
+        "maintenance",
+        "marketing",
+        "other",
+      ],
       file_kind: ["xray", "photo", "document"],
       installment_plan_status: ["active", "completed", "cancelled"],
       member_role: ["owner", "doctor", "receptionist"],
+      movement_kind: ["purchase", "usage", "auto_usage", "adjustment"],
       payment_method: ["cash", "card", "instapay", "wallet", "bank_transfer"],
       plan_item_status: ["planned", "done", "cancelled"],
       plan_status: [

@@ -20,6 +20,8 @@ export function AppShell() {
           <NavLink to="/appointments" className="nav-link">{t('nav.appointments')}</NavLink>
           <NavLink to="/patients" className="nav-link">{t('nav.patients')}</NavLink>
           <NavLink to="/labs" className="nav-link">{t('nav.labs')}</NavLink>
+          <NavLink to="/materials" className="nav-link">{t('nav.materials')}</NavLink>
+          {member.role === 'owner' && <NavLink to="/finance" className="nav-link">{t('nav.finance')}</NavLink>}
           {member.role === 'owner' && <NavLink to="/settings" className="nav-link">{t('nav.settings')}</NavLink>}
         </nav>
         <div className="sidebar-foot">
