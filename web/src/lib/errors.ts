@@ -22,6 +22,8 @@ const known: Array<[RegExp, MessageKey]> = [
   [/^not_owner$|Only the clinic owner/i, 'err.notOwner'],
   [/procedures_clinic_id_name_key|chairs_clinic_id_name_key/i, 'err.duplicateName'],
   [/Failed to send a request to the Edge Function|FunctionsFetchError/i, 'err.functionDown'],
+  [/ALLERGY_CONFLICT/i, 'err.allergyConflict'],
+  [/Only a doctor can write prescriptions/i, 'err.doctorOnly'],
   [/Failed to fetch|NetworkError/i, 'err.offline'],
 ]
 

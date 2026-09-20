@@ -13,6 +13,8 @@ import { NewPlanDialog } from '../plans/NewPlanDialog'
 import { PatientAppointments } from '../appointments/PatientAppointments'
 import { PatientLabCases } from '../labs/PatientLabCases'
 import { PatientForms } from '../forms/PatientForms'
+import { PatientAllergies } from '../prescriptions/PatientAllergies'
+import { PatientPrescriptions } from '../prescriptions/PatientPrescriptions'
 import { SessionDialog } from '../sessions/SessionDialog'
 import { getPatientFile } from './api'
 
@@ -74,6 +76,7 @@ export function PatientPage() {
           <p>{patient.medical_alerts}</p>
         </div>
       )}
+      <PatientAllergies patientId={patient.id} groups={patient.allergy_groups ?? []} />
 
       <div className="patient-grid">
         <section className="panel panel-wide">
@@ -139,6 +142,11 @@ export function PatientPage() {
             ))}
           </ul>
         </section>
+
+        <PatientPrescriptions patient={{
+          id: patient.id, full_name: patient.full_name, medical_alerts: patient.medical_alerts,
+          allergy_groups: patient.allergy_groups ?? [],
+        }} />
 
         <PatientForms patient={{
           id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,

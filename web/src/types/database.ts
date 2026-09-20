@@ -34,6 +34,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      allergy_groups: {
+        Row: {
+          code: string
+          keywords: string[]
+          label_ar: string
+          label_en: string
+        }
+        Insert: {
+          code: string
+          keywords?: string[]
+          label_ar: string
+          label_en: string
+        }
+        Update: {
+          code?: string
+          keywords?: string[]
+          label_ar?: string
+          label_en?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           chair_id: string
@@ -248,6 +269,66 @@ export type Database = {
           timezone?: string
         }
         Relationships: []
+      }
+      drugs: {
+        Row: {
+          active: boolean
+          allergy_group: string | null
+          clinic_id: string
+          created_at: string
+          default_dose: string | null
+          default_duration: string | null
+          default_frequency: string | null
+          default_notes: string | null
+          form: string | null
+          generic_name: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          allergy_group?: string | null
+          clinic_id: string
+          created_at?: string
+          default_dose?: string | null
+          default_duration?: string | null
+          default_frequency?: string | null
+          default_notes?: string | null
+          form?: string | null
+          generic_name?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          allergy_group?: string | null
+          clinic_id?: string
+          created_at?: string
+          default_dose?: string | null
+          default_duration?: string | null
+          default_frequency?: string | null
+          default_notes?: string | null
+          form?: string | null
+          generic_name?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drugs_allergy_group_fkey"
+            columns: ["allergy_group"]
+            isOneToOne: false
+            referencedRelation: "allergy_groups"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "drugs_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
@@ -1157,6 +1238,7 @@ export type Database = {
       }
       patients: {
         Row: {
+          allergy_groups: string[]
           clinic_id: string
           created_at: string
           created_by: string | null
@@ -1173,6 +1255,7 @@ export type Database = {
           whatsapp_phone: string | null
         }
         Insert: {
+          allergy_groups?: string[]
           clinic_id: string
           created_at?: string
           created_by?: string | null
@@ -1189,6 +1272,7 @@ export type Database = {
           whatsapp_phone?: string | null
         }
         Update: {
+          allergy_groups?: string[]
           clinic_id?: string
           created_at?: string
           created_by?: string | null
@@ -1389,6 +1473,188 @@ export type Database = {
           },
           {
             foreignKeyName: "payments_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "unscheduled_treatment"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+        ]
+      }
+      prescription_items: {
+        Row: {
+          allergy_group: string | null
+          clinic_id: string
+          dose: string | null
+          drug_id: string | null
+          drug_name: string
+          duration: string | null
+          frequency: string | null
+          id: string
+          notes: string | null
+          position: number
+          prescription_id: string
+        }
+        Insert: {
+          allergy_group?: string | null
+          clinic_id: string
+          dose?: string | null
+          drug_id?: string | null
+          drug_name: string
+          duration?: string | null
+          frequency?: string | null
+          id?: string
+          notes?: string | null
+          position: number
+          prescription_id: string
+        }
+        Update: {
+          allergy_group?: string | null
+          clinic_id?: string
+          dose?: string | null
+          drug_id?: string | null
+          drug_name?: string
+          duration?: string | null
+          frequency?: string | null
+          id?: string
+          notes?: string | null
+          position?: number
+          prescription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_items_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_items_drug_id_fkey"
+            columns: ["drug_id"]
+            isOneToOne: false
+            referencedRelation: "drugs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_items_prescription_id_clinic_id_fkey"
+            columns: ["prescription_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id", "clinic_id"]
+          },
+        ]
+      }
+      prescription_templates: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          items: Json
+          name: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          name: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_templates_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescriptions: {
+        Row: {
+          allergy_override_reason: string | null
+          clinic_id: string
+          id: string
+          notes: string | null
+          patient_id: string
+          prescribed_at: string
+          prescribed_by: string
+          treatment_plan_id: string | null
+        }
+        Insert: {
+          allergy_override_reason?: string | null
+          clinic_id: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          prescribed_at?: string
+          prescribed_by?: string
+          treatment_plan_id?: string | null
+        }
+        Update: {
+          allergy_override_reason?: string | null
+          clinic_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          prescribed_at?: string
+          prescribed_by?: string
+          treatment_plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "prescriptions_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "recall_list"
+            referencedColumns: ["patient_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "prescriptions_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "prescriptions_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_overview"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "prescriptions_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "prescriptions_treatment_plan_id_clinic_id_fkey"
             columns: ["treatment_plan_id", "clinic_id"]
             isOneToOne: false
             referencedRelation: "unscheduled_treatment"
@@ -2305,6 +2571,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_prescription: {
+        Args: {
+          p_items: Json
+          p_notes?: string
+          p_override_reason?: string
+          p_patient_id: string
+          p_treatment_plan_id?: string
+        }
+        Returns: string
+      }
       finance_summary: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: Json
@@ -2320,6 +2596,17 @@ export type Database = {
       is_doctor: { Args: { p_clinic: string }; Returns: boolean }
       is_member: { Args: { p_clinic: string }; Returns: boolean }
       plan_net_total: { Args: { p_plan: string }; Returns: number }
+      prescription_conflicts: {
+        Args: { p_drugs: string[]; p_patient: string }
+        Returns: {
+          allergy_group: string
+          drug_id: string
+          drug_name: string
+          label_ar: string
+          label_en: string
+          source: string
+        }[]
+      }
       record_direct_payment: {
         Args: {
           p_amount: number
@@ -2382,6 +2669,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      seed_default_drugs: { Args: { p_clinic: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       sign_installment_agreement: {

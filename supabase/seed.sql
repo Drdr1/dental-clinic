@@ -69,6 +69,9 @@ insert into public.form_templates (clinic_id, kind, title, body) values
    '{"text_ar":"أقر بأنه تم شرح خطة العلاج والبدائل والمخاطر المحتملة، وأوافق على بدء العلاج.",
      "text_en":"I confirm the treatment plan, alternatives and possible risks were explained, and I consent to treatment."}'::jsonb);
 
+-- Default drug catalog and prescription templates (0008). Review doses before real use.
+select public.seed_default_drugs('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+
 -- ---------- Patients ----------
 insert into public.patients (id, clinic_id, full_name, phone, gender, medical_alerts, next_recall_due) values
   ('bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Mona Ali',     '01000000010', 'female', 'Penicillin allergy', current_date - 10),

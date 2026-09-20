@@ -6,6 +6,7 @@ import { getSettings } from './api'
 import { ClinicSection } from './ClinicSection'
 import { ChairsSection, ProceduresSection } from './CatalogSection'
 import { TeamSection } from './TeamSection'
+import { DrugsSection } from './DrugsSection'
 
 export function SettingsPage() {
   const { clinicId, role } = useMember()
@@ -24,6 +25,7 @@ export function SettingsPage() {
       <div className="settings-grid">
         <ChairsSection chairs={q.data.chairs} />
       </div>
+      <DrugsSection />
       <TeamSection />
     </section>
   )

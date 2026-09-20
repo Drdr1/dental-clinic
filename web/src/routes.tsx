@@ -14,6 +14,7 @@ import { MaterialsPage } from './features/materials/MaterialsPage'
 import { FinancePage } from './features/finance/FinancePage'
 import { PublicFormPage } from './features/forms/PublicFormPage'
 import { AgreementPage } from './features/agreements/AgreementPage'
+import { PrescriptionPage } from './features/prescriptions/PrescriptionPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
     children: [
       { path: 'receipts/:id', element: <ReceiptPage /> },
       { path: 'agreements/:planId', element: <AgreementPage /> },
+      { path: 'prescriptions/:id', element: <PrescriptionPage /> },
       {
         element: <AppShell />,
         children: [
