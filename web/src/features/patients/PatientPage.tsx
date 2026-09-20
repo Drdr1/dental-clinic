@@ -10,6 +10,7 @@ import { useMember } from '../auth/AuthProvider'
 import { getPatientLedger } from '../payments/api'
 import { InstallmentPlanCard } from '../payments/InstallmentPlanCard'
 import { NewPlanDialog } from '../plans/NewPlanDialog'
+import { PatientAppointments } from '../appointments/PatientAppointments'
 import { SessionDialog } from '../sessions/SessionDialog'
 import { getPatientFile } from './api'
 
@@ -108,6 +109,10 @@ export function PatientPage() {
             />
           ))}
         </section>
+
+        <PatientAppointments patient={{
+          id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
+        }} />
 
         <section className="panel">
           <div className="panel-head">

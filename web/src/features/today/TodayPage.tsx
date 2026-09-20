@@ -6,6 +6,8 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { templates, waMessage } from '../../lib/whatsapp'
 import { installmentStatusKey, installmentTone } from '../payments/labels'
 import { getToday } from './api'
+import { apptStatusKey } from '../appointments/labels'
+import { minutesOfDay, minutesToTime } from '../appointments/time'
 
 const agendaOrder = ['overdue', 'in_grace', 'due', 'upcoming']
 
@@ -17,12 +19,12 @@ export function TodayPage() {
   if (q.isPending) return <section className="page"><p className="muted">{t('common.loading')}</p></section>
   if (q.isError) return <section className="page"><ErrorNote error={q.error} onRetry={() => q.refetch()} /></section>
 
-  const { agenda, recall, labs, unscheduled, planTitles } = q.data
+  const { agenda, recall, labs, unscheduled, planTitles, appointments } = q.data
   const sortedAgenda = [...agenda].sort(
     (a, b) => agendaOrder.indexOf(a.status ?? '') - agendaOrder.indexOf(b.status ?? '') ||
       (a.due_date ?? '').localeCompare(b.due_date ?? ''),
   )
-  const nothing = !agenda.length && !recall.length && !labs.length && !unscheduled.length
+  const nothing = !agenda.length && !recall.length && !labs.length && !unscheduled.length && !appointments.length
 
   return (
     <section className="page today">
@@ -32,6 +34,30 @@ export function TodayPage() {
       </header>
 
       {nothing && <p className="empty">{t('today.allClear')}</p>}
+
+      {appointments.length > 0 && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>{t('today.appointments', { n: appointments.length })}</h2>
+            <Link className="btn" to="/appointments">{t('today.openCalendar')}</Link>
+          </div>
+          <ul className="work-list">
+            {appointments.map((a) => (
+              <li key={a.id}>
+                <div className="appt-line">
+                  <span className="appt-time" dir="ltr">{minutesToTime(minutesOfDay(a.starts_at))}</span>
+                  <div>
+                    <Link to={`/patients/${a.patient_id}`} className="row-link">{a.patientName}</Link>
+                    {a.alerts && <span className="alert-dot" aria-label={t('patients.alert')} />}
+                    {a.planTitle && <p className="muted">{a.planTitle}</p>}
+                  </div>
+                </div>
+                <span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {labs.length > 0 && (
         <section className="panel panel-alert">

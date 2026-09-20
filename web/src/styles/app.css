@@ -366,3 +366,58 @@ a { color: var(--ink); }
 .work-list li:first-child { border-top: 0; padding-top: 0; }
 .work-list p { font-size: var(--step--1); margin-top: 2px; }
 .work-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* ---------- Appointments ---------- */
+.date-jump { min-height: 40px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-control); font: inherit; background: var(--surface); }
+.calendar-page { max-width: 1280px; }
+
+.cal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); overflow: auto; max-height: calc(100vh - 220px); }
+.cal-head, .cal-body { display: grid; grid-template-columns: 64px repeat(var(--chairs), minmax(180px, 1fr)); }
+.cal-head { position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--line); }
+.cal-head span { padding: 10px 12px; font-weight: 600; font-size: var(--step--1); }
+.cal-times { display: flex; flex-direction: column; border-inline-end: 1px solid var(--line); }
+.cal-times span { font-size: var(--step--1); color: var(--ink-soft); padding-inline: 8px; line-height: 1; padding-top: 2px; }
+.cal-col { position: relative; display: flex; flex-direction: column; border-inline-end: 1px solid var(--line); }
+.cal-col:last-child { border-inline-end: 0; }
+.cal-slot { border: 0; border-top: 1px dashed #edf1ef; background: transparent; cursor: pointer; padding: 0; }
+.cal-slot.is-hour { border-top: 1px solid var(--line); }
+.cal-slot:hover { background: var(--gum-soft); }
+
+.cal-appt {
+  position: absolute; inset-inline: 4px; z-index: 2; overflow: hidden;
+  display: grid; align-content: start; gap: 1px; padding: 3px 8px;
+  border: 0; border-inline-start: 4px solid var(--ink); border-radius: 8px;
+  background: #e7efed; color: var(--ink); font: inherit; font-size: var(--step--1); text-align: start; cursor: pointer;
+}
+.cal-appt:hover { filter: brightness(0.97); }
+.cal-appt-line { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.cal-appt-sub { color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-now { position: absolute; inset-inline: 0; height: 2px; background: var(--gum); z-index: 2; pointer-events: none; }
+.cal-now::before { content: ''; position: absolute; inset-inline-start: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--gum); }
+
+/* Status colours: one glance tells reception who's waiting and who's in the chair. */
+.cal-appt.appt-arrived { background: #fdf1e3; border-inline-start-color: var(--warn); }
+.cal-appt.appt-in_session { background: var(--gum-soft); border-inline-start-color: var(--gum); }
+.cal-appt.appt-done { background: var(--ok-soft); border-inline-start-color: var(--ok); }
+.cal-appt.appt-no_show { background: #f3f4f4; border-inline-start-color: var(--line-strong); color: var(--ink-soft); text-decoration: line-through; }
+.appt-badge.appt-booked { background: #eef2f1; color: var(--ink); }
+.appt-badge.appt-arrived { background: #fdf1e3; color: var(--warn); }
+.appt-badge.appt-in_session { background: var(--gum-soft); color: var(--gum); }
+.appt-badge.appt-done { background: var(--ok-soft); color: var(--ok); }
+.appt-badge.appt-no_show, .appt-badge.appt-cancelled { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+
+.appt-when { font-size: var(--step-1); font-weight: 500; }
+.status-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.medical-alert.compact { padding: 10px 14px; }
+.medical-alert.compact p { font-size: var(--step-0); }
+.appt-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; width: 100%; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: start; }
+.appt-row:hover span:first-child { text-decoration: underline; }
+.appt-line { display: flex; gap: 14px; align-items: flex-start; }
+.appt-time { font-weight: 600; min-width: 48px; }
+
+.picker { display: grid; gap: 6px; }
+.picker input { width: 100%; min-height: 42px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-control); font: inherit; }
+.picker-list { list-style: none; margin: 0; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-control); max-height: 220px; overflow-y: auto; }
+.picker-list button { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 10px; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; border-radius: 6px; text-align: start; }
+.picker-list button:hover { background: var(--paper); }
+.picked { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--paper); border-radius: var(--r-control); }

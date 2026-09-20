@@ -47,6 +47,7 @@ export type Database = {
           patient_id: string
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
+          treatment_plan_id: string | null
         }
         Insert: {
           chair_id: string
@@ -60,6 +61,7 @@ export type Database = {
           patient_id: string
           starts_at: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          treatment_plan_id?: string | null
         }
         Update: {
           chair_id?: string
@@ -73,6 +75,7 @@ export type Database = {
           patient_id?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          treatment_plan_id?: string | null
         }
         Relationships: [
           {
@@ -109,6 +112,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "recall_list"
             referencedColumns: ["patient_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_balance"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plan_overview"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_treatment_plan_id_clinic_id_fkey"
+            columns: ["treatment_plan_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "unscheduled_treatment"
+            referencedColumns: ["treatment_plan_id", "clinic_id"]
           },
         ]
       }
@@ -178,6 +209,7 @@ export type Database = {
       }
       clinics: {
         Row: {
+          closes_at: string
           created_at: string
           currency: string
           grace_days: number
@@ -185,9 +217,12 @@ export type Database = {
           lock_threshold: number
           name: string
           next_receipt_no: number
+          opens_at: string
+          slot_minutes: number
           timezone: string
         }
         Insert: {
+          closes_at?: string
           created_at?: string
           currency?: string
           grace_days?: number
@@ -195,9 +230,12 @@ export type Database = {
           lock_threshold?: number
           name: string
           next_receipt_no?: number
+          opens_at?: string
+          slot_minutes?: number
           timezone?: string
         }
         Update: {
+          closes_at?: string
           created_at?: string
           currency?: string
           grace_days?: number
@@ -205,6 +243,8 @@ export type Database = {
           lock_threshold?: number
           name?: string
           next_receipt_no?: number
+          opens_at?: string
+          slot_minutes?: number
           timezone?: string
         }
         Relationships: []

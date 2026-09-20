@@ -5,6 +5,7 @@ const money = new Intl.NumberFormat('ar-EG-u-nu-latn', { maximumFractionDigits: 
 const day = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { day: 'numeric', month: 'long' })
 const firstName = (full: string) => full.trim().split(/\s+/)[0] ?? full
 const fmtDate = (iso: string) => day.format(new Date(`${iso}T12:00:00`))
+const when = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' })
 
 export function waMessage(phone: string, text: string) {
   return `${whatsappLink(phone)}?text=${encodeURIComponent(text)}`
@@ -18,6 +19,9 @@ export const templates = {
 
   recall: (a: { name: string; clinic: string }) =>
     `أهلًا ${firstName(a.name)}، ده ${a.clinic}. ميعاد الكشف الدوري بتاعك جه، تحب نحجزلك ميعاد الأسبوع ده؟`,
+
+  appointment: (a: { name: string; clinic: string; startsAt: string }) =>
+    `أهلًا ${firstName(a.name)}، ده تأكيد لميعادك في ${a.clinic}: ${when.format(new Date(a.startsAt))}. لو محتاج تغيّر الميعاد كلمنا. في انتظارك!`,
 
   nextSession: (a: { name: string; clinic: string; plan: string }) =>
     `أهلًا ${firstName(a.name)}، ده ${a.clinic}. خطة العلاج بتاعتك (${a.plan}) لسه فيها جلسات، تحب نحجزلك الجلسة الجاية؟`,

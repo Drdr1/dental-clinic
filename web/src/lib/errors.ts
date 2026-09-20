@@ -12,6 +12,8 @@ const known: Array<[RegExp, MessageKey]> = [
   [/Balance too small/i, 'err.balanceTooSmall'],
   [/below the amount already paid/i, 'err.belowPaid'],
   [/no longer open on this plan/i, 'err.itemsChanged'],
+  [/appointments_no_overlap/i, 'err.overlap'],
+  [/Treatment plan does not belong/i, 'err.planPatient'],
   [/Failed to fetch|NetworkError/i, 'err.offline'],
 ]
 
