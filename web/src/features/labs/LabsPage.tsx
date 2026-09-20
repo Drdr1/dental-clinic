@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
+import { Skeleton } from '../../components/Skeleton'
 import { getCases, type LabFilter } from './api'
 import { LabCaseDialog } from './LabCaseDialog'
 import { LabCaseList } from './LabCaseList'
@@ -33,7 +34,7 @@ export function LabsPage() {
       </div>
 
       {q.isError && <ErrorNote error={q.error} onRetry={() => q.refetch()} />}
-      {q.isPending && <p className="muted">{t('common.loading')}</p>}
+      {q.isPending && <Skeleton rows={4} variant="list" />}
       {q.data?.length === 0 && <p className="empty">{t(`lab.empty.${filter}` as Parameters<typeof t>[0])}</p>}
       {q.data && q.data.length > 0 && (
         <section className="panel"><LabCaseList cases={q.data} /></section>

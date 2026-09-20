@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
 import { ageFrom, whatsappLink } from '../../lib/phone'
 import { ErrorNote } from '../../components/ErrorNote'
+import { Skeleton } from '../../components/Skeleton'
 import { PlanStatusBadge } from '../../components/PlanStatusBadge'
 import { useMember } from '../auth/AuthProvider'
 import { getPatientLedger } from '../payments/api'
@@ -17,6 +18,8 @@ import { PatientAllergies } from '../prescriptions/PatientAllergies'
 import { PatientPrescriptions } from '../prescriptions/PatientPrescriptions'
 import { SessionDialog } from '../sessions/SessionDialog'
 import { getPatientFile } from './api'
+import { Timeline } from './Timeline'
+import { getUpcomingForPatient } from '../appointments/api'
 
 export function PatientPage() {
   const { id = '' } = useParams()
@@ -24,14 +27,16 @@ export function PatientPage() {
 
   const { clinicId } = useMember()
   const [dialog, setDialog] = useState<'plan' | 'visit' | null>(null)
+  const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files'>('overview')
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
+  const upcoming = useQuery({ queryKey: ['appointments', id], queryFn: () => getUpcomingForPatient(id), enabled: !!id })
   const ledger = useQuery({
     queryKey: ['ledger', id],
     queryFn: () => getPatientLedger(id, clinicId),
     enabled: !!id,
   })
 
-  if (file.isPending) return <section className="page"><p className="muted">{t('common.loading')}</p></section>
+  if (file.isPending) return <section className="page"><Skeleton rows={4} variant="cards" /></section>
   if (file.isError) return <section className="page"><ErrorNote error={file.error} onRetry={() => file.refetch()} /></section>
 
   const { patient, plans, balances, perSession } = file.data
@@ -49,6 +54,10 @@ export function PatientPage() {
   const recallOverdue = !!patient.next_recall_due && patient.next_recall_due < today
   // Clinic rule: recall pauses during active treatment and restarts when the plan is completed.
   const inTreatment = plans.some((p) => p.status === 'active')
+  const owed = balances.reduce((sum, b) => sum + (b.outstanding ?? 0), 0)
+    + perSession.reduce((sum, b) => sum + (b.outstanding ?? 0), 0)
+  const overdue = balances.reduce((sum, b) => sum + (b.overdue_amount ?? 0), 0)
+  const nextAppointment = upcoming.data?.[0]
 
   return (
     <section className="page patient">
@@ -78,99 +87,124 @@ export function PatientPage() {
       )}
       <PatientAllergies patientId={patient.id} groups={patient.allergy_groups ?? []} />
 
+      <div className="info-bar">
+        <span><em>{t('patient.nextVisit')}</em>{nextAppointment ? date(nextAppointment.starts_at) : t('common.none')}</span>
+        <span className={recallOverdue && !inTreatment ? 'is-danger' : ''}>
+          <em>{t('patient.recall')}</em>
+          {inTreatment ? t('patient.recallPausedShort') : patient.next_recall_due ? date(patient.next_recall_due) : t('common.none')}
+        </span>
+        <span className={owed > 0 ? 'is-money' : ''}><em>{t('patient.outstanding')}</em>{owed > 0 ? money(owed) : t('common.none')}</span>
+        {overdue > 0 && <span className="is-danger"><em>{t('patient.overdueAmount')}</em>{money(overdue)}</span>}
+      </div>
+
+      <nav className="segmented tabs" role="tablist">
+        {(['overview', 'treatment', 'account', 'files'] as const).map((k) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'is-active' : ''} onClick={() => setTab(k)}>
+            {t(`tab.${k}` as Parameters<typeof t>[0])}
+          </button>
+        ))}
+      </nav>
+
       <div className="patient-grid">
-        <section className="panel panel-wide">
-          <h2>{t('patient.balance')}</h2>
-          {balances.length === 0 && perSession.length === 0 && <p className="muted">{t('patient.balanceEmpty')}</p>}
-          {perSession.length > 0 && (
-            <div className="plan-card">
-              <h3>{t('patient.perSessionTitle')}</h3>
-              <ul className="work-list">
-                {perSession.map((b) => (
-                  <li key={b.treatment_plan_id}>
-                    <div>
-                      <Link to={`/plans/${b.treatment_plan_id}`} className="row-link">{b.title}</Link>
-                      <p className="muted">{t('patient.perSessionPaid', { paid: money(b.paid), total: money(b.net_total) })}</p>
+        {tab === 'overview' && (
+          <>
+            <PatientAppointments patient={{
+              id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
+            }} />
+
+            <section className="panel panel-wide">
+              <div className="panel-head">
+                <h2>{t('timeline.title')}</h2>
+                <span className="head-actions">
+                  <button className="btn" onClick={() => setDialog('visit')}>{t('session.titleVisit')}</button>
+                  <button className="btn" onClick={() => setDialog('plan')}>{t('plan.new')}</button>
+                </span>
+              </div>
+              <Timeline patientId={id} />
+            </section>
+          </>
+        )}
+
+        {tab === 'treatment' && (
+          <>
+            <section className="panel">
+              <div className="panel-head">
+                <h2>{t('patient.plans')}</h2>
+                <button className="btn" onClick={() => setDialog('plan')}>{t('plan.new')}</button>
+              </div>
+              {plans.length === 0 && <p className="muted">{t('patient.plansEmpty')}</p>}
+              <ul className="plan-list">
+                {plans.map((p) => (
+                  <li key={p.treatment_plan_id}>
+                    <div className="plan-line">
+                      <Link to={`/plans/${p.treatment_plan_id}`} className="plan-title row-link">{p.title}</Link>
+                      <PlanStatusBadge status={p.status} />
                     </div>
-                    <div className="work-meta">
-                      <strong>{t('patient.perSessionOwed', { amount: money(b.outstanding) })}</strong>
-                      <Link className="btn btn-small" to={`/plans/${b.treatment_plan_id}`}>{t('pay.open')}</Link>
+                    <div className="plan-sub">
+                      <span>{money(p.net_total)}</span>
+                      <span className={p.consent_signed ? 'ok-text' : 'muted'}>
+                        {p.consent_signed ? t('patient.consentSigned') : t('patient.consentMissing')}
+                      </span>
                     </div>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-          {ledger.isError && <ErrorNote error={ledger.error} onRetry={() => ledger.refetch()} />}
-          {balances.map((b) => (
-            <InstallmentPlanCard
-              key={b.installment_plan_id}
-              summary={b}
-              planTitle={plans.find((p) => p.treatment_plan_id === b.treatment_plan_id)?.title ?? ''}
-              patientId={id}
-              schedule={(ledger.data?.installments ?? []).filter((r) => r.installment_plan_id === b.installment_plan_id)}
-              payments={(ledger.data?.payments ?? []).filter((p) => p.installment_plan_id === b.installment_plan_id)}
-              staffNames={ledger.data?.staffNames ?? new Map()}
-            />
-          ))}
-        </section>
+            </section>
 
-        <PatientAppointments patient={{
-          id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
-        }} />
+            <PatientPrescriptions patient={{
+              id: patient.id, full_name: patient.full_name, medical_alerts: patient.medical_alerts,
+              allergy_groups: patient.allergy_groups ?? [],
+            }} />
 
-        <section className="panel">
-          <div className="panel-head">
-            <h2>{t('patient.plans')}</h2>
-            <button className="btn" onClick={() => setDialog('plan')}>{t('plan.new')}</button>
-          </div>
-          {plans.length === 0 && <p className="muted">{t('patient.plansEmpty')}</p>}
-          <ul className="plan-list">
-            {plans.map((p) => (
-              <li key={p.treatment_plan_id}>
-                <div className="plan-line">
-                  <Link to={`/plans/${p.treatment_plan_id}`} className="plan-title row-link">{p.title}</Link>
-                  <PlanStatusBadge status={p.status} />
-                </div>
-                <div className="plan-sub">
-                  <span>{money(p.net_total)}</span>
-                  <span className={p.consent_signed ? 'ok-text' : 'muted'}>
-                    {p.consent_signed ? t('patient.consentSigned') : t('patient.consentMissing')}
-                  </span>
-                </div>
-              </li>
+            <PatientLabCases patient={{
+              id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
+            }} />
+          </>
+        )}
+
+        {tab === 'account' && (
+          <section className="panel panel-wide">
+            <h2>{t('patient.balance')}</h2>
+            {balances.length === 0 && perSession.length === 0 && <p className="muted">{t('patient.balanceEmpty')}</p>}
+            {perSession.length > 0 && (
+              <div className="plan-card">
+                <h3>{t('patient.perSessionTitle')}</h3>
+                <ul className="work-list">
+                  {perSession.map((b) => (
+                    <li key={b.treatment_plan_id}>
+                      <div>
+                        <Link to={`/plans/${b.treatment_plan_id}`} className="row-link">{b.title}</Link>
+                        <p className="muted">{t('patient.perSessionPaid', { paid: money(b.paid), total: money(b.net_total) })}</p>
+                      </div>
+                      <div className="work-meta">
+                        <strong>{t('patient.perSessionOwed', { amount: money(b.outstanding) })}</strong>
+                        <Link className="btn btn-small" to={`/plans/${b.treatment_plan_id}`}>{t('pay.open')}</Link>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {ledger.isError && <ErrorNote error={ledger.error} onRetry={() => ledger.refetch()} />}
+            {balances.map((b) => (
+              <InstallmentPlanCard
+                key={b.installment_plan_id}
+                summary={b}
+                planTitle={plans.find((p) => p.treatment_plan_id === b.treatment_plan_id)?.title ?? ''}
+                patientId={id}
+                schedule={(ledger.data?.installments ?? []).filter((r) => r.installment_plan_id === b.installment_plan_id)}
+                payments={(ledger.data?.payments ?? []).filter((p) => p.installment_plan_id === b.installment_plan_id)}
+                staffNames={ledger.data?.staffNames ?? new Map()}
+              />
             ))}
-          </ul>
-        </section>
+          </section>
+        )}
 
-        <PatientPrescriptions patient={{
-          id: patient.id, full_name: patient.full_name, medical_alerts: patient.medical_alerts,
-          allergy_groups: patient.allergy_groups ?? [],
-        }} />
-
-        <PatientForms patient={{
-          id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
-        }} />
-
-        <PatientLabCases patient={{
-          id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
-        }} />
-
-        <section className="panel">
-          <div className="panel-head">
-            <h2>{t('patient.recall')}</h2>
-            <button className="btn" onClick={() => setDialog('visit')}>{t('session.titleVisit')}</button>
-          </div>
-          <p className={recallOverdue && !inTreatment ? 'danger-text' : ''}>
-            {inTreatment
-              ? t('patient.recallPaused')
-              : patient.next_recall_due
-              ? recallOverdue
-                ? t('patient.recallOverdue', { date: date(patient.next_recall_due) })
-                : date(patient.next_recall_due)
-              : t('patient.recallNone')}
-          </p>
-        </section>
+        {tab === 'files' && (
+          <PatientForms patient={{
+            id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
+          }} />
+        )}
       </div>
 
       {dialog === 'plan' && <NewPlanDialog patientId={id} onClose={() => setDialog(null)} />}

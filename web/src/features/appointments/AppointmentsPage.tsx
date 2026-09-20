@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
+import { Skeleton } from '../../components/Skeleton'
 import { todayLocal } from '../../lib/dates'
 import { getClinicCalendar, getDay, type DayAppointment } from './api'
 import { AppointmentDialog } from './AppointmentDialog'
@@ -77,7 +78,7 @@ export function AppointmentsPage() {
       </header>
 
       {error && <ErrorNote error={error} onRetry={() => { calendar.refetch(); day.refetch() }} />}
-      {(calendar.isPending || day.isPending) && <p className="muted">{t('common.loading')}</p>}
+      {(calendar.isPending || day.isPending) && <Skeleton rows={6} variant="list" />}
 
       {hours && day.data && (
         <>

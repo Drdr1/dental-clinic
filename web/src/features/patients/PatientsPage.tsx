@@ -5,6 +5,7 @@ import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { useDebounced } from '../../lib/useDebounced'
 import { ErrorNote } from '../../components/ErrorNote'
+import { Skeleton } from '../../components/Skeleton'
 import { searchPatients } from './api'
 import { NewPatientDialog } from './NewPatientDialog'
 
@@ -39,7 +40,7 @@ export function PatientsPage() {
       />
 
       {patients.isError && <ErrorNote error={patients.error} onRetry={() => patients.refetch()} />}
-      {patients.isPending && <p className="muted">{t('common.loading')}</p>}
+      {patients.isPending && <Skeleton rows={5} variant="table" />}
 
       {patients.data && patients.data.length === 0 && (
         <p className="empty">{q.trim() ? t('patients.noResults', { q: q.trim() }) : t('patients.empty')}</p>

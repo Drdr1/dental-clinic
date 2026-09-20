@@ -632,6 +632,36 @@ export const en = {
   'cash.closedByShort': 'Closed by',
   'cash.history': 'Previous days',
   'cash.noHistory': 'No days closed yet.',
+
+  'quick.open': 'Quick search',
+  'quick.title': 'Quick search',
+  'quick.placeholder': 'Patient name, phone, or a screen…',
+  'quick.nothing': 'Nothing matches.',
+  'quick.hint': '↑↓ to move, Enter to open, Esc to close',
+  'today.statAppointments': 'appointments today ({done} done)',
+  'today.statCollected': 'collected today',
+  'today.statOverdue': 'overdue ({n} installments)',
+  'today.statAttention': 'lab & stock items to handle',
+
+  'tab.overview': 'Overview',
+  'tab.treatment': 'Treatment',
+  'tab.account': 'Account',
+  'tab.files': 'Files',
+  'fin.trend': 'Last six months',
+
+  'patient.nextVisit': 'Next visit',
+  'patient.recallPausedShort': 'paused',
+  'timeline.title': 'Medical history',
+  'timeline.empty': 'Nothing recorded for this patient yet.',
+  'timeline.open': 'Open',
+  'timeline.session': 'Treatment session',
+  'timeline.checkup': 'Checkup visit',
+  'timeline.prescription': 'Prescription',
+  'timeline.labSent': 'Sent to the lab',
+  'timeline.labFitted': 'Lab work fitted',
+  'timeline.form': 'Form signed',
+  'timeline.plan': 'Treatment plan created',
+  'timeline.override': 'Doctor override: {reason}',
 } as const
 
 export type MessageKey = keyof typeof en

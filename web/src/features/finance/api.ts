@@ -24,6 +24,22 @@ export async function getSummary(clinicId: string, from: string, to: string): Pr
   return data as unknown as Summary
 }
 
+export type MonthPoint = { month: string; income: number; expenses: number; net: number }
+
+/** Last `n` months (including the current one), for the trend chart. */
+export async function getTrend(clinicId: string, n = 6): Promise<MonthPoint[]> {
+  const now = new Date()
+  const ranges = Array.from({ length: n }, (_, i) => {
+    const offset = -(n - 1 - i)
+    const first = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+    const last = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0)
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return { month: iso(first), from: iso(first), to: iso(last) }
+  })
+  const results = await Promise.all(ranges.map((r) => getSummary(clinicId, r.from, r.to)))
+  return results.map((s, i) => ({ month: ranges[i].month, income: s.income, expenses: s.expenses, net: s.net }))
+}
+
 export async function getExpenses(clinicId: string, from: string, to: string): Promise<Expense[]> {
   const { data, error } = await supabase.from('expenses').select('*').eq('clinic_id', clinicId)
     .gte('spent_on', from).lte('spent_on', to)

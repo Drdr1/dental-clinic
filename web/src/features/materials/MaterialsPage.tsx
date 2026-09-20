@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
+import { Skeleton } from '../../components/Skeleton'
 import { templates, waMessage } from '../../lib/whatsapp'
 import { getStock, type MaterialStock } from './api'
 import { CountDialog, HistoryDialog, MaterialForm, PurchaseDialog, RecipeDialog, UsageDialog } from './MaterialDialogs'
@@ -38,6 +39,7 @@ export function MaterialsPage() {
       </div>
 
       {q.isError && <ErrorNote error={q.error} onRetry={() => q.refetch()} />}
+      {q.isPending && <Skeleton rows={5} variant="table" />}
       {q.data?.length === 0 && <p className="empty">{t('mat.empty')}</p>}
 
       {rows.length > 0 && (

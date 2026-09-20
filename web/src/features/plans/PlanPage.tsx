@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
+import { Skeleton } from '../../components/Skeleton'
 import { Modal } from '../../components/Modal'
 import { PlanStatusBadge } from '../../components/PlanStatusBadge'
 import { SessionDialog } from '../sessions/SessionDialog'
@@ -45,7 +46,7 @@ export function PlanPage() {
     onSuccess: () => { setDialog(null); setReason(''); refresh() },
   })
 
-  if (q.isPending) return <section className="page"><p className="muted">{t('common.loading')}</p></section>
+  if (q.isPending) return <section className="page"><Skeleton rows={4} variant="list" /></section>
   if (q.isError) return <section className="page"><ErrorNote error={q.error} onRetry={() => q.refetch()} /></section>
   if (!q.data) return <section className="page"><p className="empty">{t('plan.notFound')}</p></section>
 

@@ -8,7 +8,8 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { toIsoDate, todayLocal } from '../../lib/dates'
 import { PAYMENT_METHODS, type PaymentMethod } from '../payments/api'
 import { methodKey } from '../payments/labels'
-import { CATEGORIES, addExpense, getExpenses, getSummary, voidExpense, type Expense, type ExpenseCategory } from './api'
+import { CATEGORIES, addExpense, getExpenses, getSummary, getTrend, voidExpense, type Expense, type ExpenseCategory } from './api'
+import { TrendChart } from './TrendChart'
 
 function monthRange(offset: number) {
   const now = new Date()
@@ -95,6 +96,7 @@ export function FinancePage() {
     queryKey: ['finance', 'summary', clinicId, prevRange], queryFn: () => getSummary(clinicId, prevRange!.from, prevRange!.to),
     enabled: enabled && !!prevRange,
   })
+  const trend = useQuery({ queryKey: ['finance', 'trend', clinicId], queryFn: () => getTrend(clinicId), enabled })
   const expenses = useQuery({ queryKey: ['finance', 'expenses', clinicId, range], queryFn: () => getExpenses(clinicId, range.from, range.to), enabled })
 
   if (!enabled) return <section className="page"><p className="empty">{t('fin.ownerOnly')}</p></section>
@@ -173,6 +175,13 @@ export function FinancePage() {
             </section>
           </div>
         </>
+      )}
+
+      {trend.data && trend.data.some((m) => m.income > 0 || m.expenses > 0) && (
+        <section className="panel">
+          <h2>{t('fin.trend')}</h2>
+          <TrendChart points={trend.data} />
+        </section>
       )}
 
       <section className="panel">

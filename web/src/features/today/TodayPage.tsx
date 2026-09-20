@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
+import { Icon } from '../../components/Icon'
+import { Skeleton } from '../../components/Skeleton'
 import { templates, waMessage } from '../../lib/whatsapp'
 import { installmentStatusKey, installmentTone } from '../payments/labels'
 import { getToday } from './api'
@@ -16,14 +18,15 @@ export function TodayPage() {
   const { t, money, date } = useI18n()
   const q = useQuery({ queryKey: ['today', clinicId], queryFn: () => getToday(clinicId), refetchInterval: 5 * 60_000 })
 
-  if (q.isPending) return <section className="page"><p className="muted">{t('common.loading')}</p></section>
+  if (q.isPending) return <section className="page"><Skeleton variant="cards" rows={4} /><Skeleton rows={4} /></section>
   if (q.isError) return <section className="page"><ErrorNote error={q.error} onRetry={() => q.refetch()} /></section>
 
-  const { agenda, recall, labs, unscheduled, planTitles, appointments, lowStock } = q.data
+  const { agenda, recall, labs, unscheduled, planTitles, appointments, lowStock, collectedToday } = q.data
   const sortedAgenda = [...agenda].sort(
     (a, b) => agendaOrder.indexOf(a.status ?? '') - agendaOrder.indexOf(b.status ?? '') ||
       (a.due_date ?? '').localeCompare(b.due_date ?? ''),
   )
+  const overdueAmount = agenda.filter((a) => a.status === 'overdue').reduce((sum, a) => sum + (a.remaining ?? 0), 0)
   const nothing = !agenda.length && !recall.length && !labs.length && !unscheduled.length && !appointments.length && !lowStock.length
 
   return (
@@ -32,6 +35,34 @@ export function TodayPage() {
         <h1>{t('today.title')}</h1>
         <span className="muted">{date(new Date().toISOString())}</span>
       </header>
+
+      <div className="stat-strip">
+        <div className="stat">
+          <Icon name="calendar" />
+          <div>
+            <strong>{appointments.length}</strong>
+            <span>{t('today.statAppointments', { done: appointments.filter((a) => a.status === 'done').length })}</span>
+          </div>
+        </div>
+        <div className="stat">
+          <Icon name="cash" />
+          <div><strong>{money(collectedToday)}</strong><span>{t('today.statCollected')}</span></div>
+        </div>
+        <div className={`stat ${overdueAmount > 0 ? 'is-warn' : ''}`}>
+          <Icon name="clock" />
+          <div>
+            <strong>{money(overdueAmount)}</strong>
+            <span>{t('today.statOverdue', { n: agenda.filter((a) => a.status === 'overdue').length })}</span>
+          </div>
+        </div>
+        <div className={`stat ${labs.length + lowStock.length > 0 ? 'is-warn' : ''}`}>
+          <Icon name="alert" />
+          <div>
+            <strong>{labs.length + lowStock.length}</strong>
+            <span>{t('today.statAttention')}</span>
+          </div>
+        </div>
+      </div>
 
       {nothing && <p className="empty">{t('today.allClear')}</p>}
 

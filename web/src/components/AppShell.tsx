@@ -2,6 +2,8 @@ import { NavLink, Outlet } from 'react-router'
 import { useAuth, useMember } from '../features/auth/AuthProvider'
 import { useI18n } from '../i18n'
 import { ToothMark } from './ToothMark'
+import { Icon } from './Icon'
+import { QuickSearch } from './QuickSearch'
 
 export function AppShell() {
   const member = useMember()
@@ -15,15 +17,20 @@ export function AppShell() {
           <ToothMark className="brand-mark" />
           <span className="brand-name">{member.clinicName || t('appName')}</span>
         </div>
+        <button className="quick-trigger" onClick={() => { const e = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }); window.dispatchEvent(e) }}>
+          <Icon name="search" />
+          <span>{t('quick.open')}</span>
+          <kbd>Ctrl K</kbd>
+        </button>
         <nav className="nav">
-          <NavLink to="/today" className="nav-link">{t('nav.today')}</NavLink>
-          <NavLink to="/appointments" className="nav-link">{t('nav.appointments')}</NavLink>
-          <NavLink to="/patients" className="nav-link">{t('nav.patients')}</NavLink>
-          <NavLink to="/labs" className="nav-link">{t('nav.labs')}</NavLink>
-          <NavLink to="/materials" className="nav-link">{t('nav.materials')}</NavLink>
-          {member.role === 'owner' && <NavLink to="/finance" className="nav-link">{t('nav.finance')}</NavLink>}
-          {member.role === 'owner' && <NavLink to="/cash" className="nav-link">{t('nav.cash')}</NavLink>}
-          {member.role === 'owner' && <NavLink to="/settings" className="nav-link">{t('nav.settings')}</NavLink>}
+          <NavLink to="/today" className="nav-link"><Icon name="today" />{t('nav.today')}</NavLink>
+          <NavLink to="/appointments" className="nav-link"><Icon name="calendar" />{t('nav.appointments')}</NavLink>
+          <NavLink to="/patients" className="nav-link"><Icon name="patients" />{t('nav.patients')}</NavLink>
+          <NavLink to="/labs" className="nav-link"><Icon name="lab" />{t('nav.labs')}</NavLink>
+          <NavLink to="/materials" className="nav-link"><Icon name="materials" />{t('nav.materials')}</NavLink>
+          {member.role === 'owner' && <NavLink to="/finance" className="nav-link"><Icon name="finance" />{t('nav.finance')}</NavLink>}
+          {member.role === 'owner' && <NavLink to="/cash" className="nav-link"><Icon name="cash" />{t('nav.cash')}</NavLink>}
+          {member.role === 'owner' && <NavLink to="/settings" className="nav-link"><Icon name="settings" />{t('nav.settings')}</NavLink>}
         </nav>
         <div className="sidebar-foot">
           <div className="whoami">
@@ -39,6 +46,7 @@ export function AppShell() {
       <main className="content">
         <Outlet />
       </main>
+      <QuickSearch />
     </div>
   )
 }
