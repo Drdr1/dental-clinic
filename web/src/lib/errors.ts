@@ -24,6 +24,8 @@ const known: Array<[RegExp, MessageKey]> = [
   [/Failed to send a request to the Edge Function|FunctionsFetchError/i, 'err.functionDown'],
   [/ALLERGY_CONFLICT/i, 'err.allergyConflict'],
   [/Only a doctor can write prescriptions/i, 'err.doctorOnly'],
+  [/ALREADY_CLOSED/i, 'err.alreadyClosed'],
+  [/DIFFERENCE_REASON/i, 'err.differenceReason'],
   [/Failed to fetch|NetworkError/i, 'err.offline'],
 ]
 

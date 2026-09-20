@@ -12,6 +12,7 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { LabsPage } from './features/labs/LabsPage'
 import { MaterialsPage } from './features/materials/MaterialsPage'
 import { FinancePage } from './features/finance/FinancePage'
+import { CashPage } from './features/cash/CashPage'
 import { PublicFormPage } from './features/forms/PublicFormPage'
 import { AgreementPage } from './features/agreements/AgreementPage'
 import { PrescriptionPage } from './features/prescriptions/PrescriptionPage'
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: 'labs', element: <LabsPage /> },
           { path: 'materials', element: <MaterialsPage /> },
           { path: 'finance', element: <FinancePage /> },
+          { path: 'cash', element: <CashPage /> },
           { path: 'patients', element: <PatientsPage /> },
           { path: 'patients/:id', element: <PatientPage /> },
           { path: 'plans/:planId', element: <PlanPage /> },

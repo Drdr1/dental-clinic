@@ -57,6 +57,13 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
       </div>
       {!hoursValid && <p className="form-error">{t('settings.hoursInvalid')}</p>}
 
+      <label className="field">
+        <span>{t('settings.cashFloat')}</span>
+        <input type="number" min={0} step={50} required dir="ltr" value={s.cash_float}
+          onChange={(e) => set('cash_float', Number(e.target.value))} />
+        <small className="hint">{t('settings.cashFloatHint')}</small>
+      </label>
+
       <h3>{t('settings.installmentRules')}</h3>
       <div className="field-row">
         <label className="field">

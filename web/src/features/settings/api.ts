@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabase'
 
 export type ClinicSettings = {
   name: string
+  cash_float: number
   grace_days: number
   lock_threshold: number
   opens_at: string
@@ -11,7 +12,7 @@ export type ClinicSettings = {
 
 export async function getSettings(clinicId: string) {
   const [clinic, procedures, chairs] = await Promise.all([
-    supabase.from('clinics').select('name, grace_days, lock_threshold, opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
+    supabase.from('clinics').select('name, cash_float, grace_days, lock_threshold, opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
     supabase.from('procedures').select('id, name, default_price, default_duration_min, active').eq('clinic_id', clinicId).order('name'),
     supabase.from('chairs').select('id, name, active').eq('clinic_id', clinicId).order('name'),
   ])

@@ -164,6 +164,62 @@ export type Database = {
           },
         ]
       }
+      cash_closings: {
+        Row: {
+          business_date: string
+          cash_in: number
+          cash_out: number
+          clinic_id: string
+          closed_at: string
+          closed_by: string
+          counted_cash: number
+          difference: number
+          expected_cash: number
+          id: string
+          note: string | null
+          opening_float: number
+          reason: string | null
+        }
+        Insert: {
+          business_date: string
+          cash_in: number
+          cash_out: number
+          clinic_id: string
+          closed_at?: string
+          closed_by?: string
+          counted_cash: number
+          difference: number
+          expected_cash: number
+          id?: string
+          note?: string | null
+          opening_float: number
+          reason?: string | null
+        }
+        Update: {
+          business_date?: string
+          cash_in?: number
+          cash_out?: number
+          clinic_id?: string
+          closed_at?: string
+          closed_by?: string
+          counted_cash?: number
+          difference?: number
+          expected_cash?: number
+          id?: string
+          note?: string | null
+          opening_float?: number
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_closings_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chairs: {
         Row: {
           active: boolean
@@ -230,6 +286,7 @@ export type Database = {
       }
       clinics: {
         Row: {
+          cash_float: number
           closes_at: string
           created_at: string
           currency: string
@@ -243,6 +300,7 @@ export type Database = {
           timezone: string
         }
         Insert: {
+          cash_float?: number
           closes_at?: string
           created_at?: string
           currency?: string
@@ -256,6 +314,7 @@ export type Database = {
           timezone?: string
         }
         Update: {
+          cash_float?: number
           closes_at?: string
           created_at?: string
           currency?: string
@@ -2536,6 +2595,10 @@ export type Database = {
         Args: { p_installment_plan_id: string; p_reason: string }
         Returns: undefined
       }
+      cash_day_summary: {
+        Args: { p_clinic: string; p_date: string }
+        Returns: Json
+      }
       clinic_team: {
         Args: { p_clinic: string }
         Returns: {
@@ -2606,6 +2669,16 @@ export type Database = {
           label_en: string
           source: string
         }[]
+      }
+      record_cash_closing: {
+        Args: {
+          p_clinic: string
+          p_counted: number
+          p_date: string
+          p_note?: string
+          p_reason?: string
+        }
+        Returns: string
       }
       record_direct_payment: {
         Args: {
