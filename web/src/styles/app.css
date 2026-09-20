@@ -421,3 +421,23 @@ a { color: var(--ink); }
 .picker-list button { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 10px; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; border-radius: 6px; text-align: start; }
 .picker-list button:hover { background: var(--paper); }
 .picked { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--paper); border-radius: var(--r-control); }
+
+/* ---------- Settings ---------- */
+.settings { max-width: 1100px; }
+.settings-form h3 { margin-top: 6px; }
+.cell-input, .cell-select {
+  width: 100%; min-height: 36px; padding: 4px 10px; font: inherit; color: var(--ink);
+  border: 1px solid transparent; border-radius: var(--r-control); background: transparent;
+}
+.cell-input:hover, .cell-select:hover { border-color: var(--line); }
+.cell-input:focus { border-color: var(--line-strong); background: var(--surface); }
+.num-input { max-width: 120px; text-align: end; }
+tr.is-inactive td, li.is-inactive { color: var(--ink-soft); }
+tr.is-inactive .cell-input { color: var(--ink-soft); }
+.chair-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.chair-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.chair-row .cell-input { max-width: 260px; }
+.credentials { margin: 0; padding: 12px 14px; background: var(--paper); border-radius: var(--r-control); display: grid; gap: 6px; font-family: ui-monospace, monospace; }
+.credentials div { display: flex; gap: 12px; }
+.credentials dt { color: var(--ink-soft); min-width: 80px; }
+.credentials dd { margin: 0; font-weight: 600; user-select: all; }

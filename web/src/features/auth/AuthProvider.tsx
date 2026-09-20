@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
 
@@ -17,6 +17,8 @@ type AuthState = {
   member: Membership | null
   isDoctor: boolean
   signOut: () => Promise<void>
+  /** Re-read the membership (after renaming the clinic, for example). */
+  reloadMember: () => void
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -26,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionLoaded, setSessionLoaded] = useState(false)
   const [member, setMember] = useState<Membership | null>(null)
   const [memberLoaded, setMemberLoaded] = useState(false)
+  const [memberVersion, setMemberVersion] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -38,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const userId = session?.user.id ?? null
+  const lastUserId = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -46,7 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMemberLoaded(true)
       return
     }
-    setMemberLoaded(false)
+    // Show the loading state only when the user changes, not on a background reload.
+    if (lastUserId.current !== userId) {
+      lastUserId.current = userId
+      setMemberLoaded(false)
+    }
     supabase
       .from('clinic_members')
       .select('clinic_id, role, display_name, clinics(name)')
@@ -74,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, memberVersion])
 
   const value: AuthState = {
     loading: !sessionLoaded || (userId !== null && !memberLoaded),
@@ -84,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       await supabase.auth.signOut()
     },
+    reloadMember: () => setMemberVersion((v) => v + 1),
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

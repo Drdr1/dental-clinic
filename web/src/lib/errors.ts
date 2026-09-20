@@ -14,6 +14,14 @@ const known: Array<[RegExp, MessageKey]> = [
   [/no longer open on this plan/i, 'err.itemsChanged'],
   [/appointments_no_overlap/i, 'err.overlap'],
   [/Treatment plan does not belong/i, 'err.planPatient'],
+  [/LAST_OWNER/i, 'err.lastOwner'],
+  [/SELF_CHANGE/i, 'err.selfChange'],
+  [/^email_taken$/i, 'err.emailTaken'],
+  [/^weak_password$/i, 'err.weakPassword'],
+  [/^bad_email$/i, 'err.badEmail'],
+  [/^not_owner$|Only the clinic owner/i, 'err.notOwner'],
+  [/procedures_clinic_id_name_key|chairs_clinic_id_name_key/i, 'err.duplicateName'],
+  [/Failed to send a request to the Edge Function|FunctionsFetchError/i, 'err.functionDown'],
   [/Failed to fetch|NetworkError/i, 'err.offline'],
 ]
 

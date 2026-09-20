@@ -2000,6 +2000,18 @@ export type Database = {
         Args: { p_installment_plan_id: string; p_reason: string }
         Returns: undefined
       }
+      clinic_team: {
+        Args: { p_clinic: string }
+        Returns: {
+          active: boolean
+          created_at: string
+          display_name: string
+          email: string
+          last_sign_in: string
+          role: Database["public"]["Enums"]["member_role"]
+          user_id: string
+        }[]
+      }
       clinic_today: { Args: { p_clinic: string }; Returns: string }
       create_clinic: {
         Args: { p_display_name: string; p_name: string }

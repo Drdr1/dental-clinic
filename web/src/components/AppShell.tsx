@@ -19,6 +19,7 @@ export function AppShell() {
           <NavLink to="/today" className="nav-link">{t('nav.today')}</NavLink>
           <NavLink to="/appointments" className="nav-link">{t('nav.appointments')}</NavLink>
           <NavLink to="/patients" className="nav-link">{t('nav.patients')}</NavLink>
+          {member.role === 'owner' && <NavLink to="/settings" className="nav-link">{t('nav.settings')}</NavLink>}
         </nav>
         <div className="sidebar-foot">
           <div className="whoami">

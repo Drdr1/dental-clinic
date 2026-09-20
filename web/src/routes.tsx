@@ -8,6 +8,7 @@ import { ReceiptPage } from './features/payments/ReceiptPage'
 import { PlanPage } from './features/plans/PlanPage'
 import { TodayPage } from './features/today/TodayPage'
 import { AppointmentsPage } from './features/appointments/AppointmentsPage'
+import { SettingsPage } from './features/settings/SettingsPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/today" replace /> },
           { path: 'today', element: <TodayPage /> },
           { path: 'appointments', element: <AppointmentsPage /> },
+          { path: 'settings', element: <SettingsPage /> },
           { path: 'patients', element: <PatientsPage /> },
           { path: 'patients/:id', element: <PatientPage /> },
           { path: 'plans/:planId', element: <PlanPage /> },
