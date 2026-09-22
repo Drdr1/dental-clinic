@@ -1,0 +1,68 @@
+# Clinic overrides for the official Supabase docker-compose.yml.
+# Place next to docker-compose.yml; `docker compose` picks it up automatically.
+#
+# What this does on a small (2 GB) server:
+#   - turns off services the clinic app doesn't use (realtime, imgproxy, pooler)
+#   - makes Studio + postgres-meta opt-in:  docker compose --profile admin up -d
+#   - binds the API gateway and Postgres to localhost only (Caddy fronts the API,
+#     and you reach Postgres/Studio through an SSH tunnel)
+#   - tunes Postgres memory for 2 GB RAM
+
+services:
+
+  # ---- not used by the clinic app -------------------------------------------
+  realtime:
+    profiles: ["off"]
+  imgproxy:
+    profiles: ["off"]
+  supavisor:
+    profiles: ["off"]
+
+  # ---- admin UI only when you ask for it ------------------------------------
+  studio:
+    profiles: ["admin"]
+  meta:
+    profiles: ["admin"]
+
+  # ---- gateway: no longer waits for Studio, localhost only -------------------
+  api-gw:
+    depends_on: !reset {}
+    ports: !override
+      - "127.0.0.1:8000:8000/tcp"
+
+  # ---- storage: no image transformation (we shrink images in the browser) ---
+  storage:
+    depends_on: !override
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    environment:
+      ENABLE_IMAGE_TRANSFORMATION: "false"
+      IMGPROXY_URL: ""
+
+  # ---- edge functions: restrict CORS to the clinic app ----------------------
+  functions:
+    environment:
+      ALLOWED_ORIGIN: ${CLINIC_APP_ORIGIN:-https://clinic.derops.dev}
+
+  # ---- Postgres: localhost port for migrations/backups, 2 GB tuning ---------
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
+    command: !override
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=768MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=60

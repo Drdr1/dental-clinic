@@ -14,6 +14,7 @@ import { MaterialsPage } from './features/materials/MaterialsPage'
 import { FinancePage } from './features/finance/FinancePage'
 import { CashPage } from './features/cash/CashPage'
 import { PublicFormPage } from './features/forms/PublicFormPage'
+import { BookingPage } from './features/booking/BookingPage'
 import { AgreementPage } from './features/agreements/AgreementPage'
 import { PrescriptionPage } from './features/prescriptions/PrescriptionPage'
 
@@ -21,6 +22,8 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   // Public: the patient's form link, no login.
   { path: '/f/:token', element: <PublicFormPage /> },
+  // Public: online booking, no login.
+  { path: '/book/:slug', element: <BookingPage /> },
   {
     element: <RequireAuth />,
     children: [

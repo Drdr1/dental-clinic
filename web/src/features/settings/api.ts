@@ -14,7 +14,7 @@ export type ClinicSettings = {
 export async function getSettings(clinicId: string) {
   const [clinic, procedures, chairs] = await Promise.all([
     supabase.from('clinics').select('name, cash_float, commission_basis, grace_days, lock_threshold, opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
-    supabase.from('procedures').select('id, name, default_price, default_duration_min, active').eq('clinic_id', clinicId).order('name'),
+    supabase.from('procedures').select('id, name, default_price, default_duration_min, active, bookable_online').eq('clinic_id', clinicId).order('name'),
     supabase.from('chairs').select('id, name, active').eq('clinic_id', clinicId).order('name'),
   ])
   for (const r of [clinic, procedures, chairs]) if (r.error) throw r.error
@@ -29,9 +29,12 @@ export async function saveClinic(clinicId: string, s: ClinicSettings) {
 
 export async function saveProcedure(
   clinicId: string,
-  p: { id?: string; name: string; default_price: number; default_duration_min: number; active: boolean },
+  p: { id?: string; name: string; default_price: number; default_duration_min: number; active: boolean; bookable_online?: boolean },
 ) {
-  const row = { name: p.name.trim(), default_price: p.default_price, default_duration_min: p.default_duration_min, active: p.active }
+  const row = {
+    name: p.name.trim(), default_price: p.default_price, default_duration_min: p.default_duration_min,
+    active: p.active, bookable_online: p.bookable_online ?? false,
+  }
   const { error } = p.id
     ? await supabase.from('procedures').update(row).eq('id', p.id)
     : await supabase.from('procedures').insert({ ...row, clinic_id: clinicId })
@@ -51,6 +54,7 @@ export type TeamMember = {
   display_name: string
   role: 'owner' | 'doctor' | 'receptionist'
   active: boolean
+  bookable_online?: boolean
   commission_percent?: number
   email: string
   last_sign_in: string | null

@@ -5,7 +5,10 @@ import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
 import { saveChair, saveProcedure } from './api'
 
-type Procedure = { id?: string; name: string; default_price: number; default_duration_min: number; active: boolean }
+type Procedure = {
+  id?: string; name: string; default_price: number; default_duration_min: number
+  active: boolean; bookable_online?: boolean
+}
 type Chair = { id?: string; name: string; active: boolean }
 
 function useInvalidate() {
@@ -43,6 +46,13 @@ function ProcedureRow({ initial, isNew, onDone }: { initial: Procedure; isNew?: 
             <span>{t('settings.available')}</span>
           </label>
         </td>
+        <td>
+          <label className="check">
+            <input type="checkbox" checked={p.bookable_online ?? false}
+              onChange={(e) => setP({ ...p, bookable_online: e.target.checked })} />
+            <span>{t('book.bookable')}</span>
+          </label>
+        </td>
         <td className="num">
           {(dirty || isNew) && (
             <button className="btn btn-small btn-primary" disabled={!valid || save.isPending} onClick={() => save.mutate()}>
@@ -51,7 +61,7 @@ function ProcedureRow({ initial, isNew, onDone }: { initial: Procedure; isNew?: 
           )}
         </td>
       </tr>
-      {save.isError && <tr><td colSpan={5}><ErrorNote error={save.error} /></td></tr>}
+      {save.isError && <tr><td colSpan={6}><ErrorNote error={save.error} /></td></tr>}
     </>
   )
 }
@@ -71,13 +81,14 @@ export function ProceduresSection({ procedures }: { procedures: Required<Procedu
               <th>{t('settings.price')}</th>
               <th>{t('settings.durationMin')}</th>
               <th>{t('plan.col.status')}</th>
+              <th>{t('book.bookable')}</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {procedures.map((p) => <ProcedureRow key={`${p.id}-${p.default_price}-${p.name}-${p.active}-${p.default_duration_min}`} initial={p} />)}
+            {procedures.map((p) => <ProcedureRow key={`${p.id}-${p.default_price}-${p.name}-${p.active}-${p.default_duration_min}-${p.bookable_online}`} initial={p} />)}
             <ProcedureRow key={`new-${newKey}`} isNew
-              initial={{ name: '', default_price: 0, default_duration_min: 30, active: true }}
+              initial={{ name: '', default_price: 0, default_duration_min: 30, active: true, bookable_online: false }}
               onDone={() => setNewKey((k) => k + 1)} />
           </tbody>
         </table>

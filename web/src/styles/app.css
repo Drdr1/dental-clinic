@@ -671,3 +671,8 @@ tr.is-void-row td:last-child { text-decoration: none; }
   background: var(--gum-soft); color: var(--ink); font-size: var(--step--1);
 }
 .payer-note .link-btn { color: var(--gum); font-weight: 600; }
+
+/* ---------- Online booking ---------- */
+.day-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.day-chip { flex: none; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: var(--r-control); background: var(--surface); font: inherit; cursor: pointer; min-height: 44px; }
+.day-chip.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }

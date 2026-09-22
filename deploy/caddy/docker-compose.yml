@@ -1,0 +1,31 @@
+# Reverse proxy + static hosting for everything on this server.
+# Joins the Supabase network so it can reach the API gateway by name.
+name: edge
+
+services:
+  caddy:
+    build: .
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    env_file: .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/clinic:/srv/clinic:ro
+      - /srv/derops:/srv/derops:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - supabase
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  supabase:
+    name: supabase_default
+    external: true

@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
 import { Icon } from '../../components/Icon'
 import { Skeleton } from '../../components/Skeleton'
+import { PendingBookings } from '../booking/PendingBookings'
 import { templates, waMessage } from '../../lib/whatsapp'
 import { installmentStatusKey, installmentTone } from '../payments/labels'
 import { getToday } from './api'
@@ -63,6 +64,8 @@ export function TodayPage() {
           </div>
         </div>
       </div>
+
+      <PendingBookings />
 
       {nothing && <p className="empty">{t('today.allClear')}</p>}
 

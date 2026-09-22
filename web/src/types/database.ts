@@ -57,8 +57,10 @@ export type Database = {
       }
       appointments: {
         Row: {
+          booked_name: string | null
           chair_id: string
           clinic_id: string
+          confirmed_at: string | null
           created_at: string
           created_by: string | null
           doctor_id: string | null
@@ -66,13 +68,17 @@ export type Database = {
           id: string
           notes: string | null
           patient_id: string
+          procedure_id: string | null
+          source: string
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
           treatment_plan_id: string | null
         }
         Insert: {
+          booked_name?: string | null
           chair_id: string
           clinic_id: string
+          confirmed_at?: string | null
           created_at?: string
           created_by?: string | null
           doctor_id?: string | null
@@ -80,13 +86,17 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id: string
+          procedure_id?: string | null
+          source?: string
           starts_at: string
           status?: Database["public"]["Enums"]["appointment_status"]
           treatment_plan_id?: string | null
         }
         Update: {
+          booked_name?: string | null
           chair_id?: string
           clinic_id?: string
+          confirmed_at?: string | null
           created_at?: string
           created_by?: string | null
           doctor_id?: string | null
@@ -94,6 +104,8 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id?: string
+          procedure_id?: string | null
+          source?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["appointment_status"]
           treatment_plan_id?: string | null
@@ -133,6 +145,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "recall_list"
             referencedColumns: ["patient_id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_procedure_id_clinic_id_fkey"
+            columns: ["procedure_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id", "clinic_id"]
           },
           {
             foreignKeyName: "appointments_treatment_plan_id_clinic_id_fkey"
@@ -289,6 +308,11 @@ export type Database = {
       }
       clinics: {
         Row: {
+          booking_daily_limit: number
+          booking_enabled: boolean
+          booking_horizon_days: number
+          booking_min_notice_hours: number
+          booking_slug: string | null
           cash_float: number
           closes_at: string
           commission_basis: string
@@ -304,6 +328,11 @@ export type Database = {
           timezone: string
         }
         Insert: {
+          booking_daily_limit?: number
+          booking_enabled?: boolean
+          booking_horizon_days?: number
+          booking_min_notice_hours?: number
+          booking_slug?: string | null
           cash_float?: number
           closes_at?: string
           commission_basis?: string
@@ -319,6 +348,11 @@ export type Database = {
           timezone?: string
         }
         Update: {
+          booking_daily_limit?: number
+          booking_enabled?: boolean
+          booking_horizon_days?: number
+          booking_min_notice_hours?: number
+          booking_slug?: string | null
           cash_float?: number
           closes_at?: string
           commission_basis?: string
@@ -1847,6 +1881,7 @@ export type Database = {
         Row: {
           active: boolean
           aftercare_template: string | null
+          bookable_online: boolean
           clinic_id: string
           default_duration_min: number
           default_price: number
@@ -1856,6 +1891,7 @@ export type Database = {
         Insert: {
           active?: boolean
           aftercare_template?: string | null
+          bookable_online?: boolean
           clinic_id: string
           default_duration_min?: number
           default_price: number
@@ -1865,6 +1901,7 @@ export type Database = {
         Update: {
           active?: boolean
           aftercare_template?: string | null
+          bookable_online?: boolean
           clinic_id?: string
           default_duration_min?: number
           default_price?: number
@@ -1933,6 +1970,13 @@ export type Database = {
             columns: ["appointment_id", "clinic_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "sessions_appointment_id_clinic_id_fkey"
+            columns: ["appointment_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "pending_bookings"
             referencedColumns: ["id", "clinic_id"]
           },
           {
@@ -2515,6 +2559,45 @@ export type Database = {
           },
         ]
       }
+      pending_bookings: {
+        Row: {
+          booked_name: string | null
+          clinic_id: string | null
+          created_at: string | null
+          ends_at: string | null
+          full_name: string | null
+          id: string | null
+          notes: string | null
+          patient_id: string | null
+          phone: string | null
+          service_name: string | null
+          starts_at: string | null
+          whatsapp_phone: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id", "clinic_id"]
+          },
+          {
+            foreignKeyName: "appointments_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "recall_list"
+            referencedColumns: ["patient_id", "clinic_id"]
+          },
+        ]
+      }
       recall_list: {
         Row: {
           clinic_id: string | null
@@ -2676,6 +2759,24 @@ export type Database = {
         Args: { p_agreement_id: string; p_document_path: string }
         Returns: undefined
       }
+      book_appointment: {
+        Args: {
+          p_name: string
+          p_note?: string
+          p_phone: string
+          p_procedure: string
+          p_slug: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      booking_clinic: { Args: { p_slug: string }; Returns: Json }
+      booking_slots: {
+        Args: { p_date: string; p_procedure: string; p_slug: string }
+        Returns: {
+          slot: string
+        }[]
+      }
       cancel_installment_plan: {
         Args: { p_installment_plan_id: string; p_reason: string }
         Returns: undefined
@@ -2697,6 +2798,7 @@ export type Database = {
         }[]
       }
       clinic_today: { Args: { p_clinic: string }; Returns: string }
+      confirm_booking: { Args: { p_appointment: string }; Returns: undefined }
       create_clinic: {
         Args: { p_display_name: string; p_name: string }
         Returns: string

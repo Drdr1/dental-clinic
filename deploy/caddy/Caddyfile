@@ -1,0 +1,66 @@
+{
+	email {$ACME_EMAIL}
+	# Certificates via Cloudflare DNS: works behind the orange cloud and for the wildcard.
+	acme_dns cloudflare {env.CF_API_TOKEN}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+# ---------------- Clinic app (static React build) ----------------
+clinic.derops.dev {
+	import security_headers
+	header {
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+	root * /srv/clinic
+	encode zstd gzip
+
+	# Hashed assets can be cached forever; index.html must always be fresh.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@html path / /index.html
+	header @html Cache-Control "no-cache"
+
+	# Single-page app: unknown paths (/patients/123, /f/<token>) serve index.html.
+	try_files {path} /index.html
+	file_server
+}
+
+# ---------------- Supabase API (only the routes the app uses) ----------------
+clinic-api.derops.dev {
+	import security_headers
+
+	@api path /rest/v1/* /auth/v1/* /storage/v1/* /functions/v1/*
+	handle @api {
+		request_body {
+			max_size 25MB
+		}
+		reverse_proxy api-gw:8000
+	}
+
+	# Everything else (including the Studio dashboard) is not exposed.
+	handle {
+		respond "Not found" 404
+	}
+}
+
+# ---------------- Main site ----------------
+derops.dev, www.derops.dev {
+	import security_headers
+	root * /srv/derops
+	encode zstd gzip
+	file_server
+}
+
+# ---------------- Any other subdomain → main site ----------------
+*.derops.dev {
+	redir https://derops.dev{uri} 302
+}
