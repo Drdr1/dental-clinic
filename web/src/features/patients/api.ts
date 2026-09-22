@@ -16,11 +16,14 @@ function cleanSearch(q: string) {
   return q.replace(/[,()*%\\]/g, ' ').trim()
 }
 
-export async function searchPatients(clinicId: string, q: string): Promise<PatientRow[]> {
+export async function searchPatients(clinicId: string, q: string, includeArchived = false): Promise<PatientRow[]> {
   let query = supabase
     .from('patients')
     .select('id, full_name, phone, medical_alerts')
     .eq('clinic_id', clinicId)
+
+  // Archived patients stay out of lists and search unless explicitly asked for.
+  if (!includeArchived) query = query.is('archived_at', null)
     .order('full_name')
     .limit(50)
 
@@ -97,4 +100,24 @@ export async function getPatientFile(patientId: string) {
   if (balances.error) throw balances.error
   if (perSession.error) throw perSession.error
   return { patient: patient.data, plans: plans.data, balances: balances.data, perSession: perSession.data }
+}
+
+export type RecordCounts = Record<'sessions' | 'payments' | 'plans' | 'prescriptions' | 'files' | 'forms' | 'lab_cases' | 'appointments', number>
+
+export async function getRecordCounts(patientId: string): Promise<RecordCounts> {
+  const { data, error } = await supabase.rpc('patient_record_counts', { p_patient: patientId })
+  if (error) throw error
+  return data as unknown as RecordCounts
+}
+
+export async function archivePatient(patientId: string, reason: string, archive = true) {
+  const { error } = await supabase.rpc('archive_patient', {
+    p_patient: patientId, p_reason: reason.trim() || undefined, p_archive: archive,
+  })
+  if (error) throw error
+}
+
+export async function deletePatient(patientId: string) {
+  const { error } = await supabase.rpc('delete_patient', { p_patient: patientId })
+  if (error) throw error
 }

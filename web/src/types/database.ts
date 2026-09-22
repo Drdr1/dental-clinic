@@ -1347,6 +1347,8 @@ export type Database = {
       patients: {
         Row: {
           allergy_groups: string[]
+          archive_reason: string | null
+          archived_at: string | null
           clinic_id: string
           created_at: string
           created_by: string | null
@@ -1367,6 +1369,8 @@ export type Database = {
         }
         Insert: {
           allergy_groups?: string[]
+          archive_reason?: string | null
+          archived_at?: string | null
           clinic_id: string
           created_at?: string
           created_by?: string | null
@@ -1387,6 +1391,8 @@ export type Database = {
         }
         Update: {
           allergy_groups?: string[]
+          archive_reason?: string | null
+          archived_at?: string | null
           clinic_id?: string
           created_at?: string
           created_by?: string | null
@@ -2755,6 +2761,10 @@ export type Database = {
         Args: { p_installment_plan_id: string; p_reason: string }
         Returns: undefined
       }
+      archive_patient: {
+        Args: { p_archive?: boolean; p_patient: string; p_reason?: string }
+        Returns: undefined
+      }
       attach_agreement_document: {
         Args: { p_agreement_id: string; p_document_path: string }
         Returns: undefined
@@ -2831,6 +2841,7 @@ export type Database = {
         }
         Returns: string
       }
+      delete_patient: { Args: { p_patient: string }; Returns: undefined }
       doctor_earnings: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: {
@@ -2856,6 +2867,7 @@ export type Database = {
       }
       is_doctor: { Args: { p_clinic: string }; Returns: boolean }
       is_member: { Args: { p_clinic: string }; Returns: boolean }
+      patient_record_counts: { Args: { p_patient: string }; Returns: Json }
       patient_sources: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: {

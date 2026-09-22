@@ -22,6 +22,7 @@ import { Timeline } from './Timeline'
 import { ToothHistory } from './ToothHistory'
 import { PatientFiles } from '../files/PatientFiles'
 import { PatientForm } from './PatientForm'
+import { PatientDangerZone } from './PatientDangerZone'
 import { getUpcomingForPatient } from '../appointments/api'
 
 export function PatientPage() {
@@ -29,7 +30,7 @@ export function PatientPage() {
   const { t, money, date } = useI18n()
 
   const { clinicId } = useMember()
-  const [dialog, setDialog] = useState<'plan' | 'visit' | 'edit' | null>(null)
+  const [dialog, setDialog] = useState<'plan' | 'visit' | 'edit' | 'archive' | null>(null)
   const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files'>('overview')
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
   const upcoming = useQuery({ queryKey: ['appointments', id], queryFn: () => getUpcomingForPatient(id), enabled: !!id })
@@ -80,9 +81,16 @@ export function PatientPage() {
             {t('patient.whatsapp')}
           </a>
           <button className="btn" onClick={() => setDialog('edit')}>{t('patientForm.edit')}</button>
+          <button className="btn" onClick={() => setDialog('archive')}>{t('archive.action')}</button>
         </div>
       </header>
 
+      {patient.archived_at && (
+        <div className="medical-alert" role="note">
+          <strong>{t('archive.banner')}</strong>
+          {patient.archive_reason && <p>{patient.archive_reason}</p>}
+        </div>
+      )}
       {patient.medical_alerts && (
         <div className="medical-alert" role="note">
           <strong>{t('patient.alertTitle')}</strong>
@@ -219,6 +227,9 @@ export function PatientPage() {
         )}
       </div>
 
+      {dialog === 'archive' && (
+        <PatientDangerZone patientId={id} archived={!!patient.archived_at} onClose={() => setDialog(null)} />
+      )}
       {dialog === 'edit' && (
         <PatientForm onClose={() => setDialog(null)} patient={{
           id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
