@@ -69,6 +69,7 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
         <select value={s.commission_basis} onChange={(e) => set('commission_basis', e.target.value)}>
           <option value="work">{t('settings.basisWork')}</option>
           <option value="collection">{t('settings.basisCollection')}</option>
+          <option value="clinic_income">{t('settings.basisClinicIncome')}</option>
         </select>
         <small className="hint">{t('settings.commissionBasisHint')}</small>
       </label>

@@ -6,12 +6,15 @@ import { closeOrBack } from '../../lib/closeTab'
 import { ErrorNote } from '../../components/ErrorNote'
 import { SignaturePad } from '../../components/SignaturePad'
 import { ToothMark } from '../../components/ToothMark'
+import { useClinicLogo } from '../../lib/useClinicLogo'
+import { useMember } from '../auth/AuthProvider'
 import { getAgreements, signAgreement } from './api'
 
 /** Printable installment agreement, signed by the patient on the reception tablet. */
 export function AgreementPage() {
   const { planId = '' } = useParams()
   const { t, money, date } = useI18n()
+  const logo = useClinicLogo(useMember().clinicId)
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['agreements', planId], queryFn: () => getAgreements(planId) })
   const [version, setVersion] = useState<number | null>(null)
@@ -36,7 +39,7 @@ export function AgreementPage() {
   return (
     <div className="receipt-page">
       <article className="agreement">
-        <header className="receipt-head"><ToothMark className="receipt-mark" /><strong>{T.clinic}</strong></header>
+        <header className="receipt-head">{logo.data ? <img src={logo.data} alt="" className="receipt-logo" /> : <ToothMark className="receipt-mark" />}<strong>{T.clinic}</strong></header>
         <h1>{t('agr.title')}</h1>
         <p className="muted center">{t('agr.version', { n: a.version, date: date(T.generated_at) })}{a.version > 1 && ` — ${T.reason}`}</p>
 

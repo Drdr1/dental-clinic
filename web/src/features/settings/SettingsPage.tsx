@@ -9,6 +9,8 @@ import { TeamSection } from './TeamSection'
 import { DrugsSection } from './DrugsSection'
 import { PayersSection } from './PayersSection'
 import { BookingSection } from './BookingSection'
+import { LogoSection } from './LogoSection'
+import { DeletedPatientsSection } from './DeletedPatientsSection'
 
 export function SettingsPage() {
   const { clinicId, role } = useMember()
@@ -27,10 +29,12 @@ export function SettingsPage() {
       <div className="settings-grid">
         <ChairsSection chairs={q.data.chairs} />
       </div>
+      <LogoSection />
       <BookingSection />
       <PayersSection />
       <DrugsSection />
       <TeamSection />
+      <DeletedPatientsSection />
     </section>
   )
 }

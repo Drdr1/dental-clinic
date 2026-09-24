@@ -5,6 +5,8 @@ import { useI18n } from '../../i18n'
 import { closeOrBack } from '../../lib/closeTab'
 import { ErrorNote } from '../../components/ErrorNote'
 import { ToothMark } from '../../components/ToothMark'
+import { useClinicLogo } from '../../lib/useClinicLogo'
+import { useMember } from '../auth/AuthProvider'
 import { ageFrom } from '../../lib/phone'
 import { getPrescription } from './api'
 
@@ -12,6 +14,7 @@ import { getPrescription } from './api'
 export function PrescriptionPage() {
   const { id = '' } = useParams()
   const { t, date } = useI18n()
+  const logo = useClinicLogo(useMember().clinicId)
   const q = useQuery({ queryKey: ['prescription', id], queryFn: () => getPrescription(id) })
   const printed = useRef(false)
   useEffect(() => {
@@ -28,7 +31,7 @@ export function PrescriptionPage() {
     <div className="receipt-page">
       <article className="rx-sheet">
         <header className="rx-head">
-          <div className="rx-brand"><ToothMark className="receipt-mark" /><strong>{clinicName}</strong></div>
+          <div className="rx-brand">{logo.data ? <img src={logo.data} alt="" className="receipt-logo" /> : <ToothMark className="receipt-mark" />}<strong>{clinicName}</strong></div>
           <div className="rx-doctor">{doctor}</div>
         </header>
         <div className="rx-patient">

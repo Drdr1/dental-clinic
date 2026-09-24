@@ -169,6 +169,10 @@ a { color: var(--ink); }
 .dialog {
   width: min(560px, calc(100% - 32px)); padding: 0; border: 0;
   border-radius: var(--r-panel); color: var(--ink); background: var(--surface);
+  /* Long dialogs (prescriptions, delete confirmation) must scroll, otherwise
+     the browser simply clips whatever is past the bottom and the buttons
+     down there can't be reached. */
+  max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain;
 }
 .dialog::backdrop { background: rgb(19 50 47 / 0.35); }
 .dialog-body { display: grid; gap: 16px; padding: 24px; }
@@ -677,3 +681,11 @@ tr.is-void-row td:last-child { text-decoration: none; }
 .day-chip { flex: none; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: var(--r-control); background: var(--surface); font: inherit; cursor: pointer; min-height: 44px; }
 .day-chip.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .rule { border: 0; border-top: 1px solid var(--line); width: 100%; margin: 4px 0; }
+
+/* Clinic logo */
+.brand-logo { width: 34px; height: 34px; object-fit: contain; flex: none; }
+.receipt-logo { width: 40px; height: 40px; object-fit: contain; }
+.logo-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.logo-preview { width: 72px; height: 72px; object-fit: contain; border: 1px solid var(--line); border-radius: var(--r-control); padding: 6px; background: #fff; }
+.doctor-card { gap: 10px; }
+.doctor-card .panel-head { align-items: flex-start; }

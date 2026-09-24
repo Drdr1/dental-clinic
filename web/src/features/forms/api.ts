@@ -9,6 +9,7 @@ export type TemplateBody = { questions?: Question[]; text_ar?: string; text_en?:
 
 export type PublicForm = {
   clinic: string
+  logo: string | null
   patient_first_name: string
   kind: 'medical_history' | 'consent'
   title: string

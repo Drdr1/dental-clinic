@@ -116,16 +116,36 @@ function PasswordDialog({ userId, name, onClose }: { userId: string; name: strin
 function CommissionInput({ clinicId, userId, value }: { clinicId: string; userId: string; value: number }) {
   const { t } = useI18n()
   const qc = useQueryClient()
+  const [draft, setDraft] = useState(String(value))
+  const [justSaved, setJustSaved] = useState(false)
   const save = useMutation({
     mutationFn: (v: number) => updateMember(clinicId, userId, { commission_percent: v }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['team'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['team'] })
+      setJustSaved(true)
+      setTimeout(() => setJustSaved(false), 2000)
+    },
   })
+  const n = Number(draft)
+  const changed = draft !== String(value)
+  const valid = draft !== '' && Number.isFinite(n) && n >= 0 && n <= 100
+
   return (
     <span className="inline-controls">
       <input className="cell-input num-input" type="number" min={0} max={100} step={1} dir="ltr"
-        defaultValue={value} aria-label={t('team.commission')}
-        onBlur={(e) => { const v = Number(e.target.value); if (v !== value && v >= 0 && v <= 100) save.mutate(v) }} />
+        value={draft} aria-label={t('team.commission')}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && changed && valid) save.mutate(n) }} />
       <span className="muted">%</span>
+      {/* An explicit save, so it's never unclear whether the number stuck. */}
+      {changed && (
+        <button className="btn btn-small btn-primary" disabled={!valid || save.isPending}
+          onClick={() => save.mutate(n)}>
+          {save.isPending ? t('common.saving') : t('common.save')}
+        </button>
+      )}
+      {!changed && justSaved && <span className="ok-text small">{t('common.saved')}</span>}
+      {save.isError && <span className="danger-text small">{t('common.saveFailed')}</span>}
     </span>
   )
 }
@@ -187,7 +207,7 @@ export function TeamSection() {
                     </td>
                     <td>
                       {m.role === 'receptionist' ? <span className="muted">—</span> : (
-                        <CommissionInput clinicId={clinicId} userId={m.user_id} value={m.commission_percent ?? 0} />
+                        <CommissionInput key={`${m.user_id}-${m.commission_percent}`} clinicId={clinicId} userId={m.user_id} value={Number(m.commission_percent ?? 0)} />
                       )}
                     </td>
                     <td className="muted">{m.last_sign_in ? date(m.last_sign_in) : t('team.never')}</td>

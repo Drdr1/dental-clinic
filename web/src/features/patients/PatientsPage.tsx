@@ -14,11 +14,12 @@ export function PatientsPage() {
   const { t, money } = useI18n()
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const q = useDebounced(search)
 
   const patients = useQuery({
-    queryKey: ['patients', clinicId, q],
-    queryFn: () => searchPatients(clinicId, q),
+    queryKey: ['patients', clinicId, q, showArchived],
+    queryFn: () => searchPatients(clinicId, q, showArchived),
     placeholderData: keepPreviousData,
   })
 
@@ -29,15 +30,21 @@ export function PatientsPage() {
         <button className="btn btn-primary" onClick={() => setAdding(true)}>{t('patients.add')}</button>
       </header>
 
-      <input
-        className="search"
-        type="search"
-        autoFocus
-        placeholder={t('patients.search')}
-        aria-label={t('patients.search')}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="toolbar">
+        <input
+          className="search"
+          type="search"
+          autoFocus
+          placeholder={t('patients.search')}
+          aria-label={t('patients.search')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <label className="check">
+          <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+          <span>{t('archive.show')}</span>
+        </label>
+      </div>
 
       {patients.isError && <ErrorNote error={patients.error} onRetry={() => patients.refetch()} />}
       {patients.isPending && <Skeleton rows={5} variant="table" />}
@@ -62,6 +69,7 @@ export function PatientsPage() {
                 <tr key={p.id}>
                   <td>
                     <Link to={`/patients/${p.id}`} className="row-link">{p.full_name}</Link>
+                    {p.archived_at && <span className="badge badge-muted"> {t('archive.badge')}</span>}
                     {p.medical_alerts && (
                       <span className="alert-dot" title={p.medical_alerts} aria-label={t('patients.alert')} />
                     )}

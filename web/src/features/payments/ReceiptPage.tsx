@@ -5,12 +5,15 @@ import { useI18n } from '../../i18n'
 import { closeOrBack } from '../../lib/closeTab'
 import { ErrorNote } from '../../components/ErrorNote'
 import { ToothMark } from '../../components/ToothMark'
+import { useClinicLogo } from '../../lib/useClinicLogo'
+import { useMember } from '../auth/AuthProvider'
 import { getReceipt } from './api'
 import { methodKey } from './labels'
 
 export function ReceiptPage() {
   const { id = '' } = useParams()
   const { t, money, lang } = useI18n()
+  const logo = useClinicLogo(useMember().clinicId)
   const receipt = useQuery({ queryKey: ['receipt', id], queryFn: () => getReceipt(id), enabled: !!id })
   const printed = useRef(false)
 
@@ -36,7 +39,7 @@ export function ReceiptPage() {
     <div className="receipt-page">
       <article className="receipt">
         <header className="receipt-head">
-          <ToothMark className="receipt-mark" />
+          {logo.data ? <img src={logo.data} alt="" className="receipt-logo" /> : <ToothMark className="receipt-mark" />}
           <strong>{clinicName}</strong>
         </header>
 

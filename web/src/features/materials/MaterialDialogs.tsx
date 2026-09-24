@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useAuth } from '../auth/AuthProvider'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
@@ -7,12 +8,16 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { todayLocal } from '../../lib/dates'
 import { PAYMENT_METHODS, type PaymentMethod } from '../payments/api'
 import { methodKey } from '../payments/labels'
-import { getHistory, getRecipes, recordCount, recordPurchase, recordUsage, saveMaterial, setRecipe, type MaterialStock } from './api'
+import { deleteMaterial, getHistory, getRecipes, recordCount, recordPurchase, recordUsage, saveMaterial, setRecipe, type MaterialStock } from './api'
+import { supabase } from '../../lib/supabase'
 
 function useRefresh() {
   const qc = useQueryClient()
   return () => { for (const k of ['materials', 'material-history', 'today', 'finance']) qc.invalidateQueries({ queryKey: [k] }) }
 }
+
+// Real units only: typing a quantity here was the easiest mistake to make.
+const UNITS = ['piece', 'box', 'cartridge', 'syringe', 'tube', 'pack', 'bottle', 'ml', 'g']
 
 export function MaterialForm({ material, onClose }: { material?: MaterialStock; onClose: () => void }) {
   const { clinicId } = useMember()
@@ -22,8 +27,22 @@ export function MaterialForm({ material, onClose }: { material?: MaterialStock; 
     name: material?.name ?? '', unit: material?.unit ?? '', min_stock: material?.min_stock ?? 0,
     supplier_name: material?.supplier_name ?? '', supplier_phone: material?.supplier_phone ?? '', active: material?.active ?? true,
   })
+  // How much is on the shelf right now — recorded as an opening stock count.
+  const [opening, setOpening] = useState('')
+  const { isDoctor } = useAuth()
+  const remove = useMutation({
+    mutationFn: (force: boolean) => deleteMaterial(material!.material_id!, force),
+    onSuccess: () => { refresh(); onClose() },
+  })
   const save = useMutation({
-    mutationFn: () => saveMaterial(clinicId, { ...m, id: material?.material_id ?? undefined }),
+    mutationFn: async () => {
+      await saveMaterial(clinicId, { ...m, id: material?.material_id ?? undefined })
+      if (!material && opening !== '' && Number(opening) > 0) {
+        const { data } = await supabase.from('materials').select('id')
+          .eq('clinic_id', clinicId).eq('name', m.name.trim()).maybeSingle()
+        if (data?.id) await recordCount(data.id, Number(opening))
+      }
+    },
     onSuccess: () => { refresh(); onClose() },
   })
   return (
@@ -33,7 +52,22 @@ export function MaterialForm({ material, onClose }: { material?: MaterialStock; 
           <input required value={m.name} onChange={(e) => setM({ ...m, name: e.target.value })} placeholder={t('mat.nameHint')} autoFocus /></label>
         <div className="field-row">
           <label className="field"><span>{t('mat.unit')}</span>
-            <input value={m.unit} onChange={(e) => setM({ ...m, unit: e.target.value })} placeholder={t('mat.unitHint')} /></label>
+            <select value={UNITS.includes(m.unit) || m.unit === '' ? m.unit : '__other'}
+              onChange={(e) => setM({ ...m, unit: e.target.value === '__other' ? ' ' : e.target.value })}>
+              <option value="">{t('mat.unitChoose')}</option>
+              {UNITS.map((u) => <option key={u} value={u}>{t(`mat.unit.${u}` as Parameters<typeof t>[0])}</option>)}
+              <option value="__other">{t('mat.unitOther')}</option>
+            </select>
+            {!UNITS.includes(m.unit) && m.unit !== '' && (
+              <input value={m.unit.trim()} onChange={(e) => setM({ ...m, unit: e.target.value })}
+                placeholder={t('mat.unitHint')} />
+            )}</label>
+          {!material && (
+            <label className="field"><span>{t('mat.opening')}</span>
+              <input type="number" min={0} step="any" dir="ltr" value={opening}
+                onChange={(e) => setOpening(e.target.value)} placeholder="0" />
+              <small className="hint">{t('mat.openingHint')}</small></label>
+          )}
           <label className="field"><span>{t('mat.minStock')}</span>
             <input type="number" min={0} step="any" dir="ltr" value={m.min_stock} onChange={(e) => setM({ ...m, min_stock: Number(e.target.value) })} />
             <small className="hint">{t('mat.minStockHint')}</small></label>
@@ -49,9 +83,20 @@ export function MaterialForm({ material, onClose }: { material?: MaterialStock; 
             <span>{t('mat.activeLabel')}</span></label>
         )}
         {save.isError && <ErrorNote error={save.error} />}
+        {remove.isError && <ErrorNote error={remove.error} />}
         <div className="dialog-actions">
           <button type="submit" className="btn btn-primary" disabled={save.isPending}>{save.isPending ? t('common.saving') : t('common.save')}</button>
           <button type="button" className="btn" onClick={onClose}>{t('common.cancel')}</button>
+          {material && (
+            <button type="button" className="link-btn danger-link" disabled={remove.isPending}
+              onClick={() => {
+                const hasHistory = (material.on_hand ?? 0) !== 0 || !!material.last_purchase_on
+                if (hasHistory && !isDoctor) { alert(t('mat.deleteOwnerOnly')); return }
+                if (confirm(hasHistory ? t('mat.deleteWithHistory') : t('mat.deleteConfirm'))) remove.mutate(hasHistory)
+              }}>
+              {t('mat.delete')}
+            </button>
+          )}
         </div>
       </form>
     </Modal>

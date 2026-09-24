@@ -75,7 +75,7 @@ export function InstallmentSetupDialog({ planId, patientId, netTotal, onClose, r
           </label>
           <label className="field">
             <span>{t('inst.firstDue')}</span>
-            <input type="date" value={firstDue} min={todayLocal()} onChange={(e) => setFirstDue(e.target.value)}
+            <input type="date" value={firstDue} onChange={(e) => setFirstDue(e.target.value)}
               disabled={balance === 0} />
           </label>
         </div>

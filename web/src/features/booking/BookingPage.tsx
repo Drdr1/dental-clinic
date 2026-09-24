@@ -58,7 +58,9 @@ export function BookingPage() {
     <main className="public-form">
       <div className="public-card">
         <div className="public-head">
-          <ToothMark className="brand-mark" />
+          {clinic.data?.logo
+            ? <img src={clinic.data.logo} alt="" className="brand-logo" />
+            : <ToothMark className="brand-mark" />}
           <strong>{clinic.data?.clinic ?? ''}</strong>
           <button type="button" className="link-btn" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('nav.language')}</button>
         </div>

@@ -85,6 +85,7 @@ export type AppointmentInput = {
   clinicId: string
   patientId: string
   chairId: string
+  doctorId: string | null
   planId: string | null
   startsAt: string
   endsAt: string
@@ -96,6 +97,7 @@ export async function saveAppointment(input: AppointmentInput, id?: string) {
     clinic_id: input.clinicId,
     patient_id: input.patientId,
     chair_id: input.chairId,
+    doctor_id: input.doctorId,
     treatment_plan_id: input.planId,
     starts_at: input.startsAt,
     ends_at: input.endsAt,
@@ -110,4 +112,14 @@ export async function saveAppointment(input: AppointmentInput, id?: string) {
 export async function setAppointmentStatus(id: string, status: AppointmentStatus) {
   const { error } = await supabase.from('appointments').update({ status }).eq('id', id)
   if (error) throw error
+}
+
+/** Doctors of the clinic, for assigning appointments. */
+export async function getClinicDoctors(clinicId: string) {
+  const { data, error } = await supabase.from('clinic_members')
+    .select('user_id, display_name, role')
+    .eq('clinic_id', clinicId).eq('active', true).in('role', ['owner', 'doctor'])
+    .order('display_name')
+  if (error) throw error
+  return data
 }

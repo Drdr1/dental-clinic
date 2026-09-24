@@ -13,6 +13,8 @@ import { LabsPage } from './features/labs/LabsPage'
 import { MaterialsPage } from './features/materials/MaterialsPage'
 import { FinancePage } from './features/finance/FinancePage'
 import { CashPage } from './features/cash/CashPage'
+import { DoctorsPage } from './features/doctors/DoctorsPage'
+import { DoctorPage } from './features/doctors/DoctorPage'
 import { PublicFormPage } from './features/forms/PublicFormPage'
 import { BookingPage } from './features/booking/BookingPage'
 import { AgreementPage } from './features/agreements/AgreementPage'
@@ -41,6 +43,8 @@ export const router = createBrowserRouter([
           { path: 'materials', element: <MaterialsPage /> },
           { path: 'finance', element: <FinancePage /> },
           { path: 'cash', element: <CashPage /> },
+          { path: 'doctors', element: <DoctorsPage /> },
+          { path: 'doctors/:id', element: <DoctorPage /> },
           { path: 'patients', element: <PatientsPage /> },
           { path: 'patients/:id', element: <PatientPage /> },
           { path: 'plans/:planId', element: <PlanPage /> },

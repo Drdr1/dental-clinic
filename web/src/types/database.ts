@@ -275,8 +275,14 @@ export type Database = {
           commission_percent: number
           created_at: string
           display_name: string
+          phone: string | null
+          registration_no: string | null
           role: Database["public"]["Enums"]["member_role"]
+          specialty: string | null
           user_id: string
+          work_days: number[]
+          works_from: string | null
+          works_to: string | null
         }
         Insert: {
           active?: boolean
@@ -284,8 +290,14 @@ export type Database = {
           commission_percent?: number
           created_at?: string
           display_name: string
+          phone?: string | null
+          registration_no?: string | null
           role: Database["public"]["Enums"]["member_role"]
+          specialty?: string | null
           user_id: string
+          work_days?: number[]
+          works_from?: string | null
+          works_to?: string | null
         }
         Update: {
           active?: boolean
@@ -293,8 +305,14 @@ export type Database = {
           commission_percent?: number
           created_at?: string
           display_name?: string
+          phone?: string | null
+          registration_no?: string | null
           role?: Database["public"]["Enums"]["member_role"]
+          specialty?: string | null
           user_id?: string
+          work_days?: number[]
+          works_from?: string | null
+          works_to?: string | null
         }
         Relationships: [
           {
@@ -321,6 +339,7 @@ export type Database = {
           grace_days: number
           id: string
           lock_threshold: number
+          logo_url: string | null
           name: string
           next_receipt_no: number
           opens_at: string
@@ -341,6 +360,7 @@ export type Database = {
           grace_days?: number
           id?: string
           lock_threshold?: number
+          logo_url?: string | null
           name: string
           next_receipt_no?: number
           opens_at?: string
@@ -361,6 +381,7 @@ export type Database = {
           grace_days?: number
           id?: string
           lock_threshold?: number
+          logo_url?: string | null
           name?: string
           next_receipt_no?: number
           opens_at?: string
@@ -368,6 +389,114 @@ export type Database = {
           timezone?: string
         }
         Relationships: []
+      }
+      deleted_patients: {
+        Row: {
+          clinic_id: string
+          counts: Json
+          deleted_at: string
+          deleted_by: string
+          full_name: string
+          id: string
+          phone: string | null
+          reason: string | null
+        }
+        Insert: {
+          clinic_id: string
+          counts: Json
+          deleted_at?: string
+          deleted_by?: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          reason?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          counts?: Json
+          deleted_at?: string
+          deleted_by?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deleted_patients_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_payouts: {
+        Row: {
+          amount: number
+          clinic_id: string
+          created_at: string
+          created_by: string
+          expense_id: string | null
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          note: string | null
+          paid_on: string
+          period_from: string | null
+          period_to: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          clinic_id: string
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          note?: string | null
+          paid_on: string
+          period_from?: string | null
+          period_to?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          clinic_id?: string
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          note?: string | null
+          paid_on?: string
+          period_from?: string | null
+          period_to?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_payouts_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_payouts_clinic_id_user_id_fkey"
+            columns: ["clinic_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "clinic_members"
+            referencedColumns: ["clinic_id", "user_id"]
+          },
+          {
+            foreignKeyName: "doctor_payouts_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       drugs: {
         Row: {
@@ -2799,11 +2928,15 @@ export type Database = {
         Args: { p_clinic: string }
         Returns: {
           active: boolean
+          commission_percent: number
           created_at: string
           display_name: string
           email: string
           last_sign_in: string
+          phone: string
+          registration_no: string
           role: Database["public"]["Enums"]["member_role"]
+          specialty: string
           user_id: string
         }[]
       }
@@ -2841,7 +2974,14 @@ export type Database = {
         }
         Returns: string
       }
-      delete_patient: { Args: { p_patient: string }; Returns: undefined }
+      delete_material: {
+        Args: { p_force?: boolean; p_material: string }
+        Returns: Json
+      }
+      delete_patient: {
+        Args: { p_force?: boolean; p_patient: string; p_reason?: string }
+        Returns: Json
+      }
       doctor_earnings: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: {
@@ -2851,6 +2991,30 @@ export type Database = {
           earned: number
           percent: number
           user_id: string
+        }[]
+      }
+      doctor_overview: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: {
+          active: boolean
+          appointments: number
+          collected: number
+          display_name: string
+          earned: number
+          paid_all_time: number
+          paid_in_period: number
+          patients: number
+          percent: number
+          phone: string
+          registration_no: string
+          role: Database["public"]["Enums"]["member_role"]
+          sessions: number
+          specialty: string
+          user_id: string
+          work_days: number[]
+          work_value: number
+          works_from: string
+          works_to: string
         }[]
       }
       finance_summary: {
@@ -2905,6 +3069,19 @@ export type Database = {
           p_note?: string
           p_patient_id: string
           p_treatment_plan_id?: string
+        }
+        Returns: string
+      }
+      record_doctor_payout: {
+        Args: {
+          p_amount: number
+          p_clinic: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_note?: string
+          p_paid_on?: string
+          p_period_from?: string
+          p_period_to?: string
+          p_user: string
         }
         Returns: string
       }

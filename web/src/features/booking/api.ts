@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 export type BookingService = { id: string; name: string; minutes: number }
 export type BookingClinic = {
   clinic: string
+  logo: string | null
   timezone: string
   opens_at: string
   closes_at: string

@@ -5,7 +5,7 @@ import { useI18n } from '../../i18n'
 import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
 import { PatientPicker, type PickedPatient } from '../../components/PatientPicker'
-import { getClinicCalendar, getPatientPlans, saveAppointment, type DayAppointment } from './api'
+import { getClinicCalendar, getPatientPlans, saveAppointment, type DayAppointment, getClinicDoctors } from './api'
 import { localDateOf, localToIso, minutesOfDay, minutesToTime, timeToMinutes } from './time'
 
 const DURATIONS = [15, 30, 45, 60, 90, 120]
@@ -31,6 +31,7 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
   )
   const [planId, setPlanId] = useState(appointment?.treatment_plan_id ?? initial?.planId ?? '')
   const [chairId, setChairId] = useState(appointment?.chair_id ?? initial?.chairId ?? '')
+  const [doctorId, setDoctorId] = useState(appointment?.doctor_id ?? '')
   const [date, setDate] = useState(appointment ? localDateOf(appointment.starts_at) : initial?.date ?? '')
   const [time, setTime] = useState(appointment ? minutesToTime(minutesOfDay(appointment.starts_at)) : initial?.time ?? '')
   const [duration, setDuration] = useState(
@@ -45,6 +46,7 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
   })
 
   const chairs = calendar.data?.chairs ?? []
+  const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
   const effectiveChair = chairId || chairs[0]?.id || ''
   const slots = useMemo(() => {
     if (!calendar.data) return []
@@ -61,7 +63,8 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
       const startsAt = localToIso(date, time)
       const endsAt = new Date(Date.parse(startsAt) + duration * 60000).toISOString()
       return saveAppointment(
-        { clinicId, patientId: patient!.id, chairId: effectiveChair, planId: planId || null, startsAt, endsAt, notes },
+        { clinicId, patientId: patient!.id, chairId: effectiveChair,
+        doctorId: doctorId || null, planId: planId || null, startsAt, endsAt, notes },
         appointment?.id,
       )
     },
@@ -126,6 +129,15 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
               {DURATIONS.map((d) => <option key={d} value={d}>{t('appt.minutes', { n: d })}</option>)}
             </select>
           </label>
+          {(doctors.data?.length ?? 0) > 0 && (
+            <label className="field">
+              <span>{t('doc.doctor')}</span>
+              <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
+                <option value="">{t('doc.unassigned')}</option>
+                {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
+              </select>
+            </label>
+          )}
           {chairs.length > 1 && (
             <label className="field">
               <span>{t('appt.chair')}</span>

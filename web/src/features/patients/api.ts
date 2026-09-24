@@ -6,7 +6,7 @@ export type PlanSummary = Tables<'installment_plan_summary'>
 export type PlanOverview = Tables<'treatment_plan_overview'>
 export type PlanBalance = Tables<'treatment_plan_balance'>
 
-export type PatientRow = Pick<Patient, 'id' | 'full_name' | 'phone' | 'medical_alerts'> & {
+export type PatientRow = Pick<Patient, 'id' | 'full_name' | 'phone' | 'medical_alerts' | 'archived_at'> & {
   outstanding: number
   overdueCount: number
 }
@@ -19,7 +19,7 @@ function cleanSearch(q: string) {
 export async function searchPatients(clinicId: string, q: string, includeArchived = false): Promise<PatientRow[]> {
   let query = supabase
     .from('patients')
-    .select('id, full_name, phone, medical_alerts')
+    .select('id, full_name, phone, medical_alerts, archived_at')
     .eq('clinic_id', clinicId)
 
   // Archived patients stay out of lists and search unless explicitly asked for.
@@ -117,7 +117,25 @@ export async function archivePatient(patientId: string, reason: string, archive 
   if (error) throw error
 }
 
-export async function deletePatient(patientId: string) {
-  const { error } = await supabase.rpc('delete_patient', { p_patient: patientId })
+/** Returns the storage paths of the patient's files so the caller can remove them. */
+export async function deletePatient(patientId: string, force = false, reason = '') {
+  const { data, error } = await supabase.rpc('delete_patient', {
+    p_patient: patientId, p_force: force, p_reason: reason.trim() || undefined,
+  })
   if (error) throw error
+  const paths = ((data as { storage_paths?: string[] } | null)?.storage_paths) ?? []
+  if (paths.length) await supabase.storage.from('patient-files').remove(paths)
+}
+
+export type DeletedPatient = {
+  id: string; full_name: string; phone: string | null
+  counts: Record<string, number>; reason: string | null; deleted_at: string
+}
+
+export async function getDeletedPatients(clinicId: string): Promise<DeletedPatient[]> {
+  const { data, error } = await supabase.from('deleted_patients')
+    .select('id, full_name, phone, counts, reason, deleted_at')
+    .eq('clinic_id', clinicId).order('deleted_at', { ascending: false }).limit(100)
+  if (error) throw error
+  return data as unknown as DeletedPatient[]
 }

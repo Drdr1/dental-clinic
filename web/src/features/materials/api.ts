@@ -75,3 +75,9 @@ export async function setRecipe(clinicId: string, procedureId: string, materialI
     : await supabase.from('procedure_materials').delete().eq('procedure_id', procedureId).eq('material_id', materialId)
   if (error) throw error
 }
+
+/** Deletes a material. Needs force (owner) once it has any stock history. */
+export async function deleteMaterial(materialId: string, force = false) {
+  const { error } = await supabase.rpc('delete_material', { p_material: materialId, p_force: force })
+  if (error) throw error
+}

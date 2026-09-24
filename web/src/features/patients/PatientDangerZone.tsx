@@ -31,8 +31,10 @@ export function PatientDangerZone({ patientId, archived, onClose }: {
     mutationFn: () => archivePatient(patientId, reason, !archived),
     onSuccess: () => { refresh(); onClose() },
   })
+  const [force, setForce] = useState(false)
+  const [deleteReason, setDeleteReason] = useState('')
   const remove = useMutation({
-    mutationFn: () => deletePatient(patientId),
+    mutationFn: () => deletePatient(patientId, force, deleteReason.trim() || t('archive.noReason')),
     onSuccess: () => { refresh(); navigate('/patients') },
   })
 
@@ -40,7 +42,7 @@ export function PatientDangerZone({ patientId, archived, onClose }: {
   const attached = counts.data
     ? Object.entries(counts.data).filter(([k, v]) => k !== 'appointments' && v > 0)
     : []
-  const canDelete = role === 'owner' && counts.isSuccess && attached.length === 0
+  const canDelete = role === 'owner' && counts.isSuccess && (attached.length === 0 || force)
 
   return (
     <Modal title={t('archive.title')} onClose={onClose}>
@@ -78,21 +80,40 @@ export function PatientDangerZone({ patientId, archived, onClose }: {
 
         <h3>{t('archive.deleteTitle')}</h3>
         {attached.length > 0 ? (
-          <p className="muted">
-            {t('archive.hasRecords', {
-              list: attached.map(([k, v]) => `${t(`archive.rec.${k}` as Parameters<typeof t>[0])}: ${v}`).join('، '),
-            })}
-          </p>
+          <>
+            <p className="muted">
+              {t('archive.hasRecordsOwner', {
+                list: attached.map(([k, v]) => `${t(`archive.rec.${k}` as Parameters<typeof t>[0])}: ${v}`).join('، '),
+              })}
+            </p>
+            {role === 'owner' && (
+              <div className="lock-note">
+                <p>{t('archive.forceWarn')}</p>
+                <label className="check">
+                  <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
+                  <span>{t('archive.forceConfirm')}</span>
+                </label>
+                {force && (
+                  <label className="field"><span>{t('archive.forceReasonOptional')}</span>
+                    <input value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)} maxLength={200} /></label>
+                )}
+              </div>
+            )}
+          </>
         ) : (
           <p className="muted">{t('archive.deleteExplain')}</p>
         )}
         {role !== 'owner' && <p className="muted">{t('archive.ownerOnly')}</p>}
         {remove.isError && <ErrorNote error={remove.error} />}
-        {canDelete && (
-          <button className="btn btn-danger" disabled={remove.isPending}
-            onClick={() => { if (confirm(t('archive.deleteConfirm'))) remove.mutate() }}>
-            {t('archive.delete')}
-          </button>
+        {role === 'owner' && (
+          <div className="dialog-actions">
+            <button className="btn btn-danger" disabled={!canDelete || remove.isPending}
+              onClick={() => { if (confirm(t('archive.deleteConfirm'))) remove.mutate() }}>
+              {remove.isPending ? t('common.saving') : t('archive.delete')}
+            </button>
+            {/* Say why it's disabled instead of hiding the button and leaving them guessing. */}
+            {!canDelete && <span className="muted small">{t('archive.needTick')}</span>}
+          </div>
         )}
       </div>
     </Modal>
