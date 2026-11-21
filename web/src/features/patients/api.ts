@@ -139,3 +139,23 @@ export async function getDeletedPatients(clinicId: string): Promise<DeletedPatie
   if (error) throw error
   return data as unknown as DeletedPatient[]
 }
+
+/** A doctor's own patients: assigned to them, or treated by them. */
+export async function searchMyPatients(clinicId: string, doctorId: string, q: string): Promise<PatientRow[]> {
+  const { data, error } = await supabase.rpc('doctor_patients', { p_clinic: clinicId, p_doctor: doctorId })
+  if (error) throw error
+  const rows = (data ?? []) as Array<{
+    patient_id: string; full_name: string; phone: string; outstanding: number
+  }>
+  const term = cleanSearch(q).toLowerCase()
+  const digits = term.replace(/\D/g, '')
+  return rows
+    .filter((r) => !term
+      || r.full_name.toLowerCase().includes(term)
+      || (digits.length >= 3 && (r.phone ?? '').includes(digits)))
+    .map((r) => ({
+      id: r.patient_id, full_name: r.full_name, phone: r.phone,
+      medical_alerts: null, archived_at: null,
+      outstanding: r.outstanding ?? 0, overdueCount: 0,
+    }))
+}

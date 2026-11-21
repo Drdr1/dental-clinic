@@ -20,8 +20,10 @@ export async function getPlan(planId: string) {
     supabase.from('procedures').select('id, name, default_price').eq('clinic_id', plan.clinic_id).eq('active', true).order('name'),
     supabase.from('sessions').select('id, performed_at, notes, lock_override, override_reason')
       .eq('treatment_plan_id', planId).order('performed_at', { ascending: false }),
-    // Pay-per-session payments: linked to the plan but not to an installment plan.
-    supabase.from('payments').select('*').eq('treatment_plan_id', planId).is('installment_plan_id', null)
+    // Every payment on the plan. Filtering to installment_plan_id = null
+    // used to hide money taken against a schedule that was later
+    // cancelled: it showed nowhere and could not be reversed.
+    supabase.from('payments').select('*').eq('treatment_plan_id', planId)
       .order('receipt_no', { ascending: false }),
     supabase.from('clinic_members').select('user_id, display_name').eq('clinic_id', plan.clinic_id),
   ])
@@ -34,7 +36,7 @@ export async function getPlan(planId: string) {
     installments: summary.data,
     procedures: procedures.data ?? [],
     sessions: sessions.data ?? [],
-    directPayments: payments.data ?? [],
+    planPayments: payments.data ?? [],
     staffNames: new Map((staff.data ?? []).map((m) => [m.user_id, m.display_name])),
   }
 }
@@ -113,5 +115,21 @@ export async function cancelInstallmentPlan(installmentPlanId: string, reason: s
     p_installment_plan_id: installmentPlanId,
     p_reason: reason.trim(),
   })
+  if (error) throw error
+}
+
+/**
+ * Retires a plan: the schedule is cancelled with it and the open items go
+ * too. Anyone may cancel a plan nobody has paid into; once money has been
+ * taken against it, the server allows only a doctor or the owner.
+ */
+export async function cancelPlan(planId: string, reason: string) {
+  const { error } = await supabase.rpc('cancel_treatment_plan', { p_plan: planId, p_reason: reason.trim() })
+  if (error) throw error
+}
+
+/** Removes a plan that never happened. Refused by the server if anything is attached. */
+export async function deletePlan(planId: string) {
+  const { error } = await supabase.rpc('delete_treatment_plan', { p_plan: planId })
   if (error) throw error
 }

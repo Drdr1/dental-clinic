@@ -6,15 +6,16 @@ import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
 import { Skeleton } from '../../components/Skeleton'
 import { methodKey } from '../payments/labels'
-import { monthRange } from './range'
+import { monthFromKey, monthKeyOf, monthRange } from './range'
 import { getDoctors, getPayouts } from './api'
 import { PayoutDialog, ProfileDialog } from './DoctorDialogs'
+import { DoctorPatients } from './DoctorPatients'
 
 export function DoctorPage() {
   const { id = '' } = useParams()
   const { clinicId, role } = useMember()
-  const { t, money, date } = useI18n()
-  const [preset, setPreset] = useState<'this' | 'last'>('this')
+  const { t, money, date, time } = useI18n()
+  const [preset, setPreset] = useState<'this' | 'last' | 'pick'>('this')
   const [range, setRange] = useState(() => monthRange(0))
   const [dialog, setDialog] = useState<'profile' | 'pay' | null>(null)
   const owner = role === 'owner'
@@ -29,8 +30,10 @@ export function DoctorPage() {
   const d = q.data?.find((x) => x.user_id === id)
   if (!d) return <section className="page"><p className="empty">{t('doc.notFound')}</p></section>
 
-  const balance = Math.round((d.earned - d.paid_all_time) * 100) / 100
+  const balance = Math.round((d.earned_all_time - d.paid_all_time) * 100) / 100
   const pick = (p: 'this' | 'last') => { setPreset(p); setRange(monthRange(p === 'this' ? 0 : -1)) }
+  // Any month, not just the last two.
+  const pickMonth = (key: string) => { if (key) { setPreset('pick'); setRange(monthFromKey(key)) } }
   const days = (d.work_days ?? []).map((x) => t(`day.${x}` as Parameters<typeof t>[0])).join('، ')
 
   return (
@@ -56,7 +59,7 @@ export function DoctorPage() {
       <div className="info-bar">
         <span><em>{t('doc.workDays')}</em>{days || t('doc.noDays')}</span>
         {d.works_from && d.works_to && (
-          <span><em>{t('doc.hours')}</em>{d.works_from.slice(0, 5)} – {d.works_to.slice(0, 5)}</span>
+          <span><em>{t('doc.hours')}</em>{time(d.works_from)} – {time(d.works_to)}</span>
         )}
         <span className={balance > 0 ? 'is-danger' : ''}><em>{t('doc.balance')}</em>{money(balance)}</span>
       </div>
@@ -66,6 +69,8 @@ export function DoctorPage() {
           <button className={preset === 'this' ? 'is-active' : ''} onClick={() => pick('this')}>{t('fin.thisMonth')}</button>
           <button className={preset === 'last' ? 'is-active' : ''} onClick={() => pick('last')}>{t('fin.lastMonth')}</button>
         </div>
+        <input type="month" className="date-jump" value={monthKeyOf(range.from)} aria-label={t('doc.month')}
+          max={monthKeyOf(new Date().toISOString())} onChange={(e) => pickMonth(e.target.value)} />
       </div>
 
       <div className="stat-strip">
@@ -79,8 +84,12 @@ export function DoctorPage() {
         <section className="panel">
           <h2>{t('doc.money')}</h2>
           <dl className="totals wide">
-            <div><dt>{t('doc.earned', { percent: d.percent })}</dt><dd>{money(d.earned)}</dd></div>
+            <div><dt>{t('fin.collected')}</dt><dd>{money(d.collected)}</dd></div>
+            <div><dt>− {t('fin.labDeduction')}</dt><dd>{d.lab_cost ? money(d.lab_cost) : '—'}</dd></div>
+            <div><dt>{t('fin.base')}</dt><dd>{money(d.base_amount)}</dd></div>
+            <div><dt>{t('doc.earned', { percent: d.percent })}</dt><dd><strong>{money(d.earned)}</strong></dd></div>
             <div><dt>{t('doc.paidPeriod')}</dt><dd>{money(d.paid_in_period)}</dd></div>
+            <div className="totals-net"><dt>{t('doc.earnedTotal')}</dt><dd>{money(d.earned_all_time)}</dd></div>
             <div><dt>{t('doc.paidTotal')}</dt><dd>{money(d.paid_all_time)}</dd></div>
             <div className="totals-net"><dt>{t('doc.balance')}</dt><dd>{money(balance)}</dd></div>
           </dl>
@@ -105,6 +114,8 @@ export function DoctorPage() {
           )}
         </section>
       </div>
+
+      <DoctorPatients doctorId={d.user_id} />
 
       {dialog === 'profile' && <ProfileDialog doctor={d} onClose={() => setDialog(null)} />}
       {dialog === 'pay' && <PayoutDialog doctor={d} range={range} onClose={() => setDialog(null)} />}

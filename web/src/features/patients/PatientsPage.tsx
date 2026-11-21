@@ -6,11 +6,11 @@ import { useI18n } from '../../i18n'
 import { useDebounced } from '../../lib/useDebounced'
 import { ErrorNote } from '../../components/ErrorNote'
 import { Skeleton } from '../../components/Skeleton'
-import { searchPatients } from './api'
+import { searchMyPatients, searchPatients } from './api'
 import { PatientForm } from './PatientForm'
 
 export function PatientsPage() {
-  const { clinicId } = useMember()
+  const { clinicId, role, userId } = useMember()
   const { t, money } = useI18n()
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
@@ -18,8 +18,11 @@ export function PatientsPage() {
   const q = useDebounced(search)
 
   const patients = useQuery({
-    queryKey: ['patients', clinicId, q, showArchived],
-    queryFn: () => searchPatients(clinicId, q, showArchived),
+    queryKey: ['patients', clinicId, q, showArchived, role],
+    // Doctors see only their own patients; owner and reception see everyone.
+    queryFn: () => (role === 'doctor'
+      ? searchMyPatients(clinicId, userId, q)
+      : searchPatients(clinicId, q, showArchived)),
     placeholderData: keepPreviousData,
   })
 
@@ -40,10 +43,10 @@ export function PatientsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <label className="check">
+        {role !== 'doctor' && <label className="check">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
           <span>{t('archive.show')}</span>
-        </label>
+        </label>}
       </div>
 
       {patients.isError && <ErrorNote error={patients.error} onRetry={() => patients.refetch()} />}

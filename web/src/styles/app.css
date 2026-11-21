@@ -89,7 +89,10 @@ a { color: var(--ink); }
 }
 .field textarea { resize: vertical; }
 .field input[aria-invalid='true'] { border-color: var(--danger); }
-.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: start; }
+/* Side by side, one field having a hint under it must not stretch its
+   neighbour's input to match. */
+.field-row > .field { align-content: start; }
 .hint { color: var(--ink-soft); font-size: var(--step--1); }
 .form-error { color: var(--danger); font-size: var(--step--1); }
 
@@ -123,7 +126,9 @@ a { color: var(--ink); }
   border-inline-end: 1px solid var(--line);
   position: sticky; top: 0; height: 100vh;
 }
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+/* A menu row that acts rather than navigates (quick search) still looks like a link. */
+button.nav-link { width: 100%; border: 0; background: none; font: inherit; text-align: start; cursor: pointer; }
 .brand-mark { width: 28px; height: 28px; color: var(--gum); flex: none; }
 .brand-name { font-weight: 650; font-size: var(--step-1); line-height: 1.3; }
 .nav { display: grid; gap: 4px; }
@@ -157,6 +162,8 @@ a { color: var(--ink); }
 .table tbody tr:hover { background: #f8faf9; }
 .table .num { text-align: end; white-space: nowrap; }
 .phone { color: var(--ink-soft); text-align: start; white-space: nowrap; }
+/* A clock reads as one unit: never let "6:15" and "م" land on separate lines. */
+.clock { white-space: nowrap; }
 [dir='rtl'] .phone { text-align: end; }
 .row-link { font-weight: 500; text-decoration: none; }
 .row-link:hover { text-decoration: underline; }
@@ -224,19 +231,6 @@ a { color: var(--ink); }
 .plan-line { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
 .plan-title { font-weight: 500; }
 .plan-sub { display: flex; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
-
-/* ---------- Small screens: sidebar becomes a top bar ---------- */
-@media (max-width: 760px) {
-  .shell { grid-template-columns: 1fr; }
-  .sidebar {
-    position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center;
-    gap: 12px 20px; padding: 12px 16px; border-inline-end: 0; border-bottom: 1px solid var(--line);
-  }
-  .nav { display: flex; }
-  .sidebar-foot { margin-top: 0; margin-inline-start: auto; display: flex; gap: 14px; align-items: center; }
-  .whoami { display: none; }
-  .page { padding-top: 20px; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
@@ -378,11 +372,11 @@ a { color: var(--ink); }
 .calendar-page { max-width: none; }
 
 .cal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); overflow: auto; max-height: calc(100vh - 220px); }
-.cal-head, .cal-body { display: grid; grid-template-columns: 64px repeat(var(--chairs), minmax(180px, 1fr)); }
+.cal-head, .cal-body { display: grid; grid-template-columns: 76px repeat(var(--chairs), minmax(180px, 1fr)); }
 .cal-head { position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--line); }
 .cal-head span { padding: 10px 12px; font-weight: 600; font-size: var(--step--1); }
 .cal-times { display: flex; flex-direction: column; border-inline-end: 1px solid var(--line); }
-.cal-times span { font-size: var(--step--1); color: var(--ink-soft); padding-inline: 8px; line-height: 1; padding-top: 2px; }
+.cal-times span { font-size: var(--step--1); color: var(--ink-soft); padding-inline: 6px; line-height: 1; padding-top: 2px; white-space: nowrap; }
 .cal-col { position: relative; display: flex; flex-direction: column; border-inline-end: 1px solid var(--line); }
 .cal-col:last-child { border-inline-end: 0; }
 .cal-slot { border: 0; border-top: 1px dashed #edf1ef; background: transparent; cursor: pointer; padding: 0; }
@@ -689,3 +683,318 @@ tr.is-void-row td:last-child { text-decoration: none; }
 .logo-preview { width: 72px; height: 72px; object-fit: contain; border: 1px solid var(--line); border-radius: var(--r-control); padding: 6px; background: #fff; }
 .doctor-card { gap: 10px; }
 .doctor-card .panel-head { align-items: flex-start; }
+
+/* Patient note: a running scratchpad on the file, so it reads like paper. */
+.note-box {
+  width: 100%; min-height: 96px; padding: 12px 14px; resize: vertical;
+  border: 1px solid var(--line-strong); border-radius: var(--r-control);
+  background: var(--surface); color: var(--ink); font: inherit; line-height: 1.7;
+}
+.note-box::placeholder { color: var(--ink-soft); }
+
+/* ---------- Phone bars (hidden on desktop) ---------- */
+.topbar, .tabbar, .sheet-backdrop { display: none; }
+.icon-btn {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none;
+  border: 1px solid var(--line); border-radius: var(--r-control);
+  background: var(--surface); color: var(--ink-soft); cursor: pointer;
+}
+.icon-btn .icon { width: 20px; height: 20px; }
+
+/* ---------- Phone layout ----------
+   The sidebar is replaced by a slim top bar and a thumb-reachable bottom tab bar;
+   everything past the four daily screens lives in the "more" sheet. */
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    position: sticky; top: 0; z-index: 20;
+    padding: 10px 14px; padding-top: calc(10px + env(safe-area-inset-top));
+    background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .topbar .brand { flex: 1; min-width: 0; }
+  .topbar .brand-name { font-size: var(--step-0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .tabbar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    position: fixed; inset-inline: 0; bottom: 0; z-index: 20;
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab {
+    display: grid; justify-items: center; gap: 2px;
+    padding: 8px 4px 10px; min-height: 56px;
+    border: 0; background: none; font: inherit; font-size: 11px; font-weight: 500;
+    color: var(--ink-soft); text-decoration: none; cursor: pointer;
+  }
+  .tab .icon { width: 22px; height: 22px; }
+  .tab.active, .tab.is-on { color: var(--gum); }
+
+  /* Room for the tab bar, and a tighter page frame. */
+  .content { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .page { padding: 16px 14px 24px; gap: 16px; }
+  h1 { font-size: var(--step-2); }
+  .page-head { gap: 10px; }
+  .search { max-width: none; }
+
+  /* The "more" sheet */
+  .sheet-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 30;
+    background: rgb(19 50 47 / 0.35);
+  }
+  .sheet {
+    position: absolute; inset-inline: 0; bottom: 0;
+    background: var(--surface); border-radius: 18px 18px 0 0;
+    padding: 10px 16px calc(18px + env(safe-area-inset-bottom));
+    display: grid; gap: 14px; max-height: 85dvh; overflow-y: auto;
+  }
+  .sheet-grip { width: 42px; height: 4px; border-radius: 999px; background: var(--line-strong); justify-self: center; }
+  .sheet-nav { display: grid; gap: 2px; }
+  .sheet-nav .nav-link { padding: 12px; min-height: 48px; }
+  .sheet-foot { display: flex; gap: 10px; }
+  .sheet-foot .btn { flex: 1; }
+
+  /* Touch targets and iOS: a control under 16px makes Safari zoom on focus. */
+  .field input, .field select, .field textarea, .search, .picker input,
+  .cell-input, .cell-select, .inline-number, .date-jump, .link-box { font-size: 16px; }
+  .btn { min-height: 44px; }
+  .btn-small, .panel-head .btn { min-height: 38px; }
+  .link-btn { padding: 6px 0; }
+
+  /* Panels and tables */
+  .panel { padding: 16px 14px; }
+  .patient-grid { grid-template-columns: 1fr; }
+  .stat-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat { padding: 12px; gap: 10px; }
+  .stat strong { font-size: var(--step-1); }
+  .fin-figures { grid-template-columns: 1fr 1fr; }
+  .fin-figure strong { font-size: var(--step-2); }
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  .table th, .table td { padding: 10px 12px; }
+  .table-compact th, .table-compact td { padding: 8px 10px; }
+  .row-buttons { justify-content: flex-start; }
+  .totals, .payer-note { justify-self: stretch; }
+
+  /* Calendar: narrower chair columns so two fit on screen. */
+  .cal { max-height: calc(100dvh - 250px); }
+  .cal-head, .cal-body { grid-template-columns: 64px repeat(var(--chairs), minmax(140px, 1fr)); }
+
+  /* Dialogs become bottom sheets: easier to reach, and never clipped. */
+  .dialog {
+    width: 100%; max-width: 100%; max-height: 92dvh;
+    margin: 0 0 0 auto; position: fixed; inset-inline: 0; bottom: 0; top: auto;
+    border-radius: 18px 18px 0 0;
+  }
+  .dialog.quick { margin-top: 0; }
+  /* While a dialog is open the tab bar would sit on top of its buttons. */
+  body:has(dialog[open]) .tabbar { display: none; }
+  .dialog-body { padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+  .dialog-actions { position: sticky; bottom: 0; background: var(--surface); padding-block: 10px 2px; }
+  .dialog-actions .btn { flex: 1; }
+  .doc-signatures { grid-template-columns: 1fr; gap: 18px; }
+  .gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .login, .splash, .public-form, .receipt-page { min-height: 100dvh; }
+
+  /* Calendar controls: day navigation on its own row, then the filters. */
+  .cal-toolbar { display: grid; gap: 10px; min-width: 0; }
+  .day-nav { display: flex; gap: 8px; }
+  .day-nav .btn { flex: 1; padding-inline: 8px; }
+  /* A native date field keeps its own intrinsic width and spills out of the
+     column unless it is allowed to shrink. */
+  .cal-toolbar .date-jump {
+    width: 100%; min-width: 0;
+    -webkit-appearance: none; appearance: none;
+    /* iOS paints date and select text in its own blue once the native
+       appearance is off, so the colour has to be said out loud. */
+    color: var(--ink); background: var(--surface); text-align: start;
+  }
+
+  /* Dialog actions: even buttons in rows, instead of one stranded on its own. */
+  /* One action per row. A two-column grid leaves an odd button stranded
+     beside a gap, which is what made this sheet hard to read. */
+  .dialog .status-actions,
+  .dialog .head-actions,
+  .dialog .row-actions { display: grid; grid-template-columns: 1fr; gap: 8px; justify-content: stretch; }
+  .dialog .status-actions .btn,
+  .dialog .head-actions .btn,
+  .dialog .row-actions > .btn { width: 100%; min-height: 44px; }
+  /* A hairline between acting on the visit and leaving it. */
+  .dialog .row-actions { margin-top: 2px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+  /* Patient tabs: one scrolling row instead of a pill that wraps onto two lines. */
+  .segmented.tabs { display: flex; width: 100%; flex-wrap: nowrap; overflow-x: auto; border-radius: var(--r-control); }
+  .segmented.tabs button { flex: 1 0 auto; white-space: nowrap; }
+}
+
+/* Very small phones: labels under the tab icons get their own line budget. */
+@media (max-width: 360px) {
+  .tab { font-size: 10px; }
+  .stat-strip, .fin-figures { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .topbar, .tabbar, .sheet-backdrop { display: none !important; }
+}
+
+/* Dragging an appointment to another slot. The grab cursor is the only
+   hint reception gets, so the drop target has to be unmistakable. */
+.cal-appt.is-movable { cursor: grab; }
+.cal-appt.is-dragging { opacity: .4; cursor: grabbing; }
+/* While a drag is in flight the appointment blocks must not swallow the
+   drop: the slots underneath are the targets. */
+.cal-body.is-dragging .cal-appt { pointer-events: none; }
+.drag-hint { margin-top: 6px; }
+@media (hover: none) { .drag-hint { display: none; } }
+
+.cal-slot.is-drop {
+  background: var(--gum-soft);
+  outline: 2px solid var(--gum);
+  outline-offset: -2px;
+}
+
+/* Both signature lines sit on the same baseline, whatever is written above
+   them — the clinic column carries a name, the patient's does not. */
+.doc-signatures > div { display: flex; flex-direction: column; }
+.doc-signatures .sig-line { margin-top: auto; }
+
+/* The assistant: a chat. Header on top, the thread scrolls, the box stays at
+   the bottom — the page itself never scrolls. */
+.chat {
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+  max-width: 920px; margin-inline: auto; width: 100%;
+}
+.chat-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 18px clamp(16px, 3vw, 28px) 14px; border-bottom: 1px solid var(--line);
+}
+.chat-head .btn .icon { width: 16px; height: 16px; }
+.chat-title { display: flex; align-items: center; gap: 10px; }
+.chat-title h1 { font-size: var(--step-1); margin: 0; }
+.chat-avatar {
+  flex: none; display: grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--gum-soft); color: var(--gum);
+}
+.chat-avatar .icon { width: 18px; height: 18px; }
+.chat-avatar-lg { width: 56px; height: 56px; }
+.chat-avatar-lg .icon { width: 28px; height: 28px; }
+
+.chat-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.chat-thread { display: flex; flex-direction: column; gap: 14px; padding: 20px clamp(16px, 3vw, 28px); min-height: 100%; }
+
+.chat-empty { margin: auto; display: grid; justify-items: center; gap: 8px; text-align: center; padding: 24px 0; }
+.chat-empty h2 { margin: 6px 0 0; font-size: var(--step-1); }
+.chat-empty p { margin: 0; max-width: 46ch; }
+.chat-starters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 16px; width: min(560px, 100%); }
+.chat-starter {
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); color: var(--ink); font: inherit; text-align: start; cursor: pointer;
+}
+.chat-starter:hover { border-color: var(--gum); background: var(--gum-soft); }
+
+.msg { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
+.msg-me { justify-content: flex-end; }
+.bubble {
+  max-width: min(680px, 85%); padding: 10px 14px; border-radius: 18px;
+  line-height: 1.75; overflow-wrap: anywhere;
+}
+.msg-me .bubble {
+  white-space: pre-wrap; background: var(--ink); color: #fff;
+  border-end-end-radius: 6px;
+}
+.msg-bot .bubble {
+  background: var(--surface); border: 1px solid var(--line);
+  border-end-start-radius: 6px;
+}
+.msg-bot .bubble-error { padding: 0; border: 0; background: none; }
+.rich > * { margin: 0; }
+.rich > * + * { margin-top: 8px; }
+.rich ul, .rich ol { padding-inline-start: 22px; }
+.rich li + li { margin-top: 2px; }
+.rich li { white-space: pre-wrap; }
+.msg-meta { margin: 8px 0 0; padding-top: 6px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: var(--step--1); }
+
+/* Three dots while the answer is on its way. */
+.bubble-typing { display: flex; gap: 5px; padding: 14px 16px; }
+.bubble-typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft); animation: typing 1.2s infinite ease-in-out; }
+.bubble-typing span:nth-child(2) { animation-delay: .15s; }
+.bubble-typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes typing { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .bubble-typing span { animation: none; opacity: .6; } }
+
+.chat-composer {
+  display: flex; align-items: flex-end; gap: 8px;
+  margin: 0 clamp(16px, 3vw, 28px) 18px; padding: 8px 8px 8px 8px;
+  padding-inline-start: 16px;
+  border: 1px solid var(--line-strong); border-radius: 24px; background: var(--surface);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.chat-composer:focus-within { border-color: var(--gum); box-shadow: var(--focus); }
+.chat-composer textarea,
+.chat-composer textarea:focus,
+.chat-composer textarea:focus-visible {
+  flex: 1; min-width: 0; min-height: 0; width: auto; resize: none;
+  border: 0; outline: 0; box-shadow: none; border-radius: 0; background: none;
+  font: inherit; color: var(--ink); line-height: 1.6; padding: 6px 0; max-height: 160px;
+}
+.chat-send {
+  flex: none; width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer;
+  display: grid; place-items: center; background: var(--gum); color: #fff;
+}
+.chat-send:disabled { background: var(--line); color: var(--ink-soft); cursor: default; }
+.chat-send .icon { width: 18px; height: 18px; }
+/* The paper plane points the way the text runs. */
+[dir="rtl"] .icon-flip { transform: scaleX(-1); }
+/* Phones: the chat fits between the top bar and the tab bar. */
+@media (max-width: 860px) {
+  .chat { height: calc(100dvh - 49px - 68px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .chat-head { padding-block: 10px; }
+  .chat-composer { margin-bottom: 10px; }
+  .chat-starters { grid-template-columns: 1fr; }
+  .bubble { max-width: 88%; }
+}
+.rich bdi { white-space: nowrap; }
+
+/* Voice-to-record: a text box with a microphone at its edge. */
+.dictate { display: grid; gap: 6px; }
+.dictate-box { position: relative; }
+.dictate-box textarea {
+  width: 100%; min-height: 96px; resize: vertical; padding: 10px 12px; padding-inline-end: 56px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-control);
+  background: var(--surface); color: var(--ink); font: inherit; line-height: 1.7;
+}
+.dictate-box textarea:focus { outline: 0; border-color: var(--gum); box-shadow: var(--focus); }
+.dictate-box.is-recording textarea { border-color: var(--danger); }
+.dictate-mic {
+  position: absolute; inset-inline-end: 8px; top: 8px;
+  width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
+  display: grid; place-items: center; background: var(--gum-soft); color: var(--gum);
+}
+.dictate-mic .icon { width: 20px; height: 20px; }
+.dictate-mic.is-on { background: var(--danger); color: #fff; animation: rec-pulse 1.4s infinite; }
+.dictate-mic:disabled { opacity: .5; cursor: default; }
+@keyframes rec-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
+@media (prefers-reduced-motion: reduce) { .dictate-mic.is-on { animation: none; } }
+.dictate-status { margin: 0; min-height: 1.4em; display: flex; align-items: center; gap: 6px; }
+.rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; }
+.error-text { color: var(--danger); }
+.dictate-cta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.dictate-cta .btn .icon, .dictate-open .icon { width: 16px; height: 16px; }
+.dictate-open { justify-self: start; }
+.dictate-panel { display: grid; gap: 8px; padding: 12px; border: 1px dashed var(--line-strong); border-radius: var(--r-panel); background: var(--paper); }
+.warn-note { padding: 10px 14px; border-radius: var(--r-control); background: color-mix(in srgb, var(--warn) 10%, var(--surface)); color: var(--warn); }
+.warn-note ul { margin: 6px 0 0; padding-inline-start: 20px; }
+.draft-lines { display: grid; gap: 10px; }
+.draft-line {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: end;
+  padding: 10px; border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface);
+}
+.draft-line .field { margin: 0; align-self: start; }
+.draft-line .field:nth-of-type(1) { grid-column: span 4; }
+.draft-line .field:nth-of-type(2) { grid-column: span 2; }
+.draft-line .field:nth-of-type(3) { grid-column: span 2; }
+.draft-line .field:nth-of-type(4) { grid-column: span 3; }
+.draft-remove { grid-column: span 1; align-self: start; margin-top: 26px; }

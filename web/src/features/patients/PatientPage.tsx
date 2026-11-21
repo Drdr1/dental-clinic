@@ -19,11 +19,12 @@ import { PatientPrescriptions } from '../prescriptions/PatientPrescriptions'
 import { SessionDialog } from '../sessions/SessionDialog'
 import { getPatientFile } from './api'
 import { Timeline } from './Timeline'
+import { PatientNotes } from './PatientNotes'
 import { ToothHistory } from './ToothHistory'
 import { PatientFiles } from '../files/PatientFiles'
 import { PatientForm } from './PatientForm'
 import { PatientDangerZone } from './PatientDangerZone'
-import { getUpcomingForPatient } from '../appointments/api'
+import { getClinicDoctors, getUpcomingForPatient } from '../appointments/api'
 
 export function PatientPage() {
   const { id = '' } = useParams()
@@ -34,6 +35,7 @@ export function PatientPage() {
   const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files'>('overview')
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
   const upcoming = useQuery({ queryKey: ['appointments', id], queryFn: () => getUpcomingForPatient(id), enabled: !!id })
+  const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
   const ledger = useQuery({
     queryKey: ['ledger', id],
     queryFn: () => getPatientLedger(id, clinicId),
@@ -62,6 +64,7 @@ export function PatientPage() {
     + perSession.reduce((sum, b) => sum + (b.outstanding ?? 0), 0)
   const overdue = balances.reduce((sum, b) => sum + (b.overdue_amount ?? 0), 0)
   const nextAppointment = upcoming.data?.[0]
+  const doctorName = doctors.data?.find((d) => d.user_id === patient?.primary_doctor_id)?.display_name
 
   return (
     <section className="page patient">
@@ -100,6 +103,7 @@ export function PatientPage() {
       <PatientAllergies patientId={patient.id} groups={patient.allergy_groups ?? []} />
 
       <div className="info-bar">
+        {doctorName && <span><em>{t('patientForm.doctor')}</em>{doctorName}</span>}
         <span><em>{t('patient.nextVisit')}</em>{nextAppointment ? date(nextAppointment.starts_at) : t('common.none')}</span>
         <span className={recallOverdue && !inTreatment ? 'is-danger' : ''}>
           <em>{t('patient.recall')}</em>
@@ -123,6 +127,8 @@ export function PatientPage() {
             <PatientAppointments patient={{
               id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
             }} />
+
+            <PatientNotes patientId={id} initial={patient.notes} />
 
             <section className="panel panel-wide">
               <div className="panel-head">
@@ -235,7 +241,9 @@ export function PatientPage() {
           id: patient.id, full_name: patient.full_name, phone: patient.phone, whatsapp_phone: patient.whatsapp_phone,
           gender: patient.gender, date_of_birth: patient.date_of_birth, medical_alerts: patient.medical_alerts,
           source: patient.source, source_note: patient.source_note, payer_id: patient.payer_id,
+          primary_doctor_id: patient.primary_doctor_id,
           recall_interval_months: patient.recall_interval_months,
+          national_id: patient.national_id, address: patient.address,
         }} />
       )}
       {dialog === 'plan' && <NewPlanDialog patientId={id} onClose={() => setDialog(null)} />}

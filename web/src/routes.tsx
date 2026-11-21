@@ -9,7 +9,9 @@ import { PlanPage } from './features/plans/PlanPage'
 import { TodayPage } from './features/today/TodayPage'
 import { AppointmentsPage } from './features/appointments/AppointmentsPage'
 import { SettingsPage } from './features/settings/SettingsPage'
+import { AssistantPage } from './features/assistant/AssistantPage'
 import { LabsPage } from './features/labs/LabsPage'
+import { LabPage } from './features/labs/LabPage'
 import { MaterialsPage } from './features/materials/MaterialsPage'
 import { FinancePage } from './features/finance/FinancePage'
 import { CashPage } from './features/cash/CashPage'
@@ -39,7 +41,9 @@ export const router = createBrowserRouter([
           { path: 'today', element: <TodayPage /> },
           { path: 'appointments', element: <AppointmentsPage /> },
           { path: 'settings', element: <SettingsPage /> },
+          { path: 'assistant', element: <AssistantPage /> },
           { path: 'labs', element: <LabsPage /> },
+          { path: 'labs/:id', element: <LabPage /> },
           { path: 'materials', element: <MaterialsPage /> },
           { path: 'finance', element: <FinancePage /> },
           { path: 'cash', element: <CashPage /> },

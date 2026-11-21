@@ -13,6 +13,12 @@ const paths: Record<string, string> = {
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2',
   alert: 'M12 9v4M12 17h.01M10.3 4.3 2.6 17.4A2 2 0 0 0 4.3 20.4h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z',
   box: 'M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z',
+  assistant: 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4V6Z M9 9h6M9 12h4',
+  mic: 'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6',
+  stop: 'M7 7h10v10H7V7Z',
+  plus: 'M12 5v14M5 12h14',
+  send: 'M21 3 10 14M21 3l-6.5 18-4.5-7-7-4.5L21 3Z',
+  more: 'M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z M19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z',
 }
 
 export function Icon({ name, className }: { name: keyof typeof paths | string; className?: string }) {

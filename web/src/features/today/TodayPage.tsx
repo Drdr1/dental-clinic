@@ -10,13 +10,15 @@ import { templates, waMessage } from '../../lib/whatsapp'
 import { installmentStatusKey, installmentTone } from '../payments/labels'
 import { getToday } from './api'
 import { apptStatusKey } from '../appointments/labels'
-import { minutesOfDay, minutesToTime } from '../appointments/time'
 
 const agendaOrder = ['overdue', 'in_grace', 'due', 'upcoming']
 
 export function TodayPage() {
-  const { clinicId, clinicName } = useMember()
-  const { t, money, date } = useI18n()
+  const { clinicId, clinicName, role } = useMember()
+  // Clinic-wide money belongs to whoever handles it: the owner and reception.
+  // Doctors still see each patient's own balance, which the session lock depends on.
+  const seesMoney = role !== 'doctor'
+  const { t, money, date, time } = useI18n()
   const q = useQuery({ queryKey: ['today', clinicId], queryFn: () => getToday(clinicId), refetchInterval: 5 * 60_000 })
 
   if (q.isPending) return <section className="page"><Skeleton variant="cards" rows={4} /><Skeleton rows={4} /></section>
@@ -45,17 +47,21 @@ export function TodayPage() {
             <span>{t('today.statAppointments', { done: appointments.filter((a) => a.status === 'done').length })}</span>
           </div>
         </div>
-        <div className="stat">
-          <Icon name="cash" />
-          <div><strong>{money(collectedToday)}</strong><span>{t('today.statCollected')}</span></div>
-        </div>
-        <div className={`stat ${overdueAmount > 0 ? 'is-warn' : ''}`}>
-          <Icon name="clock" />
-          <div>
-            <strong>{money(overdueAmount)}</strong>
-            <span>{t('today.statOverdue', { n: agenda.filter((a) => a.status === 'overdue').length })}</span>
-          </div>
-        </div>
+        {seesMoney && (
+          <>
+            <div className="stat">
+              <Icon name="cash" />
+              <div><strong>{money(collectedToday)}</strong><span>{t('today.statCollected')}</span></div>
+            </div>
+            <div className={`stat ${overdueAmount > 0 ? 'is-warn' : ''}`}>
+              <Icon name="clock" />
+              <div>
+                <strong>{money(overdueAmount)}</strong>
+                <span>{t('today.statOverdue', { n: agenda.filter((a) => a.status === 'overdue').length })}</span>
+              </div>
+            </div>
+          </>
+        )}
         <div className={`stat ${labs.length + lowStock.length > 0 ? 'is-warn' : ''}`}>
           <Icon name="alert" />
           <div>
@@ -79,7 +85,7 @@ export function TodayPage() {
             {appointments.map((a) => (
               <li key={a.id}>
                 <div className="appt-line">
-                  <span className="appt-time" dir="ltr">{minutesToTime(minutesOfDay(a.starts_at))}</span>
+                  <span className="appt-time">{time(a.starts_at)}</span>
                   <div>
                     <Link to={`/patients/${a.patient_id}`} className="row-link">{a.patientName}</Link>
                     {a.alerts && <span className="alert-dot" aria-label={t('patients.alert')} />}
@@ -118,7 +124,7 @@ export function TodayPage() {
         </section>
       )}
 
-      {agenda.length > 0 && (
+      {seesMoney && agenda.length > 0 && (
         <section className="panel">
           <h2>{t('today.installments', { n: agenda.length })}</h2>
           <div className="table-wrap">

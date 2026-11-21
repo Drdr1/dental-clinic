@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
+import { Link } from 'react-router'
 import { useI18n } from '../../i18n'
+import type { MessageKey } from '../../i18n/en'
+import { methodKey } from '../payments/labels'
 import { ErrorNote } from '../../components/ErrorNote'
 import { shiftDate } from '../appointments/time'
 import { todayLocal } from '../../lib/dates'
@@ -9,17 +12,19 @@ import { closeDay, getClosers, getClosings, getDay } from './api'
 
 export function CashPage() {
   const { clinicId, role } = useMember()
-  const { t, money, date: fmtDate } = useI18n()
+  const { t, money, date: fmtDate, time } = useI18n()
   const qc = useQueryClient()
   const [day, setDay] = useState(todayLocal())
   const [counted, setCounted] = useState('')
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
-  const owner = role === 'owner'
+  // Reception holds the drawer and counts it at night, so she gets this
+  // screen. The money reports stay owner-only.
+  const canCash = role === 'owner' || role === 'receptionist'
 
-  const summary = useQuery({ queryKey: ['cash', clinicId, day], queryFn: () => getDay(clinicId, day), enabled: owner })
-  const history = useQuery({ queryKey: ['cash-history', clinicId], queryFn: () => getClosings(clinicId), enabled: owner })
-  const closers = useQuery({ queryKey: ['closers', clinicId], queryFn: () => getClosers(clinicId), enabled: owner })
+  const summary = useQuery({ queryKey: ['cash', clinicId, day], queryFn: () => getDay(clinicId, day), enabled: canCash })
+  const history = useQuery({ queryKey: ['cash-history', clinicId], queryFn: () => getClosings(clinicId), enabled: canCash })
+  const closers = useQuery({ queryKey: ['closers', clinicId], queryFn: () => getClosers(clinicId), enabled: canCash })
 
   const save = useMutation({
     mutationFn: () => closeDay(clinicId, day, Number(counted), reason, note),
@@ -30,7 +35,7 @@ export function CashPage() {
     },
   })
 
-  if (!owner) return <section className="page"><p className="empty">{t('cash.ownerOnly')}</p></section>
+  if (!canCash) return <section className="page"><p className="empty">{t('cash.ownerOnly')}</p></section>
 
   const s = summary.data
   const diff = s && counted !== '' ? Math.round((Number(counted) - s.expected_cash) * 100) / 100 : null
@@ -64,6 +69,65 @@ export function CashPage() {
             <div><dt>{t('cash.out')}</dt><dd>−{money(s.cash_out)}</dd></div>
             <div className="totals-net"><dt>{t('cash.expected')}</dt><dd>{money(s.expected_cash)}</dd></div>
           </dl>
+
+          {/* The day itself, so a count that doesn't match can be traced to a line. */}
+          {s.payments.length > 0 && (
+            <>
+              <h3>{t('cash.tookToday', { n: s.payments.length })}</h3>
+              <div className="table-wrap">
+                <table className="table table-compact">
+                  <thead><tr>
+                    <th>{t('cash.at')}</th>
+                    <th>{t('receipt.receivedFrom')}</th>
+                    <th>{t('pay.method')}</th>
+                    <th>{t('cash.takenBy')}</th>
+                    <th className="num">{t('pay.amount')}</th>
+                  </tr></thead>
+                  <tbody>
+                    {s.payments.map((p) => (
+                      <tr key={p.id} className={p.is_reversal ? 'is-void-row' : ''}>
+                        <td className="muted clock">{time(p.at)}</td>
+                        <td>
+                          <Link to={`/patients/${p.patient_id}`} className="row-link">{p.patient}</Link>
+                          {p.note && <p className="muted small">{p.note}</p>}
+                        </td>
+                        <td>
+                          {t(methodKey(p.method))}
+                          {p.method !== 'cash' && <span className="badge badge-muted"> {t('cash.notInDrawer')}</span>}
+                        </td>
+                        <td className="muted">{p.taken_by}</td>
+                        <td className="num">{money(p.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <dl className="totals wide">
+                {Object.entries(s.income_by_method).sort((a, b) => b[1] - a[1]).map(([mth, v]) => (
+                  <div key={mth}><dt>{t(methodKey(mth))}</dt><dd>{money(v)}</dd></div>
+                ))}
+              </dl>
+            </>
+          )}
+
+          {s.cash_expenses.length > 0 && (
+            <>
+              <h3>{t('cash.paidOut')}</h3>
+              <div className="table-wrap">
+                <table className="table table-compact">
+                  <tbody>
+                    {s.cash_expenses.map((e) => (
+                      <tr key={e.id}>
+                        <td>{t(`fin.cat.${e.category}` as MessageKey)}</td>
+                        <td className="muted">{[e.paid_to, e.note].filter(Boolean).join(' — ')}</td>
+                        <td className="num">−{money(e.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
           {s.closing ? (
             <div className="closed-box">

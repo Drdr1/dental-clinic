@@ -68,14 +68,15 @@ export function AppointmentDetails({ appointment: a, onClose, onEdit }: Props) {
           <span className="head-actions">
             <Link className="btn btn-small" to={`/patients/${a.patient_id}`}>{t('appt.openFile')}</Link>
             {a.status === 'booked' && <button className="btn btn-small" onClick={onEdit}>{t('appt.reschedule')}</button>}
+            {a.patientPhone && a.status === 'booked' && (
+              <a className="btn btn-small" target="_blank" rel="noreferrer"
+                href={waMessage(a.patientPhone, templates.appointment({ name: a.patientName, clinic: clinicName, startsAt: a.starts_at }))}>
+                {t('appt.confirmWhatsapp')}
+              </a>
+            )}
+            {/* Leaving the sheet comes last, under everything it could be mistaken for. */}
             <button className="btn btn-small" onClick={onClose}>{t('common.close')}</button>
           </span>
-          {a.patientPhone && a.status === 'booked' && (
-            <a className="btn btn-small" target="_blank" rel="noreferrer"
-              href={waMessage(a.patientPhone, templates.appointment({ name: a.patientName, clinic: clinicName, startsAt: a.starts_at }))}>
-              {t('appt.confirmWhatsapp')}
-            </a>
-          )}
         </div>
       </div>
     </Modal>

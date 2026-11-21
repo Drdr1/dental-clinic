@@ -1,11 +1,11 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
 import { PatientPicker, type PickedPatient } from '../../components/PatientPicker'
-import { getClinicCalendar, getPatientPlans, saveAppointment, type DayAppointment, getClinicDoctors } from './api'
+import { getClinicCalendar, getPatientDoctor, getPatientPlans, saveAppointment, type DayAppointment, getClinicDoctors } from './api'
 import { localDateOf, localToIso, minutesOfDay, minutesToTime, timeToMinutes } from './time'
 
 const DURATIONS = [15, 30, 45, 60, 90, 120]
@@ -19,8 +19,8 @@ type Props = {
 }
 
 export function AppointmentDialog({ onClose, appointment, initial }: Props) {
-  const { clinicId } = useMember()
-  const { t } = useI18n()
+  const { clinicId, userId, role } = useMember()
+  const { t, time: clock } = useI18n()
   const queryClient = useQueryClient()
   const calendar = useQuery({ queryKey: ['calendar', clinicId], queryFn: () => getClinicCalendar(clinicId) })
 
@@ -31,13 +31,23 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
   )
   const [planId, setPlanId] = useState(appointment?.treatment_plan_id ?? initial?.planId ?? '')
   const [chairId, setChairId] = useState(appointment?.chair_id ?? initial?.chairId ?? '')
-  const [doctorId, setDoctorId] = useState(appointment?.doctor_id ?? '')
+  const [doctorId, setDoctorId] = useState(appointment?.doctor_id ?? (role === 'doctor' ? userId : ''))
   const [date, setDate] = useState(appointment ? localDateOf(appointment.starts_at) : initial?.date ?? '')
   const [time, setTime] = useState(appointment ? minutesToTime(minutesOfDay(appointment.starts_at)) : initial?.time ?? '')
   const [duration, setDuration] = useState(
     appointment ? Math.round((Date.parse(appointment.ends_at) - Date.parse(appointment.starts_at)) / 60000) : 30,
   )
   const [notes, setNotes] = useState(appointment?.notes ?? '')
+
+  // Reception rarely books "for nobody": fall back to the patient's own doctor.
+  const patientDoctor = useQuery({
+    queryKey: ['patient-doctor', patient?.id],
+    queryFn: () => getPatientDoctor(patient!.id),
+    enabled: !!patient && !appointment,
+  })
+  useEffect(() => {
+    if (!doctorId && patientDoctor.data) setDoctorId(patientDoctor.data)
+  }, [patientDoctor.data, doctorId])
 
   const plans = useQuery({
     queryKey: ['patient-plans', patient?.id],
@@ -56,7 +66,11 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
     return out
   }, [calendar.data])
 
-  const valid = !!patient && !!effectiveChair && !!date && !!time && duration > 0
+  // Every appointment belongs to a doctor: that is what puts it on his calendar,
+  // and what decides whose collections and lab bills it counts towards.
+  const needsDoctor = (doctors.data?.length ?? 0) > 0
+  const valid = !!patient && !!effectiveChair && !!date && !!time && duration > 0 &&
+    (!needsDoctor || !!doctorId)
 
   const save = useMutation({
     mutationFn: () => {
@@ -117,7 +131,7 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
             <span>{t('appt.time')}</span>
             <select required value={time} onChange={(e) => setTime(e.target.value)}>
               <option value="" disabled>{t('appt.chooseTime')}</option>
-              {slots.map((s) => <option key={s} value={s}>{s}</option>)}
+              {slots.map((s) => <option key={s} value={s}>{clock(s)}</option>)}
             </select>
           </label>
         </div>
@@ -133,7 +147,7 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
             <label className="field">
               <span>{t('doc.doctor')}</span>
               <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
-                <option value="">{t('doc.unassigned')}</option>
+                <option value="" disabled>{t('doc.pick')}</option>
                 {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
               </select>
             </label>

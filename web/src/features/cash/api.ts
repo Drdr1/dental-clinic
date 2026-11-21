@@ -3,6 +3,27 @@ import type { Tables } from '../../types/database'
 
 export type Closing = Tables<'cash_closings'>
 
+export type DayPayment = {
+  id: string
+  at: string
+  receipt_no: number
+  patient_id: string
+  patient: string
+  amount: number
+  method: string
+  note: string | null
+  is_reversal: boolean
+  taken_by: string
+}
+
+export type DayExpense = {
+  id: string
+  category: string
+  amount: number
+  paid_to: string | null
+  note: string | null
+}
+
 export type DaySummary = {
   date: string
   opening_float: number
@@ -10,6 +31,11 @@ export type DaySummary = {
   cash_out: number
   expected_cash: number
   closing: Closing | null
+  /** Every payment of the day, cash or not, in the order it was taken. */
+  payments: DayPayment[]
+  /** What was paid out of the drawer in cash. */
+  cash_expenses: DayExpense[]
+  income_by_method: Record<string, number>
 }
 
 export async function getDay(clinicId: string, date: string): Promise<DaySummary> {

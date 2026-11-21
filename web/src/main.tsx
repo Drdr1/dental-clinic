@@ -12,6 +12,14 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: true } },
 })
 
+// Registered only so the app can be installed on a phone's home screen.
+// The worker caches nothing (see public/sw.js) — clinic data is always fetched live.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <I18nProvider>

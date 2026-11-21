@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
 import { templates, waMessage } from '../../lib/whatsapp'
+import { assignDoctor, getClinicDoctors } from '../appointments/api'
 import { confirmBooking, getPendingBookings } from './api'
 
 /** Online bookings waiting for reception to call and confirm. */
@@ -12,8 +14,15 @@ export function PendingBookings() {
   const { t, date } = useI18n()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['pending-bookings', clinicId], queryFn: () => getPendingBookings(clinicId) })
+  const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
+  // A booking made online names no doctor, so reception says who is taking it.
+  const [picked, setPicked] = useState<Record<string, string>>({})
   const confirm = useMutation({
-    mutationFn: confirmBooking,
+    mutationFn: async (id: string) => {
+      const doctorId = picked[id]
+      if (doctorId) await assignDoctor(id, doctorId)
+      await confirmBooking(id)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pending-bookings'] })
       qc.invalidateQueries({ queryKey: ['today'] })
@@ -49,7 +58,16 @@ export function PendingBookings() {
                 }))}>
                 {t('appt.confirmWhatsapp')}
               </a>
-              <button className="btn btn-small btn-primary" disabled={confirm.isPending}
+              {(doctors.data?.length ?? 0) > 0 && (
+                <select className="cell-select" aria-label={t('doc.doctor')}
+                  value={picked[b.id] ?? ''}
+                  onChange={(e) => setPicked({ ...picked, [b.id]: e.target.value })}>
+                  <option value="" disabled>{t('doc.pick')}</option>
+                  {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
+                </select>
+              )}
+              <button className="btn btn-small btn-primary"
+                disabled={confirm.isPending || ((doctors.data?.length ?? 0) > 0 && !picked[b.id])}
                 onClick={() => confirm.mutate(b.id)}>{t('book.confirm')}</button>
             </div>
           </li>

@@ -17,8 +17,13 @@ export type Doctor = {
   patients: number
   work_value: number
   collected: number
+  lab_cost: number
+  base_amount: number
+  /** The selected period. */
   earned: number
   paid_in_period: number
+  /** Since the clinic started — the balance is taken from these two. */
+  earned_all_time: number
   paid_all_time: number
   appointments: number
 }
@@ -67,4 +72,20 @@ export async function getPayouts(clinicId: string, userId: string): Promise<Payo
     .order('paid_on', { ascending: false }).limit(50)
   if (error) throw error
   return data as Payout[]
+}
+
+export type Attribution = {
+  income: number
+  attributed: number
+  unattributed: number
+  orphan_payments: number
+}
+
+/** The period's income against what reached a doctor — the figure that has to close. */
+export async function getAttribution(clinicId: string, from: string, to: string): Promise<Attribution> {
+  const { data, error } = await supabase.rpc('collection_attribution', {
+    p_clinic: clinicId, p_from: from, p_to: to,
+  })
+  if (error) throw error
+  return data as unknown as Attribution
 }

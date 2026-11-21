@@ -43,9 +43,9 @@ async function withPeople(rows: Appointment[]): Promise<DayAppointment[]> {
   })
 }
 
-export async function getDay(clinicId: string, date: string): Promise<DayAppointment[]> {
+export async function getDay(clinicId: string, date: string, doctorId?: string | null): Promise<DayAppointment[]> {
   const { from, to } = dayRange(date)
-  const { data, error } = await supabase
+  let query = supabase
     .from('appointments')
     .select('*')
     .eq('clinic_id', clinicId)
@@ -53,6 +53,11 @@ export async function getDay(clinicId: string, date: string): Promise<DayAppoint
     .lt('starts_at', to)
     .neq('status', 'cancelled')
     .order('starts_at')
+
+  // A doctor's calendar is their own; the owner can narrow to one doctor.
+  // Nothing in the app books without a doctor any more, so nothing goes missing.
+  if (doctorId) query = query.eq('doctor_id', doctorId)
+  const { data, error } = await query
   if (error) throw error
   return withPeople(data)
 }
@@ -122,4 +127,17 @@ export async function getClinicDoctors(clinicId: string) {
     .order('display_name')
   if (error) throw error
   return data
+}
+
+/** Puts an appointment in a doctor's hands (used when an online booking is confirmed). */
+export async function assignDoctor(appointmentId: string, doctorId: string) {
+  const { error } = await supabase.from('appointments').update({ doctor_id: doctorId }).eq('id', appointmentId)
+  if (error) throw error
+}
+
+/** The patient's own doctor, used to pre-fill the booking form. */
+export async function getPatientDoctor(patientId: string): Promise<string | null> {
+  const { data, error } = await supabase.from('patients').select('primary_doctor_id').eq('id', patientId).single()
+  if (error) throw error
+  return data?.primary_doctor_id ?? null
 }

@@ -69,12 +69,30 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
         <select value={s.commission_basis} onChange={(e) => set('commission_basis', e.target.value)}>
           <option value="work">{t('settings.basisWork')}</option>
           <option value="collection">{t('settings.basisCollection')}</option>
+          <option value="collection_net_lab">{t('settings.basisNetLab')}</option>
           <option value="clinic_income">{t('settings.basisClinicIncome')}</option>
         </select>
         <small className="hint">{t('settings.commissionBasisHint')}</small>
       </label>
 
+      <label className="field">
+        <span>{t('settings.adminPercent')}</span>
+        <input type="number" min={0} max={100} step="any" required dir="ltr" value={s.admin_percent}
+          onChange={(e) => set('admin_percent', Number(e.target.value))} />
+        <small className="hint">{t('settings.adminPercentHint')}</small>
+      </label>
+
       <h3>{t('settings.installmentRules')}</h3>
+
+      <label className="field">
+        <span>{t('inst.dueDay')}</span>
+        <select value={s.installment_day ?? ''}
+          onChange={(e) => set('installment_day', e.target.value ? Number(e.target.value) : null)}>
+          {[5, 10, 15, 20, 25].map((d) => <option key={d} value={d}>{t('inst.dayOfMonth', { n: d })}</option>)}
+          <option value="">{t('inst.noFixedDay')}</option>
+        </select>
+        <small className="hint">{t('settings.dueDayHint')}</small>
+      </label>
       <div className="field-row">
         <label className="field">
           <span>{t('settings.graceDays')}</span>
@@ -87,6 +105,30 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
           <input type="number" min={1} max={12} required dir="ltr" value={s.lock_threshold}
             onChange={(e) => set('lock_threshold', Number(e.target.value))} />
           <small className="hint">{t('settings.lockThresholdHint')}</small>
+        </label>
+      </div>
+
+      <label className="field">
+        <span>{t('settings.suspendAfter')}</span>
+        <input type="number" min={1} max={90} required dir="ltr" value={s.suspend_after_days}
+          onChange={(e) => set('suspend_after_days', Number(e.target.value))} />
+        <small className="hint">{t('settings.suspendAfterHint')}</small>
+      </label>
+
+      {/* Printed on every installment contract: who signs for the clinic,
+          and whose courts hear a dispute. */}
+      <div className="field-row">
+        <label className="field">
+          <span>{t('settings.representedBy')}</span>
+          <input value={s.represented_by ?? ''} maxLength={80}
+            onChange={(e) => set('represented_by', e.target.value || null)} />
+          <small className="hint">{t('settings.representedByHint')}</small>
+        </label>
+        <label className="field">
+          <span>{t('settings.legalVenue')}</span>
+          <input value={s.legal_venue ?? ''} maxLength={60}
+            onChange={(e) => set('legal_venue', e.target.value || null)} />
+          <small className="hint">{t('settings.legalVenueHint')}</small>
         </label>
       </div>
 

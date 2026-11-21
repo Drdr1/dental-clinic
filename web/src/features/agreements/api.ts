@@ -3,13 +3,17 @@ import { supabase } from '../../lib/supabase'
 export type AgreementTerms = {
   clinic: string
   currency: string
-  patient: { name: string; phone: string }
+  /** Absent on agreements signed before clause set 2. */
+  represented_by?: string | null
+  legal_venue?: string | null
+  clauses_version?: number
+  patient: { name: string; phone: string; national_id?: string | null; address?: string | null }
   treatment: { title: string; discount: number; items: Array<{ description: string | null; tooth: number | null; price: number }> }
   net_total: number
   down_payment: number
   paid_to_date: number
   schedule: Array<{ seq: number; down_payment: boolean; due_date: string; amount: number; paid: number }>
-  rules: { grace_days: number; session_lock_after_overdue: number; late_fees: boolean; installment_price_equals_cash: boolean }
+  rules: { grace_days: number; session_lock_after_overdue: number; suspend_after_days?: number; late_fees: boolean; installment_price_equals_cash: boolean }
   reason: string
   generated_at: string
 }
@@ -37,5 +41,12 @@ export async function signAgreement(id: string, name: string, signature: string)
   const { error } = await supabase.rpc('sign_installment_agreement', {
     p_agreement_id: id, p_signed_by_name: name.trim(), p_signature_data: signature,
   })
+  if (error) throw error
+}
+
+/** Issue a new version of an old contract on the current clauses.
+ *  The signed version stays exactly as it was signed. */
+export async function reissueAgreement(planId: string) {
+  const { error } = await supabase.rpc('reissue_installment_agreement', { p_plan: planId })
   if (error) throw error
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useMember } from '../features/auth/AuthProvider'
-import { searchPatients } from '../features/patients/api'
+import { searchMyPatients, searchPatients } from '../features/patients/api'
 import { useDebounced } from '../lib/useDebounced'
 import { useI18n } from '../i18n'
 import { Icon } from './Icon'
@@ -11,7 +11,7 @@ type Target = { label: string; to: string; hint?: string }
 
 /** Ctrl/⌘+K from anywhere: jump to a patient or a screen. */
 export function QuickSearch() {
-  const { clinicId, role } = useMember()
+  const { clinicId, role, userId } = useMember()
   const { t, money } = useI18n()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -36,8 +36,8 @@ export function QuickSearch() {
   }, [open])
 
   const patients = useQuery({
-    queryKey: ['patients', clinicId, term],
-    queryFn: () => searchPatients(clinicId, term),
+    queryKey: ['patients', clinicId, term, role],
+    queryFn: () => (role === 'doctor' ? searchMyPatients(clinicId, userId, term) : searchPatients(clinicId, term)),
     enabled: open && term.trim().length >= 2,
   })
 

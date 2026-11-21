@@ -1,11 +1,15 @@
-import { useState, type FormEvent } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '../auth/AuthProvider'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAuth, useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
 import { errorKey } from '../../lib/errors'
+import { getClinicDoctors, getPatientDoctor } from '../appointments/api'
 import { recordSession } from './api'
+import { DictateBox } from '../dictation/DictateBox'
+import { draftSession } from '../dictation/api'
+import { Icon } from '../../components/Icon'
 
 export type OpenItem = { id: string; label: string }
 
@@ -17,6 +21,7 @@ type Props = {
 
 export function SessionDialog({ patientId, plan, onClose }: Props) {
   const { isDoctor } = useAuth()
+  const { clinicId, userId, role } = useMember()
   const { t } = useI18n()
   const queryClient = useQueryClient()
   const [done, setDone] = useState<Set<string>>(new Set())
@@ -24,6 +29,29 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
   const [isRecall, setIsRecall] = useState(!plan)
   const [overrideReason, setOverrideReason] = useState('')
   const [locked, setLocked] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
+  const [spoken, setSpoken] = useState('')
+  const [filled, setFilled] = useState(false)
+
+  // Say what was done; the boxes below fill in. She still reads them and
+  // presses save — the draft only fills the same fields she could fill by hand.
+  const understand = useMutation({
+    mutationFn: () => draftSession(clinicId, spoken, plan?.openItems ?? []),
+    onSuccess: (d) => {
+      if (d.doneItemIds.length) setDone(new Set(d.doneItemIds))
+      const parts = [d.note.trim(), d.next.trim() && `${t('dict.next')}: ${d.next.trim()}`].filter(Boolean)
+      if (parts.length) setNotes((n) => [n.trim(), ...parts].filter(Boolean).join('\n'))
+      setFilled(true)
+    },
+  })
+  // Who did the work. Reception saves most visits, so this has to be said
+  // rather than taken from whoever is signed in.
+  const [doctorId, setDoctorId] = useState(role === 'doctor' || role === 'owner' ? userId : '')
+  const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
+  const patientDoctor = useQuery({ queryKey: ['patient-doctor', patientId], queryFn: () => getPatientDoctor(patientId) })
+  useEffect(() => {
+    if (!doctorId && patientDoctor.data) setDoctorId(patientDoctor.data)
+  }, [patientDoctor.data, doctorId])
 
   const save = useMutation({
     mutationFn: () =>
@@ -33,6 +61,7 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
         notes,
         isRecallVisit: isRecall,
         doneItemIds: [...done],
+        doctorId: doctorId || null,
         override: locked ? { reason: overrideReason } : undefined,
       }),
     onSuccess: () => {
@@ -55,7 +84,9 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
     })
   }
 
-  const canSubmit = !save.isPending && (!locked || (isDoctor && overrideReason.trim().length > 0))
+  const needsDoctor = (doctors.data?.length ?? 0) > 0
+  const canSubmit = !save.isPending && (!needsDoctor || !!doctorId) &&
+    (!locked || (isDoctor && overrideReason.trim().length > 0))
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -65,6 +96,24 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
   return (
     <Modal title={plan ? t('session.titlePlan', { plan: plan.title }) : t('session.titleVisit')} onClose={onClose}>
       <form onSubmit={onSubmit} className="dialog-form">
+        {!speaking ? (
+          <button type="button" className="btn dictate-open" onClick={() => setSpeaking(true)}>
+            <Icon name="mic" /> {t('dict.sessionButton')}
+          </button>
+        ) : (
+          <div className="dictate-panel">
+            <DictateBox value={spoken} onChange={(v) => { setSpoken(v); setFilled(false) }}
+              placeholder={t('dict.sessionPlaceholder')} />
+            <div className="row-buttons">
+              <button type="button" className="btn btn-primary" disabled={!spoken.trim() || understand.isPending}
+                onClick={() => understand.mutate()}>
+                {understand.isPending ? t('dict.understanding') : t('dict.fill')}
+              </button>
+            </div>
+            {understand.isError && <ErrorNote error={understand.error} />}
+            {filled && <p className="hint">{t('dict.filled')}</p>}
+          </div>
+        )}
         {plan && plan.openItems.length > 0 && (
           <fieldset className="checklist">
             <legend>{t('session.whatWasDone')}</legend>
@@ -75,6 +124,17 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
               </label>
             ))}
           </fieldset>
+        )}
+
+        {needsDoctor && (
+          <label className="field">
+            <span>{t('session.doctor')}</span>
+            <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
+              <option value="" disabled>{t('doc.pick')}</option>
+              {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
+            </select>
+            <small className="hint">{t('session.doctorHint')}</small>
+          </label>
         )}
 
         <label className="field">

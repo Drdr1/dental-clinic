@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
@@ -10,17 +10,20 @@ import { PlanStatusBadge } from '../../components/PlanStatusBadge'
 import { SessionDialog } from '../sessions/SessionDialog'
 import { DirectPaymentDialog } from '../payments/DirectPaymentDialog'
 import { PaymentList } from '../payments/PaymentList'
+import { Icon } from '../../components/Icon'
 import { AddItemsForm } from './AddItemsForm'
+import { DictatePlanDialog } from '../dictation/DictatePlanDialog'
 import { InstallmentSetupDialog } from './InstallmentSetupDialog'
-import { cancelInstallmentPlan, cancelItem, getPlan, setDiscount, setStatus, type PlanItem, type PlanStatus } from './api'
+import { cancelInstallmentPlan, cancelItem, cancelPlan, deletePlan, getPlan, setDiscount, setStatus, type PlanItem, type PlanStatus } from './api'
 
-type Dialog = 'installments' | 'revise' | 'decline' | 'cancelInstallments' | 'session' | 'pay' | null
+type Dialog = 'installments' | 'revise' | 'decline' | 'cancelInstallments' | 'cancelPlan' | 'session' | 'pay' | 'dictate' | null
 
 export function PlanPage() {
   const { planId = '' } = useParams()
   const { t, money, date } = useI18n()
   const { isDoctor } = useAuth()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [dialog, setDialog] = useState<Dialog>(null)
   const [reason, setReason] = useState('')
 
@@ -48,12 +51,25 @@ export function PlanPage() {
     mutationFn: (id: string) => cancelInstallmentPlan(id, reason),
     onSuccess: () => { setDialog(null); setReason(''); refresh() },
   })
+  const scrapPlan = useMutation({
+    mutationFn: (mode: 'cancel' | 'delete') =>
+      mode === 'cancel' ? cancelPlan(planId, reason) : deletePlan(planId),
+    onSuccess: (_d, mode) => {
+      setDialog(null); setReason(''); refresh()
+      if (mode === 'delete' && q.data) navigate(`/patients/${q.data.plan.patient_id}`)
+    },
+  })
 
   if (q.isPending) return <section className="page"><Skeleton rows={4} variant="list" /></section>
   if (q.isError) return <section className="page"><ErrorNote error={q.error} onRetry={() => q.refetch()} /></section>
   if (!q.data) return <section className="page"><p className="empty">{t('plan.notFound')}</p></section>
 
-  const { plan, items, patient, installments, procedures, sessions, directPayments, staffNames } = q.data
+  const { plan, items, patient, installments, procedures, sessions, planPayments, staffNames } = q.data
+  // With a live schedule the schedule card lists its own payments, so only
+  // the pay-per-session ones belong here. Without one — including a schedule
+  // that was cancelled — every payment on the plan belongs here, or money
+  // taken against the old schedule would be invisible and unreversible.
+  const directPayments = installments ? planPayments.filter((p) => !p.installment_plan_id) : planPayments
   const st = plan.status as PlanStatus
   const live = items.filter((i) => i.status !== 'cancelled')
   const subtotal = live.reduce((s, i) => s + i.price, 0)
@@ -85,9 +101,8 @@ export function PlanPage() {
           )}
           {(st === 'draft' || st === 'presented') && live.length > 0 && (
             <>
-              {isDoctor && (
-                <button className="btn btn-primary" onClick={() => setDialog('installments')}>{t('plan.acceptInstallments')}</button>
-              )}
+              {/* Reception sets up the schedule too; only revising and cancelling stay with the doctor. */}
+              <button className="btn btn-primary" onClick={() => setDialog('installments')}>{t('plan.acceptInstallments')}</button>
               <button className="btn" onClick={() => status.mutate({ to: 'active' })}>{t('plan.acceptNoInstallments')}</button>
             </>
           )}
@@ -98,6 +113,12 @@ export function PlanPage() {
           )}
           {st === 'active' && openItems.length === 0 && live.length > 0 && (
             <button className="btn" onClick={() => status.mutate({ to: 'completed' })}>{t('plan.complete')}</button>
+          )}
+          {/* A plan marked finished by mistake must still be retirable. */}
+          {st !== 'cancelled' && (
+            <button className="btn" onClick={() => { setReason(''); setDialog('cancelPlan') }}>
+              {t('plan.cancelPlan')}
+            </button>
           )}
         </div>
       </header>
@@ -187,6 +208,13 @@ export function PlanPage() {
         {discount.isError && <ErrorNote error={discount.error} />}
 
         {editable && (
+          <div className="dictate-cta">
+            <button type="button" className="btn" onClick={() => setDialog('dictate')}>
+              <Icon name="mic" /> {t('dict.planButton')}
+            </button>
+          </div>
+        )}
+        {editable && (
           <AddItemsForm
             planId={planId}
             procedures={procedures}
@@ -270,6 +298,9 @@ export function PlanPage() {
           revise={{ installmentPlanId: installments.installment_plan_id, alreadyPaid: installments.total_paid ?? 0 }}
           onClose={() => setDialog(null)} />
       )}
+      {dialog === 'dictate' && (
+        <DictatePlanDialog planId={planId} procedures={procedures} onClose={() => setDialog(null)} />
+      )}
       {dialog === 'session' && (
         <SessionDialog patientId={plan.patient_id}
           plan={{ id: planId, title: plan.title, openItems: openItems.map((i) => ({ id: i.id, label: itemLabel(i) })) }}
@@ -293,6 +324,36 @@ export function PlanPage() {
           </form>
         </Modal>
       )}
+      {dialog === 'cancelPlan' && (
+        <Modal title={t('plan.cancelPlan')} onClose={() => setDialog(null)}>
+          <form className="dialog-form" onSubmit={(e) => { e.preventDefault(); if (reason.trim()) scrapPlan.mutate('cancel') }}>
+            <p>{t('plan.cancelPlanExplain')}</p>
+            <label className="field">
+              <span>{t('reverse.reason')}</span>
+              <input required value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} autoFocus />
+            </label>
+            {scrapPlan.isError && <ErrorNote error={scrapPlan.error} />}
+            <div className="dialog-actions">
+              <button type="submit" className="btn btn-danger" disabled={!reason.trim() || scrapPlan.isPending}>
+                {t('plan.cancelPlan')}
+              </button>
+              <button type="button" className="btn" onClick={() => setDialog(null)}>{t('common.close')}</button>
+            </div>
+            {/* Only for a plan nothing has happened on: no money, no visits, no schedule. */}
+            {!installments && sessions.length === 0 && planPayments.length === 0 && (
+              <>
+                <hr className="rule" />
+                <p className="hint">{t('plan.deletePlanExplain')}</p>
+                <button type="button" className="link-btn danger-link" disabled={scrapPlan.isPending}
+                  onClick={() => { if (confirm(t('plan.deletePlanConfirm'))) scrapPlan.mutate('delete') }}>
+                  {t('plan.deletePlan')}
+                </button>
+              </>
+            )}
+          </form>
+        </Modal>
+      )}
+
       {dialog === 'cancelInstallments' && installments?.installment_plan_id && (
         <Modal title={t('plan.cancelInstallments')} onClose={() => setDialog(null)}>
           <form className="dialog-form" onSubmit={(e) => {

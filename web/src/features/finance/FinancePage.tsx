@@ -8,7 +8,8 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { toIsoDate, todayLocal } from '../../lib/dates'
 import { PAYMENT_METHODS, type PaymentMethod } from '../payments/api'
 import { methodKey } from '../payments/labels'
-import { CATEGORIES, addExpense, getDoctorEarnings, getExpenses, getPatientSources, getSummary, getTrend, voidExpense, type Expense, type ExpenseCategory } from './api'
+import { AUTO_CATEGORIES, CATEGORIES, addExpense, getDoctorEarnings, getExpenses, getPatientSources, getProfit, getSummary, getTrend, voidExpense, type Expense, type ExpenseCategory } from './api'
+import { getSettings } from '../settings/api'
 import { TrendChart } from './TrendChart'
 
 function monthRange(offset: number) {
@@ -20,15 +21,16 @@ function monthRange(offset: number) {
 
 const catKey = (c: string) => `fin.cat.${c}` as MessageKey
 
-function AddExpenseDialog({ onClose }: { onClose: () => void }) {
+function AddExpenseDialog({ onClose, income, adminPercent }: { onClose: () => void; income: number; adminPercent: number }) {
   const { clinicId } = useMember()
-  const { t } = useI18n()
+  const { t, money } = useI18n()
   const qc = useQueryClient()
   const [e, setE] = useState({ spent_on: todayLocal(), category: 'rent' as ExpenseCategory, amount: '', method: 'cash' as PaymentMethod, paid_to: '', note: '' })
   const save = useMutation({
     mutationFn: () => addExpense(clinicId, { ...e, amount: Number(e.amount) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['finance'] }); onClose() },
   })
+  const suggested = Math.round(income * adminPercent) / 100
   function onSubmit(ev: FormEvent) { ev.preventDefault(); if (Number(e.amount) > 0 && !save.isPending) save.mutate() }
   return (
     <Modal title={t('fin.addExpense')} onClose={onClose}>
@@ -36,7 +38,7 @@ function AddExpenseDialog({ onClose }: { onClose: () => void }) {
         <div className="field-row">
           <label className="field"><span>{t('fin.category')}</span>
             <select value={e.category} onChange={(x) => setE({ ...e, category: x.target.value as ExpenseCategory })}>
-              {CATEGORIES.filter((c) => c !== 'lab').map((c) => <option key={c} value={c}>{t(catKey(c))}</option>)}
+              {CATEGORIES.filter((c) => !AUTO_CATEGORIES.includes(c)).map((c) => <option key={c} value={c}>{t(catKey(c))}</option>)}
             </select></label>
           <label className="field"><span>{t('pay.amount')}</span>
             <input type="number" min="0.01" step="any" required dir="ltr" value={e.amount} onChange={(x) => setE({ ...e, amount: x.target.value })} autoFocus /></label>
@@ -49,6 +51,14 @@ function AddExpenseDialog({ onClose }: { onClose: () => void }) {
               {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{t(methodKey(m))}</option>)}
             </select></label>
         </div>
+        {e.category === 'admin' && adminPercent > 0 && income > 0 && (
+          <p className="hint">
+            {t('fin.adminSuggestion', { percent: adminPercent, amount: money(suggested) })}{' '}
+            <button type="button" className="link-btn" onClick={() => setE({ ...e, amount: String(suggested) })}>
+              {t('fin.adminUse')}
+            </button>
+          </p>
+        )}
         <label className="field"><span>{t('fin.paidTo')}</span><input value={e.paid_to} onChange={(x) => setE({ ...e, paid_to: x.target.value })} maxLength={80} /></label>
         <label className="field"><span>{t('pay.note')}</span><input value={e.note} onChange={(x) => setE({ ...e, note: x.target.value })} maxLength={200} /></label>
         <p className="hint">{t('fin.autoHint')}</p>
@@ -104,6 +114,9 @@ export function FinancePage() {
     queryKey: ['finance', 'sources', clinicId, range], queryFn: () => getPatientSources(clinicId, range.from, range.to), enabled,
   })
   const expenses = useQuery({ queryKey: ['finance', 'expenses', clinicId, range], queryFn: () => getExpenses(clinicId, range.from, range.to), enabled })
+  const profit = useQuery({ queryKey: ['finance', 'profit', clinicId, range], queryFn: () => getProfit(clinicId, range.from, range.to), enabled })
+  // Only for the suggested management fee in the expense dialog.
+  const clinic = useQuery({ queryKey: ['settings', clinicId], queryFn: () => getSettings(clinicId), enabled, select: (d) => d.clinic })
 
   if (!enabled) return <section className="page"><p className="empty">{t('fin.ownerOnly')}</p></section>
 
@@ -183,6 +196,57 @@ export function FinancePage() {
         </>
       )}
 
+      {profit.isError && <ErrorNote error={profit.error} onRetry={() => profit.refetch()} />}
+      {profit.data && (
+        <section className="panel">
+          <h2>{t('fin.profitTitle')}</h2>
+          <p className="muted small">{t('fin.profitHint')}</p>
+          <dl className="totals wide">
+            <div><dt>{t('fin.income')}</dt><dd>{money(profit.data.income)}</dd></div>
+            <div>
+              <dt>− {t('fin.cat.doctors')}</dt>
+              <dd>{money(profit.data.doctor_commission)}</dd>
+            </div>
+            {Object.entries(profit.data.expenses_by_category).sort((a, b) => b[1] - a[1]).map(([c, v]) => (
+              <div key={c}><dt>− {t(catKey(c))}</dt><dd>{money(v)}</dd></div>
+            ))}
+            <div className="totals-net">
+              <dt>{t('fin.netProfit')}</dt>
+              <dd className={profit.data.net_profit < 0 ? 'danger-text' : ''}>{money(profit.data.net_profit)}</dd>
+            </div>
+          </dl>
+
+          {profit.data.commission_due !== 0 && (
+            <p className="muted small">
+              {t('fin.commissionDue', {
+                due: money(profit.data.commission_due), paid: money(profit.data.commission_paid),
+              })}
+            </p>
+          )}
+
+          <hr className="rule" />
+          <h3>{t('fin.partnerSplit')}</h3>
+          {profit.data.partners.length === 0 && <p className="muted">{t('fin.noPartners')}</p>}
+          {profit.data.partners.length > 0 && (
+            <>
+              <dl className="totals wide">
+                {profit.data.partners.map((p) => (
+                  <div key={p.id}>
+                    <dt>{p.name} <span className="muted">({p.percent}%)</span></dt>
+                    <dd>{money(p.amount)}</dd>
+                  </div>
+                ))}
+              </dl>
+              {Math.abs(profit.data.partner_percent_total - 100) > 0.01 && (
+                <p className="danger-text small">
+                  {t('fin.partnerPercentOff', { total: profit.data.partner_percent_total })}
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
       {trend.data && trend.data.some((m) => m.income > 0 || m.expenses > 0) && (
         <section className="panel">
           <h2>{t('fin.trend')}</h2>
@@ -195,15 +259,26 @@ export function FinancePage() {
           <section className="panel">
             <h2>{t('fin.doctorEarnings')}</h2>
             <p className="muted small">
-              {earnings.data![0].basis === 'work' ? t('settings.basisWork') : t('settings.basisCollection')}
+              {earnings.data![0].basis === 'work' ? t('settings.basisWork')
+                : earnings.data![0].basis === 'collection' ? t('settings.basisCollection')
+                : t('settings.basisNetLab')}
             </p>
             <div className="table-wrap">
               <table className="table table-compact">
-                <thead><tr><th>{t('team.name')}</th><th className="num">{t('fin.base')}</th><th className="num">%</th><th className="num">{t('fin.earned')}</th></tr></thead>
+                <thead><tr>
+                  <th>{t('team.name')}</th>
+                  <th className="num">{t('fin.collected')}</th>
+                  <th className="num">{t('fin.labDeduction')}</th>
+                  <th className="num">{t('fin.base')}</th>
+                  <th className="num">%</th>
+                  <th className="num">{t('fin.earned')}</th>
+                </tr></thead>
                 <tbody>
                   {earnings.data!.map((d) => (
                     <tr key={d.user_id}>
                       <td>{d.display_name}</td>
+                      <td className="num">{money(d.collected)}</td>
+                      <td className="num muted">{d.lab_cost ? `− ${money(d.lab_cost)}` : '—'}</td>
                       <td className="num">{money(d.base_amount)}</td>
                       <td className="num muted">{d.percent}%</td>
                       <td className="num"><strong>{money(d.earned)}</strong></td>
@@ -268,7 +343,13 @@ export function FinancePage() {
         )}
       </section>
 
-      {adding && <AddExpenseDialog onClose={() => setAdding(false)} />}
+      {adding && (
+        <AddExpenseDialog
+          onClose={() => setAdding(false)}
+          income={s?.income ?? 0}
+          adminPercent={clinic.data?.admin_percent ?? 0}
+        />
+      )}
       {voiding && <VoidDialog expense={voiding} onClose={() => setVoiding(null)} />}
     </section>
   )

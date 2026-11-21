@@ -1,9 +1,12 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
 import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
-import { addMonthsClamped, todayLocal } from '../../lib/dates'
+import { toIsoDate } from '../../lib/dates'
+import { useMember } from '../auth/AuthProvider'
+import { useQuery } from '@tanstack/react-query'
+import { getSettings } from '../settings/api'
 import { createInstallmentPlan, reviseInstallmentPlan } from './api'
 import { previewSchedule } from './schedule'
 
@@ -16,13 +19,39 @@ type Props = {
   revise?: { installmentPlanId: string; alreadyPaid: number }
 }
 
+/** The clinic collects on one of these days; every instalment lands on it. */
+const DUE_DAYS = [5, 10, 15, 20, 25]
+
+/** The first of the chosen days that is still ahead of us. */
+function nextDueOn(day: number) {
+  const now = new Date()
+  const d = new Date(now.getFullYear(), now.getMonth(), day)
+  if (d <= now) d.setMonth(d.getMonth() + 1)
+  return toIsoDate(d)
+}
+
 export function InstallmentSetupDialog({ planId, patientId, netTotal, onClose, revise }: Props) {
   const { t, money, date } = useI18n()
+  const { clinicId } = useMember()
   const queryClient = useQueryClient()
+  // Reception sets up most schedules, so this must not be owner-only.
+  const settings = useQuery({ queryKey: ['settings', clinicId], queryFn: () => getSettings(clinicId) })
   const [down, setDown] = useState(revise ? '0' : '')
   const [months, setMonths] = useState('6')
-  const [firstDue, setFirstDue] = useState(() => addMonthsClamped(todayLocal(), 1))
+  const [dueDay, setDueDay] = useState<number | null>(5)
+  const [firstDue, setFirstDue] = useState(() => nextDueOn(5))
   const [reason, setReason] = useState('')
+
+  // The clinic's usual day, if the owner has set one.
+  const clinicDay = settings.data?.clinic.installment_day ?? null
+  useEffect(() => {
+    if (clinicDay && clinicDay !== dueDay && DUE_DAYS.includes(clinicDay)) {
+      setDueDay(clinicDay)
+      setFirstDue(nextDueOn(clinicDay))
+    }
+    // Only when the setting first arrives; the user's own pick wins after that.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clinicDay])
 
   const downValue = revise ? 0 : Number(down || 0)
   const monthsValue = Math.trunc(Number(months))
@@ -74,9 +103,22 @@ export function InstallmentSetupDialog({ planId, patientId, netTotal, onClose, r
               onChange={(e) => setMonths(e.target.value)} disabled={balance === 0} />
           </label>
           <label className="field">
+            <span>{t('inst.dueDay')}</span>
+            <select value={dueDay ?? ''} disabled={balance === 0}
+              onChange={(e) => {
+                const v = e.target.value ? Number(e.target.value) : null
+                setDueDay(v)
+                if (v) setFirstDue(nextDueOn(v))
+              }}>
+              {DUE_DAYS.map((d) => <option key={d} value={d}>{t('inst.dayOfMonth', { n: d })}</option>)}
+              <option value="">{t('inst.customDate')}</option>
+            </select>
+          </label>
+          <label className="field">
             <span>{t('inst.firstDue')}</span>
-            <input type="date" value={firstDue} onChange={(e) => setFirstDue(e.target.value)}
-              disabled={balance === 0} />
+            <input type="date" value={firstDue} disabled={balance === 0}
+              onChange={(e) => { setFirstDue(e.target.value); setDueDay(null) }} />
+            {dueDay && <small className="hint">{t('inst.everyMonthOn', { n: dueDay })}</small>}
           </label>
         </div>
 

@@ -11,6 +11,8 @@ type I18n = {
   t: (key: MessageKey, vars?: Record<string, string | number>) => string
   money: (value: number | null | undefined) => string
   date: (value: string | null | undefined) => string
+  /** Minutes since midnight, "HH:MM[:SS]" or an ISO timestamp → a 12-hour clock. */
+  time: (value: string | number | null | undefined) => string
 }
 
 const I18nContext = createContext<I18n | null>(null)
@@ -58,6 +60,27 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       money: (v) => (v == null ? '—' : `\u2066${moneyFmt.format(v)}\u2069 ${currency}`),
       // Dates from Postgres `date` columns are plain YYYY-MM-DD; parse as local noon to avoid TZ shifts.
       date: (v) => (v ? dateFmt.format(new Date(v.length === 10 ? `${v}T12:00:00` : v)) : '—'),
+      // The clinic reads the clock as 6:45 م, never 18:45. Stored values stay
+      // 24-hour; this is only how they are shown.
+      time: (v) => {
+        if (v == null || v === '') return '—'
+        let minutes: number
+        if (typeof v === 'number') minutes = v
+        else if (/^\d{1,2}:\d{2}/.test(v)) {
+          const [h, m] = v.split(':').map(Number)
+          minutes = h * 60 + m
+        } else {
+          const d = new Date(v)
+          if (Number.isNaN(d.getTime())) return '—'
+          minutes = d.getHours() * 60 + d.getMinutes()
+        }
+        const h24 = Math.floor(minutes / 60) % 24
+        const h12 = h24 % 12 === 0 ? 12 : h24 % 12
+        const mm = String(minutes % 60).padStart(2, '0')
+        const suffix = lang === 'ar' ? (h24 < 12 ? 'ص' : 'م') : (h24 < 12 ? 'AM' : 'PM')
+        // Isolated so the clock keeps its own direction inside Arabic text.
+        return `\u2066${h12}:${mm}\u2069 ${suffix}`
+      },
     }
   }, [lang, setLang])
 

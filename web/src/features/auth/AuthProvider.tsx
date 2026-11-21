@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 export type Role = 'owner' | 'doctor' | 'receptionist'
 
 export type Membership = {
+  userId: string
   clinicId: string
   clinicName: string
   role: Role
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Many-to-one embed: an object with generated types; normalize defensively anyway.
           const clinic = Array.isArray(data.clinics) ? data.clinics[0] : data.clinics
           setMember({
+            userId,
             clinicId: data.clinic_id,
             clinicName: clinic?.name ?? '',
             role: data.role as Role,

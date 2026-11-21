@@ -30,7 +30,9 @@ export async function getToday(clinicId: string) {
   return {
     agenda: agenda.data ?? [],
     recall: recall.data ?? [],
-    labs: (labs.data ?? []).filter((l) => l.status === 'late' || l.at_risk),
+    // Late at any stage, not just late coming back: a try-in that never
+    // arrived is the one reception has to chase today.
+    labs: (labs.data ?? []).filter((l) => l.stage_late || l.at_risk),
     unscheduled: unscheduled.data ?? [],
     planTitles: titles,
     appointments,

@@ -7,14 +7,16 @@ import { isValidPhone, normalizePhone } from '../../lib/phone'
 import { todayLocal } from '../../lib/dates'
 import { ErrorNote } from '../../components/ErrorNote'
 import { createPatient, findByPhone, getPayers, updatePatient } from './api'
+import { getClinicDoctors } from '../appointments/api'
 
 const SOURCES = ['facebook', 'instagram', 'google', 'friend', 'signboard', 'passing', 'payer', 'returning', 'other'] as const
 
 export type EditablePatient = {
   id: string; full_name: string; phone: string; whatsapp_phone: string | null
   gender: string | null; date_of_birth: string | null; medical_alerts: string | null
-  source: string | null; source_note: string | null; payer_id: string | null
+  source: string | null; source_note: string | null; payer_id: string | null; primary_doctor_id: string | null
   recall_interval_months: number | null
+  national_id: string | null; address: string | null
 }
 
 /** One form for adding and for editing a patient. */
@@ -25,8 +27,10 @@ export function PatientForm({ patient, onClose }: { patient?: EditablePatient; o
   const qc = useQueryClient()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const payers = useQuery({ queryKey: ['payers', clinicId], queryFn: () => getPayers(clinicId) })
+  const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
   const [phoneError, setPhoneError] = useState(false)
   const [duplicate, setDuplicate] = useState<{ id: string; full_name: string } | null>(null)
+  const dupAcknowledged = useRef(false)
   const [source, setSource] = useState(patient?.source ?? '')
 
   useEffect(() => { dialogRef.current?.showModal() }, [])
@@ -42,10 +46,14 @@ export function PatientForm({ patient, onClose }: { patient?: EditablePatient; o
       }
       setPhoneError(false)
 
-      if (phone !== patient?.phone) {
+      // A shared number is normal here — a father books for his children on his
+      // own phone. So it is a warning, not a wall: say who else has it, and let
+      // the next press of Save go through.
+      if (phone !== patient?.phone && !dupAcknowledged.current) {
         const existing = await findByPhone(clinicId, phone)
         if (existing && existing.id !== patient?.id) {
           setDuplicate(existing)
+          dupAcknowledged.current = true
           return null
         }
       }
@@ -62,7 +70,11 @@ export function PatientForm({ patient, onClose }: { patient?: EditablePatient; o
         source: source || null,
         source_note: String(form.get('source_note') ?? '').trim() || null,
         payer_id: String(form.get('payer') ?? '') || null,
+        primary_doctor_id: String(form.get('doctor') ?? '') || null,
         recall_interval_months: recall === '' ? null : Number(recall),
+        // Printed on the installment contract; blank until somebody needs it.
+        national_id: String(form.get('national_id') ?? '').trim() || null,
+        address: String(form.get('address') ?? '').trim() || null,
       }
       if (patient) {
         await updatePatient(patient.id, values)
@@ -99,7 +111,7 @@ export function PatientForm({ patient, onClose }: { patient?: EditablePatient; o
           <label className="field">
             <span>{t('patientForm.phone')}</span>
             <input name="phone" required inputMode="tel" dir="ltr" autoComplete="off" defaultValue={patient?.phone}
-              aria-invalid={phoneError} onChange={() => setDuplicate(null)} />
+              aria-invalid={phoneError} onChange={() => { setDuplicate(null); dupAcknowledged.current = false }} />
           </label>
           <label className="field">
             <span>{t('patientForm.whatsapp')}</span>
@@ -108,9 +120,11 @@ export function PatientForm({ patient, onClose }: { patient?: EditablePatient; o
         </div>
         {phoneError && <p className="form-error" role="alert">{t('patientForm.phoneInvalid')}</p>}
         {duplicate && (
-          <p className="form-error" role="alert">
+          <p className="warn-text" role="alert">
             {t('patientForm.duplicate', { name: duplicate.full_name })}{' '}
             <Link to={`/patients/${duplicate.id}`}>{t('patientForm.openExisting')}</Link>
+            <br />
+            <span className="hint">{t('patientForm.duplicateAllowed')}</span>
           </p>
         )}
 
@@ -155,6 +169,27 @@ export function PatientForm({ patient, onClose }: { patient?: EditablePatient; o
               <input name="source_note" defaultValue={patient?.source_note ?? ''} maxLength={120}
                 placeholder={t('patientForm.sourceNoteHint')} />
             )}
+          </label>
+        </div>
+
+        <label className="field">
+          <span>{t('patientForm.doctor')}</span>
+          <select name="doctor" defaultValue={patient?.primary_doctor_id ?? ''}>
+            <option value="">{t('patientForm.doctorNone')}</option>
+            {doctors.data?.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
+          </select>
+        </label>
+
+        <div className="field-row">
+          <label className="field">
+            <span>{t('patientForm.nationalId')}</span>
+            <input name="national_id" dir="ltr" inputMode="numeric" maxLength={20}
+              defaultValue={patient?.national_id ?? ''} />
+            <small className="hint">{t('patientForm.nationalIdHint')}</small>
+          </label>
+          <label className="field">
+            <span>{t('patientForm.address')}</span>
+            <input name="address" maxLength={160} defaultValue={patient?.address ?? ''} />
           </label>
         </div>
 

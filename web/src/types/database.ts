@@ -183,6 +183,47 @@ export type Database = {
           },
         ]
       }
+      assistant_queries: {
+        Row: {
+          answered: boolean
+          asked_at: string
+          asked_by: string
+          clinic_id: string
+          error: string | null
+          id: string
+          question: string
+          tools_used: string[]
+        }
+        Insert: {
+          answered?: boolean
+          asked_at?: string
+          asked_by?: string
+          clinic_id: string
+          error?: string | null
+          id?: string
+          question: string
+          tools_used?: string[]
+        }
+        Update: {
+          answered?: boolean
+          asked_at?: string
+          asked_by?: string
+          clinic_id?: string
+          error?: string | null
+          id?: string
+          question?: string
+          tools_used?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_queries_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_closings: {
         Row: {
           business_date: string
@@ -326,6 +367,7 @@ export type Database = {
       }
       clinics: {
         Row: {
+          admin_percent: number
           booking_daily_limit: number
           booking_enabled: boolean
           booking_horizon_days: number
@@ -338,15 +380,21 @@ export type Database = {
           currency: string
           grace_days: number
           id: string
+          installment_day: number | null
+          lab_stage_days: number
+          legal_venue: string | null
           lock_threshold: number
           logo_url: string | null
           name: string
           next_receipt_no: number
           opens_at: string
+          represented_by: string | null
           slot_minutes: number
+          suspend_after_days: number
           timezone: string
         }
         Insert: {
+          admin_percent?: number
           booking_daily_limit?: number
           booking_enabled?: boolean
           booking_horizon_days?: number
@@ -359,15 +407,21 @@ export type Database = {
           currency?: string
           grace_days?: number
           id?: string
+          installment_day?: number | null
+          lab_stage_days?: number
+          legal_venue?: string | null
           lock_threshold?: number
           logo_url?: string | null
           name: string
           next_receipt_no?: number
           opens_at?: string
+          represented_by?: string | null
           slot_minutes?: number
+          suspend_after_days?: number
           timezone?: string
         }
         Update: {
+          admin_percent?: number
           booking_daily_limit?: number
           booking_enabled?: boolean
           booking_horizon_days?: number
@@ -380,12 +434,17 @@ export type Database = {
           currency?: string
           grace_days?: number
           id?: string
+          installment_day?: number | null
+          lab_stage_days?: number
+          legal_venue?: string | null
           lock_threshold?: number
           logo_url?: string | null
           name?: string
           next_receipt_no?: number
           opens_at?: string
+          represented_by?: string | null
           slot_minutes?: number
+          suspend_after_days?: number
           timezone?: string
         }
         Relationships: []
@@ -1161,58 +1220,88 @@ export type Database = {
       }
       lab_cases: {
         Row: {
+          billing_on: string | null
           cancelled_at: string | null
           clinic_id: string
           created_at: string
           created_by: string | null
           description: string
+          doctor_id: string | null
           expected_on: string
           fitted_on: string | null
           id: string
+          invoiced_amount: number | null
+          item_id: string | null
           lab_fee: number | null
           lab_id: string
+          needs_tryin: boolean
           notes: string | null
           patient_id: string
           plan_item_id: string | null
           received_on: string | null
           sent_on: string
           shade: string | null
+          tryin_done_on: string | null
+          tryin_expected_on: string | null
+          tryin_received_on: string | null
+          unit_price: number | null
+          units: number
         }
         Insert: {
+          billing_on?: string | null
           cancelled_at?: string | null
           clinic_id: string
           created_at?: string
           created_by?: string | null
           description: string
+          doctor_id?: string | null
           expected_on: string
           fitted_on?: string | null
           id?: string
+          invoiced_amount?: number | null
+          item_id?: string | null
           lab_fee?: number | null
           lab_id: string
+          needs_tryin?: boolean
           notes?: string | null
           patient_id: string
           plan_item_id?: string | null
           received_on?: string | null
           sent_on: string
           shade?: string | null
+          tryin_done_on?: string | null
+          tryin_expected_on?: string | null
+          tryin_received_on?: string | null
+          unit_price?: number | null
+          units?: number
         }
         Update: {
+          billing_on?: string | null
           cancelled_at?: string | null
           clinic_id?: string
           created_at?: string
           created_by?: string | null
           description?: string
+          doctor_id?: string | null
           expected_on?: string
           fitted_on?: string | null
           id?: string
+          invoiced_amount?: number | null
+          item_id?: string | null
           lab_fee?: number | null
           lab_id?: string
+          needs_tryin?: boolean
           notes?: string | null
           patient_id?: string
           plan_item_id?: string | null
           received_on?: string | null
           sent_on?: string
           shade?: string | null
+          tryin_done_on?: string | null
+          tryin_expected_on?: string | null
+          tryin_received_on?: string | null
+          unit_price?: number | null
+          units?: number
         }
         Relationships: [
           {
@@ -1220,6 +1309,20 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_cases_doctor_fk"
+            columns: ["clinic_id", "doctor_id"]
+            isOneToOne: false
+            referencedRelation: "clinic_members"
+            referencedColumns: ["clinic_id", "user_id"]
+          },
+          {
+            foreignKeyName: "lab_cases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_items"
             referencedColumns: ["id"]
           },
           {
@@ -1249,6 +1352,51 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "treatment_plan_items"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_items: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          created_at: string
+          id: string
+          lab_id: string | null
+          name: string
+          unit_price: number
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          created_at?: string
+          id?: string
+          lab_id?: string | null
+          name: string
+          unit_price?: number
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          lab_id?: string | null
+          name?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_items_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_items_lab_id_clinic_id_fkey"
+            columns: ["lab_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
+            referencedColumns: ["id", "clinic_id"]
           },
         ]
       }
@@ -1399,6 +1547,47 @@ export type Database = {
           },
         ]
       }
+      partners: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          share_percent: number
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          share_percent?: number
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          share_percent?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partners_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_files: {
         Row: {
           caption: string | null
@@ -1475,6 +1664,7 @@ export type Database = {
       }
       patients: {
         Row: {
+          address: string | null
           allergy_groups: string[]
           archive_reason: string | null
           archived_at: string | null
@@ -1486,10 +1676,12 @@ export type Database = {
           gender: string | null
           id: string
           medical_alerts: string | null
+          national_id: string | null
           next_recall_due: string | null
           notes: string | null
           payer_id: string | null
           phone: string
+          primary_doctor_id: string | null
           recall_interval_months: number | null
           recall_type: string
           source: string | null
@@ -1497,6 +1689,7 @@ export type Database = {
           whatsapp_phone: string | null
         }
         Insert: {
+          address?: string | null
           allergy_groups?: string[]
           archive_reason?: string | null
           archived_at?: string | null
@@ -1508,10 +1701,12 @@ export type Database = {
           gender?: string | null
           id?: string
           medical_alerts?: string | null
+          national_id?: string | null
           next_recall_due?: string | null
           notes?: string | null
           payer_id?: string | null
           phone: string
+          primary_doctor_id?: string | null
           recall_interval_months?: number | null
           recall_type?: string
           source?: string | null
@@ -1519,6 +1714,7 @@ export type Database = {
           whatsapp_phone?: string | null
         }
         Update: {
+          address?: string | null
           allergy_groups?: string[]
           archive_reason?: string | null
           archived_at?: string | null
@@ -1530,10 +1726,12 @@ export type Database = {
           gender?: string | null
           id?: string
           medical_alerts?: string | null
+          national_id?: string | null
           next_recall_due?: string | null
           notes?: string | null
           payer_id?: string | null
           phone?: string
+          primary_doctor_id?: string | null
           recall_interval_months?: number | null
           recall_type?: string
           source?: string | null
@@ -1547,6 +1745,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clinics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patients_clinic_id_primary_doctor_id_fkey"
+            columns: ["clinic_id", "primary_doctor_id"]
+            isOneToOne: false
+            referencedRelation: "clinic_members"
+            referencedColumns: ["clinic_id", "user_id"]
           },
           {
             foreignKeyName: "patients_payer_id_clinic_id_fkey"
@@ -2058,6 +2263,7 @@ export type Database = {
           appointment_id: string | null
           clinic_id: string
           created_at: string
+          doctor_id: string | null
           id: string
           is_recall_visit: boolean
           lock_override: boolean
@@ -2073,6 +2279,7 @@ export type Database = {
           appointment_id?: string | null
           clinic_id: string
           created_at?: string
+          doctor_id?: string | null
           id?: string
           is_recall_visit?: boolean
           lock_override?: boolean
@@ -2088,6 +2295,7 @@ export type Database = {
           appointment_id?: string | null
           clinic_id?: string
           created_at?: string
+          doctor_id?: string | null
           id?: string
           is_recall_visit?: boolean
           lock_override?: boolean
@@ -2120,6 +2328,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clinics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_doctor_fk"
+            columns: ["clinic_id", "doctor_id"]
+            isOneToOne: false
+            referencedRelation: "clinic_members"
+            referencedColumns: ["clinic_id", "user_id"]
           },
           {
             foreignKeyName: "sessions_patient_id_clinic_id_fkey"
@@ -2521,27 +2736,44 @@ export type Database = {
       lab_case_status: {
         Row: {
           at_risk: boolean | null
+          billed_on: string | null
+          billing_on: string | null
           cancelled_at: string | null
           clinic_id: string | null
           created_at: string | null
           created_by: string | null
+          days_late: number | null
           description: string | null
+          doctor_id: string | null
+          doctor_name: string | null
           expected_on: string | null
           fitted_on: string | null
           full_name: string | null
           id: string | null
+          invoiced_amount: number | null
+          item_id: string | null
+          item_name: string | null
           lab_fee: number | null
           lab_id: string | null
           lab_name: string | null
+          needs_tryin: boolean | null
           next_appointment_at: string | null
+          next_due: string | null
           notes: string | null
           patient_id: string | null
           plan_item_id: string | null
           received_on: string | null
           sent_on: string | null
           shade: string | null
+          stage: string | null
+          stage_late: boolean | null
           status: string | null
+          tryin_done_on: string | null
+          tryin_expected_on: string | null
+          tryin_received_on: string | null
           turnaround_days: number | null
+          unit_price: number | null
+          units: number | null
         }
         Relationships: [
           {
@@ -2549,6 +2781,20 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_cases_doctor_fk"
+            columns: ["clinic_id", "doctor_id"]
+            isOneToOne: false
+            referencedRelation: "clinic_members"
+            referencedColumns: ["clinic_id", "user_id"]
+          },
+          {
+            foreignKeyName: "lab_cases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_items"
             referencedColumns: ["id"]
           },
           {
@@ -2890,9 +3136,45 @@ export type Database = {
         Args: { p_installment_plan_id: string; p_reason: string }
         Returns: undefined
       }
+      agreements_needing_reissue: {
+        Args: { p_clinic: string }
+        Returns: {
+          installment_plan_id: string
+          net_total: number
+          patient_id: string
+          patient_name: string
+          version: number
+          was_signed: boolean
+        }[]
+      }
       archive_patient: {
         Args: { p_archive?: boolean; p_patient: string; p_reason?: string }
         Returns: undefined
+      }
+      assistant_day_schedule: {
+        Args: { p_clinic: string; p_date: string }
+        Returns: {
+          chair: string
+          doctor_name: string
+          ends_at: string
+          full_name: string
+          notes: string
+          phone: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      assistant_patient_brief: {
+        Args: { p_clinic: string; p_query: string }
+        Returns: {
+          doctor_name: string
+          full_name: string
+          next_visit: string
+          outstanding: number
+          overdue_count: number
+          patient_id: string
+          phone: string
+        }[]
       }
       attach_agreement_document: {
         Args: { p_agreement_id: string; p_document_path: string }
@@ -2916,12 +3198,21 @@ export type Database = {
           slot: string
         }[]
       }
+      can_handle_cash: { Args: { p_clinic: string }; Returns: boolean }
       cancel_installment_plan: {
         Args: { p_installment_plan_id: string; p_reason: string }
         Returns: undefined
       }
+      cancel_treatment_plan: {
+        Args: { p_plan: string; p_reason: string }
+        Returns: undefined
+      }
       cash_day_summary: {
         Args: { p_clinic: string; p_date: string }
+        Returns: Json
+      }
+      clinic_profit: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: Json
       }
       clinic_team: {
@@ -2941,6 +3232,10 @@ export type Database = {
         }[]
       }
       clinic_today: { Args: { p_clinic: string }; Returns: string }
+      collection_attribution: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: Json
+      }
       confirm_booking: { Args: { p_appointment: string }; Returns: undefined }
       create_clinic: {
         Args: { p_display_name: string; p_name: string }
@@ -2982,13 +3277,16 @@ export type Database = {
         Args: { p_force?: boolean; p_patient: string; p_reason?: string }
         Returns: Json
       }
+      delete_treatment_plan: { Args: { p_plan: string }; Returns: undefined }
       doctor_earnings: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: {
           base_amount: number
           basis: string
+          collected: number
           display_name: string
           earned: number
+          lab_cost: number
           percent: number
           user_id: string
         }[]
@@ -2998,9 +3296,12 @@ export type Database = {
         Returns: {
           active: boolean
           appointments: number
+          base_amount: number
           collected: number
           display_name: string
           earned: number
+          earned_all_time: number
+          lab_cost: number
           paid_all_time: number
           paid_in_period: number
           patients: number
@@ -3017,6 +3318,18 @@ export type Database = {
           works_to: string
         }[]
       }
+      doctor_patients: {
+        Args: { p_clinic: string; p_doctor: string }
+        Returns: {
+          assigned: boolean
+          full_name: string
+          last_visit: string
+          outstanding: number
+          patient_id: string
+          phone: string
+          sessions: number
+        }[]
+      }
       finance_summary: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: Json
@@ -3031,6 +3344,40 @@ export type Database = {
       }
       is_doctor: { Args: { p_clinic: string }; Returns: boolean }
       is_member: { Args: { p_clinic: string }; Returns: boolean }
+      lab_invoice_check: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: {
+          cases: number
+          difference: number
+          expected: number
+          invoiced: number
+          lab_id: string
+          lab_name: string
+          units: number
+        }[]
+      }
+      lab_months: {
+        Args: { p_clinic: string; p_lab: string }
+        Returns: {
+          cases: number
+          difference: number
+          expected: number
+          invoiced: number
+          month: string
+          still_out: number
+          units: number
+        }[]
+      }
+      log_assistant_query: {
+        Args: {
+          p_answered: boolean
+          p_clinic: string
+          p_error?: string
+          p_question: string
+          p_tools: string[]
+        }
+        Returns: undefined
+      }
       patient_record_counts: { Args: { p_patient: string }; Returns: Json }
       patient_sources: {
         Args: { p_clinic: string; p_from: string; p_to: string }
@@ -3107,6 +3454,7 @@ export type Database = {
       }
       record_session: {
         Args: {
+          p_doctor_id?: string
           p_done_item_ids?: string[]
           p_is_recall_visit: boolean
           p_notes: string
@@ -3123,6 +3471,10 @@ export type Database = {
       record_usage: {
         Args: { p_material_id: string; p_note?: string; p_quantity: number }
         Returns: string
+      }
+      reissue_installment_agreement: {
+        Args: { p_plan: string }
+        Returns: number
       }
       reverse_payment: {
         Args: { p_payment_id: string; p_reason: string }
@@ -3175,6 +3527,8 @@ export type Database = {
         | "maintenance"
         | "marketing"
         | "other"
+        | "doctors"
+        | "admin"
       file_kind: "xray" | "photo" | "document"
       installment_plan_status: "active" | "completed" | "cancelled"
       member_role: "owner" | "doctor" | "receptionist"
@@ -3335,6 +3689,8 @@ export const Constants = {
         "maintenance",
         "marketing",
         "other",
+        "doctors",
+        "admin",
       ],
       file_kind: ["xray", "photo", "document"],
       installment_plan_status: ["active", "completed", "cancelled"],

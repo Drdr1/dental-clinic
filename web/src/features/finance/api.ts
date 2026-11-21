@@ -3,8 +3,10 @@ import type { Tables } from '../../types/database'
 import type { PaymentMethod } from '../payments/api'
 
 export type Expense = Tables<'expenses'>
-export type ExpenseCategory = 'rent' | 'salaries' | 'materials' | 'lab' | 'utilities' | 'maintenance' | 'marketing' | 'other'
-export const CATEGORIES: ExpenseCategory[] = ['rent', 'salaries', 'materials', 'lab', 'utilities', 'maintenance', 'marketing', 'other']
+export type ExpenseCategory = 'rent' | 'salaries' | 'doctors' | 'admin' | 'materials' | 'lab' | 'utilities' | 'maintenance' | 'marketing' | 'other'
+export const CATEGORIES: ExpenseCategory[] = ['rent', 'salaries', 'doctors', 'admin', 'materials', 'lab', 'utilities', 'maintenance', 'marketing', 'other']
+/** Written by the system, never typed in by hand: lab fees and doctor payouts. */
+export const AUTO_CATEGORIES: ExpenseCategory[] = ['lab', 'doctors']
 
 export type Summary = {
   income: number
@@ -40,8 +42,52 @@ export async function getTrend(clinicId: string, n = 6): Promise<MonthPoint[]> {
   return results.map((s, i) => ({ month: ranges[i].month, income: s.income, expenses: s.expenses, net: s.net }))
 }
 
-export type DoctorEarning = { user_id: string; display_name: string; percent: number; base_amount: number; earned: number; basis: string }
+export type DoctorEarning = {
+  user_id: string; display_name: string; percent: number
+  collected: number; lab_cost: number; base_amount: number; earned: number; basis: string
+}
 export type SourceRow = { source: string; patients: number; collected: number }
+
+export type Partner = { id?: string; name: string; share_percent: number; active: boolean; note: string | null }
+
+export type Profit = {
+  income: number
+  doctor_commission: number
+  commission_paid: number
+  commission_due: number
+  expenses: number
+  expenses_by_category: Record<string, number>
+  net_profit: number
+  partner_percent_total: number
+  partners: { id: string; name: string; percent: number; amount: number }[]
+}
+
+/** Income − doctors − every other cost, then split between the partners. */
+export async function getProfit(clinicId: string, from: string, to: string): Promise<Profit> {
+  const { data, error } = await supabase.rpc('clinic_profit', { p_clinic: clinicId, p_from: from, p_to: to })
+  if (error) throw error
+  return data as unknown as Profit
+}
+
+export async function listPartners(clinicId: string): Promise<Required<Partner>[]> {
+  const { data, error } = await supabase.from('partners').select('id, name, share_percent, active, note')
+    .eq('clinic_id', clinicId).order('share_percent', { ascending: false }).order('name')
+  if (error) throw error
+  return data as Required<Partner>[]
+}
+
+export async function savePartner(clinicId: string, p: Partner) {
+  const row = { name: p.name.trim(), share_percent: p.share_percent, active: p.active, note: p.note?.trim() || null }
+  const { error } = p.id
+    ? await supabase.from('partners').update(row).eq('id', p.id)
+    : await supabase.from('partners').insert({ ...row, clinic_id: clinicId })
+  if (error) throw error
+}
+
+export async function deletePartner(id: string) {
+  const { error } = await supabase.from('partners').delete().eq('id', id)
+  if (error) throw error
+}
 
 export async function getDoctorEarnings(clinicId: string, from: string, to: string): Promise<DoctorEarning[]> {
   const { data, error } = await supabase.rpc('doctor_earnings', { p_clinic: clinicId, p_from: from, p_to: to })

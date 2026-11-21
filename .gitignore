@@ -1,3 +1,22 @@
 node_modules/
 .env*
 !.env.example
+# secrets — never commit
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+*.pem
+*.key
+age-key*
+*.sql.gz
+backups/
+# build output and dependencies
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+web/public/mediapipe/
+supabase/.temp/
+.DS_Store

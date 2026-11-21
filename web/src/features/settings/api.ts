@@ -4,6 +4,13 @@ export type ClinicSettings = {
   name: string
   cash_float: number
   commission_basis: string
+  admin_percent: number
+  lab_stage_days: number
+  installment_day: number | null
+  /** Printed on the installment contract. */
+  represented_by: string | null
+  legal_venue: string | null
+  suspend_after_days: number
   grace_days: number
   lock_threshold: number
   opens_at: string
@@ -13,7 +20,7 @@ export type ClinicSettings = {
 
 export async function getSettings(clinicId: string) {
   const [clinic, procedures, chairs] = await Promise.all([
-    supabase.from('clinics').select('name, cash_float, commission_basis, grace_days, lock_threshold, opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
+    supabase.from('clinics').select('name, cash_float, commission_basis, admin_percent, lab_stage_days, installment_day, grace_days, lock_threshold, suspend_after_days, represented_by, legal_venue, opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
     supabase.from('procedures').select('id, name, default_price, default_duration_min, active, bookable_online').eq('clinic_id', clinicId).order('name'),
     supabase.from('chairs').select('id, name, active').eq('clinic_id', clinicId).order('name'),
   ])

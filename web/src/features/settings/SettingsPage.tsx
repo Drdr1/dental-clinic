@@ -8,6 +8,8 @@ import { ChairsSection, ProceduresSection } from './CatalogSection'
 import { TeamSection } from './TeamSection'
 import { DrugsSection } from './DrugsSection'
 import { PayersSection } from './PayersSection'
+import { PartnersSection } from './PartnersSection'
+import { LabItemsSection } from './LabItemsSection'
 import { BookingSection } from './BookingSection'
 import { LogoSection } from './LogoSection'
 import { DeletedPatientsSection } from './DeletedPatientsSection'
@@ -31,9 +33,11 @@ export function SettingsPage() {
       </div>
       <LogoSection />
       <BookingSection />
+      <LabItemsSection />
       <PayersSection />
       <DrugsSection />
       <TeamSection />
+      <PartnersSection />
       <DeletedPatientsSection />
     </section>
   )
