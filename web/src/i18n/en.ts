@@ -11,6 +11,7 @@ export const en = {
   'login.title': 'Sign in to the clinic',
   'login.email': 'Email',
   'login.password': 'Password',
+  'login.unreachable': "Can't reach the clinic server right now. Try again shortly; if it keeps happening, send this message to support.",
   'login.submit': 'Sign in',
   'login.submitting': 'Signing in…',
   'login.failed': 'Email or password is incorrect.',

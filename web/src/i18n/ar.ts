@@ -13,6 +13,7 @@ export const ar: Messages = {
   'login.title': 'تسجيل الدخول للعيادة',
   'login.email': 'البريد الإلكتروني',
   'login.password': 'كلمة المرور',
+  'login.unreachable': 'مش قادرين نوصل لسيرفر العيادة دلوقتي. جرّب تاني بعد شوية، ولو فضلت المشكلة ابعت الرسالة دي للدعم.',
   'login.submit': 'دخول',
   'login.submitting': 'جارٍ الدخول…',
   'login.failed': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',

@@ -12,7 +12,9 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [failed, setFailed] = useState(false)
+  // 'credentials' only when the server really said the email or password is wrong;
+  // anything else (no network, a wrong app key) says so, with the server's reason.
+  const [failed, setFailed] = useState<null | { kind: 'credentials' } | { kind: 'other'; detail: string }>(null)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/'
   if (!loading && session) return <Navigate to={from} replace />
@@ -20,10 +22,12 @@ export function LoginPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setSubmitting(true)
-    setFailed(false)
+    setFailed(null)
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     setSubmitting(false)
-    if (error) setFailed(true)
+    if (!error) return
+    const bad = error.code === 'invalid_credentials' || (error.status === 400 && /invalid login/i.test(error.message))
+    setFailed(bad ? { kind: 'credentials' } : { kind: 'other', detail: `${error.status ?? ''} ${error.message}`.trim() })
   }
 
   return (
@@ -41,7 +45,10 @@ export function LoginPage() {
           <input type="password" dir="ltr" autoComplete="current-password" required value={password}
             onChange={(e) => setPassword(e.target.value)} />
         </label>
-        {failed && <p className="form-error" role="alert">{t('login.failed')}</p>}
+        {failed?.kind === 'credentials' && <p className="form-error" role="alert">{t('login.failed')}</p>}
+        {failed?.kind === 'other' && (
+          <p className="form-error" role="alert">{t('login.unreachable')} <span dir="ltr" className="small">({failed.detail})</span></p>
+        )}
         <button className="btn btn-primary" type="submit" disabled={submitting}>
           {submitting ? t('login.submitting') : t('login.submit')}
         </button>
