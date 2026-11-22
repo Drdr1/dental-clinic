@@ -68,7 +68,24 @@ function rest(url: string, anon: string, jwt: string) {
   }
 }
 
+// The web app and the iOS app (capacitor://clinic.derops.dev) are the only callers.
+// The Android app is served as https://clinic.derops.dev, so it matches the first.
+const ORIGINS = [
+  Deno.env.get('ALLOWED_ORIGIN') ?? 'https://clinic.derops.dev',
+  ...(Deno.env.get('EXTRA_ORIGINS') ?? 'capacitor://clinic.derops.dev').split(',').map((o) => o.trim()).filter(Boolean),
+]
+
 Deno.serve(async (req) => {
+  const res = await serveRequest(req)
+  const origin = req.headers.get('Origin') ?? ''
+  if (ORIGINS.includes(origin)) {
+    res.headers.set('Access-Control-Allow-Origin', origin)
+    res.headers.append('Vary', 'Origin')
+  }
+  return res
+})
+
+async function serveRequest(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors() })
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405)
 
@@ -99,7 +116,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 502)
   }
-})
+}
 
 // ---------------------------------------------------------------------------
 // Step 1: speech → text
