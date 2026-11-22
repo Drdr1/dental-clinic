@@ -110,7 +110,7 @@ export function PatientPage() {
               <h1>{patient.full_name}</h1>
               <p className="patient-meta">
                 {age !== null && <span>{t('patient.age', { n: age })}</span>}
-                <a dir="ltr" href={`tel:${patient.phone}`} className="phone-link">{patient.phone}</a>
+                <span dir="ltr">{patient.phone}</span>
               </p>
             </div>
           </div>
@@ -127,7 +127,7 @@ export function PatientPage() {
               </button>
               {more && (
                 <div className="user-pop" role="menu">
-                  <a role="menuitem" href={`tel:${patient.phone}`}>{t('patient.call')}</a>
+                  <a role="menuitem" className="phone-only-inline" href={`tel:${patient.phone}`}>{t('patient.call')}</a>
                   <button role="menuitem" onClick={() => { setMore(false); setDialog('edit') }}>{t('patientForm.edit')}</button>
                   <button role="menuitem" onClick={() => { setMore(false); setDialog('plan') }}>{t('plan.new')}</button>
                   <button role="menuitem" onClick={() => { setMore(false); setDialog('archive') }}>{t('archive.action')}</button>

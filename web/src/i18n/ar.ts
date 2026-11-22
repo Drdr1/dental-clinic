@@ -1157,6 +1157,7 @@ export const ar: Messages = {
   'patient.st.lab': 'في المعمل',
   'patient.st.ongoing': 'جاري',
   'patient.st.notYet': 'لسه',
+  'tooth.sessionN': '{what}، الجلسة {n}',
   'nav.more': 'المزيد',
   'doc.title': 'الأطباء',
   'doc.ownerOnly': 'أرقام الأطباء لصاحب العيادة بس.',

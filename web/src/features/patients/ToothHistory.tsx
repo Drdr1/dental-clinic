@@ -28,47 +28,81 @@ function conditionOf(list: ToothEntry[] | undefined): ToothCondition {
   return RANK.find((k) => kinds.includes(k)) ?? (list.some((e) => e.status === 'planned') ? 'needs' : 'filling')
 }
 
-async function getToothHistory(patientId: string): Promise<ToothEntry[]> {
-  const { data: plans, error } = await supabase.from('treatment_plans').select('id, title').eq('patient_id', patientId)
-  if (error) throw error
-  if (!plans.length) return []
-  const [items, procedures, sessions] = await Promise.all([
-    supabase.from('treatment_plan_items').select('plan_id, procedure_id, tooth_number, description, status, done_in_session_id')
-      .in('plan_id', plans.map((p) => p.id)).not('tooth_number', 'is', null).neq('status', 'cancelled'),
-    supabase.from('procedures').select('id, name'),
-    supabase.from('sessions').select('id, performed_at').eq('patient_id', patientId),
+type ToothSession = { id: string; at: string; planId: string | null; doctor: string; notes: string }
+type ToothData = { entries: ToothEntry[]; sessions: ToothSession[] }
+
+async function getToothHistory(patientId: string): Promise<ToothData> {
+  const [plansRes, sessions] = await Promise.all([
+    supabase.from('treatment_plans').select('id, title, clinic_id').eq('patient_id', patientId),
+    supabase.from('sessions').select('id, performed_at, treatment_plan_id, doctor_id, performed_by, notes')
+      .eq('patient_id', patientId).order('performed_at'),
   ])
-  for (const r of [items, procedures, sessions]) if (r.error) throw r.error
+  if (plansRes.error) throw plansRes.error
+  if (sessions.error) throw sessions.error
+  const plans = plansRes.data
+  const clinicId = plans[0]?.clinic_id
+  const [items, procedures, staff] = await Promise.all([
+    plans.length
+      ? supabase.from('treatment_plan_items').select('plan_id, procedure_id, tooth_number, description, status, done_in_session_id')
+        .in('plan_id', plans.map((p) => p.id)).not('tooth_number', 'is', null).neq('status', 'cancelled')
+      : Promise.resolve({ data: [], error: null }),
+    supabase.from('procedures').select('id, name'),
+    clinicId
+      ? supabase.from('clinic_members').select('user_id, display_name').eq('clinic_id', clinicId)
+      : Promise.resolve({ data: [], error: null }),
+  ])
+  for (const r of [items, procedures, staff]) if (r.error) throw r.error
   const names = new Map((procedures.data ?? []).map((p) => [p.id, p.name]))
   const when = new Map((sessions.data ?? []).map((s) => [s.id, s.performed_at]))
   const titles = new Map(plans.map((p) => [p.id, p.title]))
-  return (items.data ?? []).map((i) => ({
-    tooth: i.tooth_number as number,
-    label: [i.procedure_id ? names.get(i.procedure_id) : null, i.description].filter(Boolean).join(' — '),
-    procedure: `${i.procedure_id ? names.get(i.procedure_id) ?? '' : ''} ${i.description ?? ''}`,
-    status: i.status === 'done' ? 'done' : 'planned',
-    at: i.done_in_session_id ? when.get(i.done_in_session_id) ?? null : null,
-    planId: i.plan_id,
-    planTitle: titles.get(i.plan_id) ?? '',
-  }))
+  const people = new Map((staff.data ?? []).map((m) => [m.user_id, m.display_name]))
+  return {
+    entries: (items.data ?? []).map((i) => ({
+      tooth: i.tooth_number as number,
+      label: [i.procedure_id ? names.get(i.procedure_id) : null, i.description].filter(Boolean).join(' — '),
+      procedure: `${i.procedure_id ? names.get(i.procedure_id) ?? '' : ''} ${i.description ?? ''}`,
+      status: i.status === 'done' ? 'done' : 'planned',
+      at: i.done_in_session_id ? when.get(i.done_in_session_id) ?? null : null,
+      planId: i.plan_id,
+      planTitle: titles.get(i.plan_id) ?? '',
+    })),
+    sessions: (sessions.data ?? []).map((s) => ({
+      id: s.id, at: s.performed_at, planId: s.treatment_plan_id,
+      doctor: people.get(s.doctor_id ?? s.performed_by ?? '') ?? '',
+      notes: (s.notes ?? '').trim(),
+    })),
+  }
 }
 
-// Simple outlines: a crown with roots for the upper jaw, the same flipped for the lower.
-const UPPER_PATH = 'M5 13c0-5 2-9 7-9s7 4 7 9c0 4-1 7-2 7-1.4 0-1.6-4-5-4s-3.6 4-5 4c-1 0-2-3-2-7z'
-const LOWER_PATH = 'M5 11c0 5 2 9 7 9s7-4 7-9c0-4-1-7-2-7-1.4 0-1.6 4-5 4s-3.6-4-5-4c-1 0-2 3-2 7z'
+// The design's tooth: one outline, flipped for the lower jaw.
+const TOOTH_PATH = 'M6 22 Q6 4 14 3 Q22 4 22 22 Q26 24 25 31 Q24 38 14 38 Q4 38 3 31 Q2 24 6 22 Z'
 
 /** Chart and per-tooth history side by side, like the paper chart: tap a tooth to see what was done on it. */
 export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; onAddForTooth?: (tooth: number) => void }) {
-  const { t, date } = useI18n()
+  const { t, date, lang } = useI18n()
+  // "14 نوفمبر" as in the design; the year only when it isn't this year.
+  const short = (iso: string) => new Date(iso).getFullYear() === new Date().getFullYear()
+    ? new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long' }).format(new Date(iso))
+    : date(iso)
   const [picked, setPicked] = useState<number | null>(null)
   const q = useQuery({ queryKey: ['tooth-history', patientId], queryFn: () => getToothHistory(patientId) })
 
+  const entries = q.data?.entries ?? []
   const byTooth = new Map<number, ToothEntry[]>()
-  for (const e of q.data ?? []) byTooth.set(e.tooth, [...(byTooth.get(e.tooth) ?? []), e])
+  for (const e of entries) byTooth.set(e.tooth, [...(byTooth.get(e.tooth) ?? []), e])
   // Until someone taps a tooth, show the one worked on most recently.
-  const latest = [...(q.data ?? [])].sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''))[0]?.tooth ?? null
+  const latest = [...entries].sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''))[0]?.tooth ?? null
   const selected = picked ?? latest
-  const shown = selected ? [...(byTooth.get(selected) ?? [])].sort((a, b) => (b.at ?? '9999').localeCompare(a.at ?? '9999')) : []
+  // The visits on this tooth: every session of a plan that has work on it, newest first,
+  // numbered within the plan ("حشو عصب، الجلسة 2") as the doctor would say it.
+  const toothItems = selected ? byTooth.get(selected) ?? [] : []
+  const planIds = new Set(toothItems.map((e) => e.planId))
+  const visits = (q.data?.sessions ?? []).filter((s) => s.planId && planIds.has(s.planId)).map((s) => {
+    const inPlan = (q.data?.sessions ?? []).filter((x) => x.planId === s.planId)
+    const what = [...new Set(toothItems.filter((e) => e.planId === s.planId).map((e) => e.label))].join('، ')
+    return { ...s, title: inPlan.length > 1 ? t('tooth.sessionN', { what, n: inPlan.indexOf(s) + 1 }) : what }
+  }).reverse()
+  const planned = toothItems.filter((e) => e.status === 'planned')
   const cond = (n: number) => conditionOf(byTooth.get(n))
 
   const tooth = (n: number, upper: boolean) => (
@@ -76,7 +110,10 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
       aria-pressed={selected === n} aria-label={`${t('plan.tooth', { n })}: ${t(`tooth.c.${cond(n)}`)}`}
       onClick={() => setPicked(n)}>
       {!upper && <span className="tooth2-n">{n}</span>}
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d={upper ? UPPER_PATH : LOWER_PATH} /></svg>
+      <svg viewBox="0 0 28 40" aria-hidden="true">
+        <rect x="0" y="0" width="28" height="40" rx="6" className="tooth2-bg" />
+        <path d={TOOTH_PATH} transform={upper ? undefined : 'translate(0 40) scale(1 -1)'} />
+      </svg>
       {upper && <span className="tooth2-n">{n}</span>}
     </button>
   )
@@ -109,12 +146,21 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
           <h2>{selected ? t('tooth.toothN', { n: selected }) : t('tooth.allWork')}</h2>
           {selected && cond(selected) !== 'healthy' && <span className={`badge tb-${cond(selected)}`}>{t(`tooth.c.${cond(selected)}`)}</span>}
         </div>
-        {q.data && q.data.length === 0 && <p className="muted">{t('tooth.empty')}</p>}
-        {selected && shown.length === 0 && <p className="muted">{t('tooth.noneOnTooth', { n: selected })}</p>}
+        {q.data && entries.length === 0 && <p className="muted">{t('tooth.empty')}</p>}
+        {selected && visits.length === 0 && planned.length === 0 && <p className="muted">{t('tooth.noneOnTooth', { n: selected })}</p>}
         <ul className="tooth-log">
-          {shown.map((e, i) => (
-            <li key={`${e.tooth}-${i}`}>
-              <span className="muted small nowrap">{e.at ? date(e.at) : t('plan.itemPlanned')}</span>
+          {visits.map((v) => (
+            <li key={v.id}>
+              <span className="muted small nowrap">{short(v.at)}</span>
+              <div>
+                <strong>{v.title}</strong>
+                {(v.doctor || v.notes) && <p className="muted small">{[v.doctor, v.notes].filter(Boolean).join(' · ')}</p>}
+              </div>
+            </li>
+          ))}
+          {planned.map((e, i) => (
+            <li key={`p-${i}`}>
+              <span className="muted small nowrap">{t('plan.itemPlanned')}</span>
               <div>
                 <strong>{e.label}</strong>
                 <p className="muted small"><Link to={`/plans/${e.planId}`}>{e.planTitle}</Link></p>

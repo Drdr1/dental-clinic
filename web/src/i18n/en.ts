@@ -1155,6 +1155,7 @@ export const en = {
   'patient.st.lab': 'At the lab',
   'patient.st.ongoing': 'In progress',
   'patient.st.notYet': 'Not yet',
+  'tooth.sessionN': '{what}, session {n}',
   'nav.more': 'More',
   'doc.title': 'Doctors',
   'doc.ownerOnly': 'Doctor figures are visible to the clinic owner only.',

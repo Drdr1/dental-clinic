@@ -1288,22 +1288,25 @@ button.chip { cursor: pointer; }
 .tooth-row2.is-lower { border-top: 1px solid var(--line2); padding-top: 10px; padding-bottom: 0; }
 .tooth-row2 > :nth-child(8) { margin-inline-end: 4px; }
 .tooth2 { display: grid; justify-items: center; gap: 2px; border: 0; background: none; padding: 4px 0; border-radius: 8px; cursor: pointer; font: inherit; color: var(--ink-soft); }
-.tooth2 svg { width: 100%; max-width: 30px; height: 30px; }
-.tooth2 path { fill: #fff; stroke: var(--line-strong); stroke-width: 1.3; }
+.tooth2 svg { width: 100%; max-width: 30px; height: 43px; }
+.tooth2 path { fill: #fff; stroke: #8a98ae; stroke-width: 1.6; }
+.tooth2-bg { fill: transparent; }
+.tooth2.is-selected .tooth2-bg { fill: var(--gum-soft2); }
 .tooth2-n { font-size: 11px; }
-.tooth2:hover { background: var(--grey-soft); }
-.tooth2.c-needs path { fill: #fbd9d4; stroke: var(--danger); }
-.tooth2.c-filling path { fill: var(--gum-soft2); stroke: var(--gum); }
-.tooth2.c-root_canal path { fill: var(--gum); stroke: var(--gum); }
+.tooth2:hover .tooth2-bg { fill: var(--grey-soft); }
+.tooth2:hover { background: none; }
+.tooth2.c-needs path { fill: #fbd5cf; stroke: var(--danger); }
+.tooth2.c-filling path { fill: #cfdffc; stroke: var(--gum); }
+.tooth2.c-root_canal path { fill: var(--gum); stroke: #1a3f9e; }
 .tooth2.c-crown path { fill: var(--ink); stroke: var(--ink); }
-.tooth2.c-missing path { fill: none; stroke: var(--line-strong); stroke-dasharray: 2 2; }
-.tooth2.is-selected { background: var(--gum-soft); }
+.tooth2.c-missing path { fill: #fff; stroke: #8a98ae; stroke-dasharray: 3 3; }
+.tooth2.is-selected { background: none; }
 .tooth2.is-selected .tooth2-n { color: var(--ink); font-weight: 700; }
 .tooth-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
 .tooth-legend span { display: flex; align-items: center; gap: 6px; }
 .swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid var(--line-strong); background: #fff; }
 .swatch.c-needs { background: #fbd9d4; border-color: var(--danger); }
-.swatch.c-filling { background: var(--gum-soft2); border-color: var(--gum); }
+.swatch.c-filling { background: #cfdffc; border-color: var(--gum); }
 .swatch.c-root_canal { background: var(--gum); border-color: var(--gum); }
 .swatch.c-crown { background: var(--ink); border-color: var(--ink); }
 .swatch.c-missing { background: none; border-style: dashed; }
@@ -1315,7 +1318,7 @@ button.chip { cursor: pointer; }
 .phone-link { color: inherit; text-decoration: none; }
 .pill { display: inline-block; font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 999px; background: var(--grey-soft); color: var(--ink); }
 .pill-danger { background: var(--danger-soft); color: var(--danger); }
-.tooth-log li { grid-template-columns: 112px minmax(0, 1fr); }
+.tooth-log li { grid-template-columns: 86px minmax(0, 1fr); padding: 10px 0; }
 .tooth-log { list-style: none; margin: 0; padding: 0; }
 .tooth-log li { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line2); }
 .tooth-log li:first-child { border-top: 0; padding-top: 0; }
@@ -1331,6 +1334,7 @@ button.chip { cursor: pointer; }
 }
 @media (max-width: 860px) {
   .patient-card { padding: 16px; }
+  .tooth2 svg { height: 30px; }
   .patient-actions .btn { flex: 1 1 auto; }
   .tooth-row2 { gap: 0; }
   .tooth2 svg { height: 22px; }
@@ -1338,3 +1342,7 @@ button.chip { cursor: pointer; }
 }
 
 .appbar-spacer { flex: 1; }
+
+/* Calling needs a phone: on a desktop it only opens an app picker. */
+.phone-only-inline { display: none; }
+@media (max-width: 860px) { .phone-only-inline { display: inline-flex; } .user-pop .phone-only-inline { display: flex; } }

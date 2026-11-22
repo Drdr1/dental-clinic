@@ -57,7 +57,7 @@ export function LabPage() {
         </div>
         {lab.phone && (
           <div className="head-actions">
-            <a className="btn" href={`tel:${lab.phone}`}>{t('patient.call')}</a>
+            <a className="btn phone-only-inline" href={`tel:${lab.phone}`}>{t('patient.call')}</a>
             <a className="btn" target="_blank" rel="noreferrer" href={whatsappLink(lab.phone)}>{t('patient.whatsapp')}</a>
           </div>
         )}
