@@ -1042,7 +1042,7 @@ export const en = {
   'mat.deleteWithHistory': 'This material has stock history. Deleting removes its purchases and usage. Purchase expenses stay in the finance report. Continue?',
   'mat.deleteOwnerOnly': 'Only the clinic owner can delete a material that has stock history.',
 
-  'nav.doctors': 'Doctors',
+  'nav.doctors': 'Team',
   'shell.search': 'Search by patient name or mobile',
   'shell.newPatient': 'New patient',
   'shell.newAppointment': 'New appointment',
@@ -1265,7 +1265,7 @@ export const en = {
   'fin.workDone': 'Work done',
   'fin.share': 'Share',
   'fin.sharesPaid': '{amount} of it paid so far; the rest is on the Doctors page.',
-  'doc.titleV2': 'Doctors and team',
+  'doc.titleV2': 'Team',
   'doc.teamCount': '{d} doctors · {r} reception',
   'doc.addReception': 'Add receptionist',
   'doc.addDoctor': 'Add doctor',

@@ -1044,7 +1044,7 @@ export const ar: Messages = {
   'mat.deleteWithHistory': 'الخامة دي عليها حركة مخزون. الحذف هيشيل مشترياتها وصرفها. مصروفات الشراء هتفضل في التقرير المالي. تكمل؟',
   'mat.deleteOwnerOnly': 'صاحب العيادة بس اللي يقدر يحذف خامة عليها حركة مخزون.',
 
-  'nav.doctors': 'الأطباء',
+  'nav.doctors': 'الفريق',
   'shell.search': 'ابحث باسم المريض أو رقم الموبايل',
   'shell.newPatient': 'مريض جديد',
   'shell.newAppointment': 'موعد جديد',
@@ -1267,7 +1267,7 @@ export const ar: Messages = {
   'fin.workDone': 'الشغل اللي اتعمل',
   'fin.share': 'نصيبه',
   'fin.sharesPaid': 'اتصرف منها {amount} لحد دلوقتي، والباقي في صفحة الأطباء.',
-  'doc.titleV2': 'الأطباء والفريق',
+  'doc.titleV2': 'الفريق',
   'doc.teamCount': '{d} أطباء · {r} استقبال',
   'doc.addReception': 'إضافة استقبال',
   'doc.addDoctor': 'إضافة دكتور',
