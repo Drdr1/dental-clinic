@@ -6,18 +6,22 @@ import { useI18n } from '../../i18n'
 import type { MessageKey } from '../../i18n/en'
 import { methodKey } from '../payments/labels'
 import { ErrorNote } from '../../components/ErrorNote'
-import { shiftDate } from '../appointments/time'
 import { todayLocal } from '../../lib/dates'
 import { closeDay, getClosers, getClosings, getDay } from './api'
+import { Modal } from '../../components/Modal'
+import { AUTO_CATEGORIES, CATEGORIES, addExpense, type ExpenseCategory } from '../finance/api'
 
 export function CashPage() {
   const { clinicId, role } = useMember()
-  const { t, money, date: fmtDate, time } = useI18n()
+  const { t, money, date: fmtDate, time, lang } = useI18n()
   const qc = useQueryClient()
   const [day, setDay] = useState(todayLocal())
   const [counted, setCounted] = useState('')
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
+  const [showAll, setShowAll] = useState(false)
+  const [payingOut, setPayingOut] = useState(false)
+  const [out, setOut] = useState<{ note: string; amount: string; category: ExpenseCategory }>({ note: '', amount: '', category: 'other' })
   // Reception holds the drawer and counts it at night, so she gets this
   // screen. The money reports stay owner-only.
   const canCash = role === 'owner' || role === 'receptionist'
@@ -35,6 +39,15 @@ export function CashPage() {
     },
   })
 
+  // Petty cash out of the drawer is an expense paid in cash on that day (owner only, as expenses are).
+  const payOut = useMutation({
+    mutationFn: () => addExpense(clinicId, { spent_on: day, category: out.category, amount: Number(out.amount), method: 'cash', paid_to: '', note: out.note }),
+    onSuccess: () => {
+      setPayingOut(false); setOut({ note: '', amount: '', category: 'other' })
+      qc.invalidateQueries({ queryKey: ['cash'] }); qc.invalidateQueries({ queryKey: ['finance'] })
+    },
+  })
+
   if (!canCash) return <section className="page"><p className="empty">{t('cash.ownerOnly')}</p></section>
 
   const s = summary.data
@@ -47,165 +60,195 @@ export function CashPage() {
     if (canSave && !save.isPending) save.mutate()
   }
 
+  const isToday = day === todayLocal()
+  const total = (s?.payments ?? []).filter((p) => !p.is_reversal).reduce((sum, p) => sum + p.amount, 0)
+  const recent = showAll ? history.data ?? [] : (history.data ?? []).slice(0, 5)
+  const weekday = (d: string) => new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+    .format(new Date(`${d}T12:00:00`))
+
   return (
     <section className="page">
       <header className="page-head">
-        <h1>{t('cash.title')}</h1>
-        <div className="head-actions">
-          <button className="btn" onClick={() => setDay(shiftDate(day, -1))}>{t('appt.prevDay')}</button>
-          {day !== todayLocal() && <button className="btn" onClick={() => setDay(todayLocal())}>{t('appt.today')}</button>}
-          <input type="date" className="date-jump" value={day} max={todayLocal()} aria-label={t('receipt.date')}
-            onChange={(e) => e.target.value && setDay(e.target.value)} />
+        <div>
+          <h1>{t('cash.title')}</h1>
+          <p className="muted">
+            {weekday(day)} · {s?.closing ? t('cash.dayClosed') : isToday ? t('cash.dayOpen') : t('cash.dayNotClosed')}
+            {!isToday && <> · <button className="link-btn link-strong" onClick={() => setDay(todayLocal())}>{t('cash.backToToday')}</button></>}
+          </p>
+        </div>
+        <div className="row-buttons">
+          {role === 'owner' && <Link className="btn" to="/finance">{t('cash.monthReport')}</Link>}
         </div>
       </header>
 
       {summary.isError && <ErrorNote error={summary.error} onRetry={() => summary.refetch()} />}
       {s && (
-        <section className="panel">
-          <h2>{fmtDate(s.date)}</h2>
-          <dl className="totals wide">
-            {s.opening_float > 0 && <div><dt>{t('cash.float')}</dt><dd>{money(s.opening_float)}</dd></div>}
-            <div><dt>{t('cash.in')}</dt><dd>{money(s.cash_in)}</dd></div>
-            <div><dt>{t('cash.out')}</dt><dd>−{money(s.cash_out)}</dd></div>
-            <div className="totals-net"><dt>{t('cash.expected')}</dt><dd>{money(s.expected_cash)}</dd></div>
-          </dl>
+        <>
+          <div className="cash-eq">
+            <article className="kpi"><span className="kpi-sub">{t('cash.float')}</span><strong className="kpi-value">{money(s.opening_float)}</strong></article>
+            <span className="eq-op">+</span>
+            <article className="kpi"><span className="kpi-sub">{t('cash.in')}</span><strong className="kpi-value">{money(s.cash_in)}</strong></article>
+            <span className="eq-op">−</span>
+            <article className="kpi"><span className="kpi-sub">{t('cash.out')}</span><strong className="kpi-value">{money(s.cash_out)}</strong></article>
+            <span className="eq-op">=</span>
+            <article className="kpi kpi-ink"><span className="kpi-sub">{t('cash.expected')}</span><strong className="kpi-value">{money(s.expected_cash)}</strong></article>
+          </div>
 
-          {/* The day itself, so a count that doesn't match can be traced to a line. */}
-          {s.payments.length > 0 && (
-            <>
-              <h3>{t('cash.tookToday', { n: s.payments.length })}</h3>
-              <div className="table-wrap">
-                <table className="table table-compact">
-                  <thead><tr>
-                    <th>{t('cash.at')}</th>
-                    <th>{t('receipt.receivedFrom')}</th>
-                    <th>{t('pay.method')}</th>
-                    <th>{t('cash.takenBy')}</th>
-                    <th className="num">{t('pay.amount')}</th>
-                  </tr></thead>
-                  <tbody>
-                    {s.payments.map((p) => (
-                      <tr key={p.id} className={p.is_reversal ? 'is-void-row' : ''}>
-                        <td className="muted clock">{time(p.at)}</td>
-                        <td>
-                          <Link to={`/patients/${p.patient_id}`} className="row-link">{p.patient}</Link>
-                          {p.note && <p className="muted small">{p.note}</p>}
-                        </td>
-                        <td>
-                          {t(methodKey(p.method))}
-                          {p.method !== 'cash' && <span className="badge badge-muted"> {t('cash.notInDrawer')}</span>}
-                        </td>
-                        <td className="muted">{p.taken_by}</td>
-                        <td className="num">{money(p.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <dl className="totals wide">
-                {Object.entries(s.income_by_method).sort((a, b) => b[1] - a[1]).map(([mth, v]) => (
-                  <div key={mth}><dt>{t(methodKey(mth))}</dt><dd>{money(v)}</dd></div>
-                ))}
-              </dl>
-            </>
-          )}
+          <div className="plan-grid">
+            <div className="plan-main">
+              <section className="panel">
+                <div className="panel-head">
+                  <h2>{isToday ? t('cash.todayTakings') : t('cash.dayTakings')}</h2>
+                  {s.payments.length > 0 && (
+                    <span className="muted small">{t('cash.takingsSub', { n: s.payments.length, total: money(total), cash: money(s.cash_in) })}</span>
+                  )}
+                </div>
+                {s.payments.length === 0 && <p className="muted">{t('cash.noTakings')}</p>}
+                {s.payments.length > 0 && (
+                  <div className="table-scroll">
+                    <table className="table table-plain">
+                      <thead><tr>
+                        <th>{t('cash.at')}</th>
+                        <th>{t('patients.col.patient')}</th>
+                        <th>{t('pay.amount')}</th>
+                        <th>{t('pay.method')}</th>
+                        <th className="hide-phone">{t('cash.takenBy')}</th>
+                      </tr></thead>
+                      <tbody>
+                        {s.payments.map((p) => (
+                          <tr key={p.id} className={p.is_reversal ? 'is-void-row' : ''}>
+                            <td className="muted nowrap">{time(p.at)}</td>
+                            <td>
+                              <Link to={`/patients/${p.patient_id}`} className="row-link strong">{p.patient}</Link>
+                              {p.note && <p className="muted small">{p.note}</p>}
+                            </td>
+                            <td className="strong nowrap">{money(p.amount)}</td>
+                            <td className="nowrap">
+                              <span className={`badge ${p.method === 'cash' ? 'badge-neutral' : 'badge-info'}`}>{t(methodKey(p.method))}</span>
+                              {p.method !== 'cash' && <span className="muted small"> {t('cash.notInDrawer')}</span>}
+                            </td>
+                            <td className="hide-phone">{p.taken_by}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
 
-          {s.cash_expenses.length > 0 && (
-            <>
-              <h3>{t('cash.paidOut')}</h3>
-              <div className="table-wrap">
-                <table className="table table-compact">
-                  <tbody>
-                    {s.cash_expenses.map((e) => (
-                      <tr key={e.id}>
-                        <td>{t(`fin.cat.${e.category}` as MessageKey)}</td>
-                        <td className="muted">{[e.paid_to, e.note].filter(Boolean).join(' — ')}</td>
-                        <td className="num">−{money(e.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-
-          {s.closing ? (
-            <div className="closed-box">
-              <p><strong>{t('cash.closedAlready')}</strong></p>
-              <dl className="totals wide">
-                <div><dt>{t('cash.counted')}</dt><dd>{money(s.closing.counted_cash)}</dd></div>
-                <div><dt>{t('cash.difference')}</dt>
-                  <dd className={s.closing.difference === 0 ? 'ok-text' : 'danger-text'}>
-                    {s.closing.difference === 0 ? t('cash.exact') : money(s.closing.difference)}
-                  </dd></div>
-              </dl>
-              {s.closing.reason && <p className="muted">{s.closing.reason}</p>}
-              <p className="muted small">
-                {t('cash.closedBy', { name: closers.data?.get(s.closing.closed_by) ?? '', date: fmtDate(s.closing.closed_at) })}
-              </p>
+              <section className="panel">
+                <div className="panel-head">
+                  <h2>{t('cash.paidOut')}</h2>
+                  {role === 'owner' && !s.closing && (
+                    <button className="btn btn-small" onClick={() => setPayingOut(true)}>{t('cash.payOut')}</button>
+                  )}
+                </div>
+                {s.cash_expenses.length === 0 && <p className="muted">{t('cash.nothingOut')}</p>}
+                <ul className="sched-list">
+                  {s.cash_expenses.map((e) => (
+                    <li key={e.id}>
+                      <div>
+                        <strong>{[e.note, e.paid_to].filter(Boolean).join(' · ') || t(`fin.cat.${e.category}` as MessageKey)}</strong>
+                        <p className="muted small">{t(`fin.cat.${e.category}` as MessageKey)}</p>
+                      </div>
+                      <strong>{money(e.amount)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             </div>
-          ) : (
-            <form className="dialog-form" onSubmit={onSubmit}>
-              <label className="field">
-                <span>{t('cash.counted')}</span>
-                <input type="number" min="0" step="any" dir="ltr" required value={counted}
-                  onChange={(e) => setCounted(e.target.value)} autoFocus />
-                <small className="hint">{t('cash.countedHint')}</small>
-              </label>
 
-              {diff !== null && (
-                <p className={diff === 0 ? 'ok-text' : 'danger-text'}>
-                  {diff === 0 ? t('cash.exact') : diff > 0 ? t('cash.over', { amount: money(diff) }) : t('cash.short', { amount: money(-diff) })}
-                </p>
-              )}
-              {needsReason && (
-                <label className="field"><span>{t('cash.reason')}</span>
-                  <input required value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200}
-                    placeholder={t('cash.reasonHint')} /></label>
-              )}
-              <label className="field"><span>{t('pay.note')}</span>
-                <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} /></label>
+            <aside className="plan-side">
+              <section className="panel">
+                <h2>{t('cash.close')}</h2>
+                {s.closing ? (
+                  <>
+                    <div className="account-split"><span>{t('cash.counted')}</span><strong>{money(s.closing.counted_cash)}</strong></div>
+                    <div className={`diff-box ${s.closing.difference === 0 ? 'ok' : s.closing.difference > 0 ? 'over' : 'short'}`}>
+                      <span>{t('cash.difference')}</span>
+                      <strong>{s.closing.difference === 0 ? t('cash.exactShort') : s.closing.difference > 0 ? t('cash.overShort', { amount: money(s.closing.difference) }) : t('cash.shortShort', { amount: money(-s.closing.difference) })}</strong>
+                    </div>
+                    {s.closing.reason && <p className="muted">{s.closing.reason}</p>}
+                    <p className="muted small">{t('cash.closedBy', { name: closers.data?.get(s.closing.closed_by) ?? '', date: fmtDate(s.closing.closed_at) })}</p>
+                  </>
+                ) : (
+                  <form className="dialog-form" onSubmit={onSubmit}>
+                    <p className="muted">{t('cash.countedHint')}</p>
+                    <label className="field">
+                      <span>{t('cash.counted')}</span>
+                      <input type="number" min="0" step="any" dir="ltr" required value={counted}
+                        onChange={(e) => setCounted(e.target.value)} />
+                    </label>
+                    {diff !== null && (
+                      <div className={`diff-box ${diff === 0 ? 'ok' : diff > 0 ? 'over' : 'short'}`}>
+                        <span>{t('cash.difference')}</span>
+                        <strong>{diff === 0 ? t('cash.exactShort') : diff > 0 ? t('cash.overShort', { amount: money(diff) }) : t('cash.shortShort', { amount: money(-diff) })}</strong>
+                      </div>
+                    )}
+                    {needsReason && (
+                      <label className="field"><span>{t('cash.reason')}</span>
+                        <input required value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200}
+                          placeholder={t('cash.reasonHintShort')} /></label>
+                    )}
+                    {save.isError && <ErrorNote error={save.error} />}
+                    <button type="submit" className="btn btn-ink btn-block" disabled={!canSave || save.isPending}>
+                      {save.isPending ? t('common.saving') : t('cash.close')}
+                    </button>
+                    <p className="hint">{t('cash.finalHint')}</p>
+                  </form>
+                )}
+              </section>
 
-              {save.isError && <ErrorNote error={save.error} />}
-              <div className="dialog-actions">
-                <button type="submit" className="btn btn-primary" disabled={!canSave || save.isPending}>
-                  {save.isPending ? t('common.saving') : t('cash.close')}
-                </button>
-              </div>
-              <p className="hint">{t('cash.finalHint')}</p>
-            </form>
-          )}
-        </section>
+              <section className="panel">
+                <div className="panel-head">
+                  <h2>{t('cash.history')}</h2>
+                  <span className="row-buttons">
+                    {(history.data?.length ?? 0) > 5 && (
+                      <button className="link-btn link-strong" onClick={() => setShowAll((v) => !v)}>{showAll ? t('plan.showLess') : t('cash.all')}</button>
+                    )}
+                    <input type="date" className="date-jump date-small" value={day} max={todayLocal()} aria-label={t('cash.openDay')}
+                      title={t('cash.openDay')} onChange={(e) => e.target.value && setDay(e.target.value)} />
+                  </span>
+                </div>
+                {history.data?.length === 0 && <p className="muted">{t('cash.noHistory')}</p>}
+                <ul className="sched-list">
+                  {recent.map((c) => (
+                    <li key={c.id}>
+                      <div>
+                        <button className="link-btn row-link strong" onClick={() => setDay(c.business_date)}>{weekday(c.business_date)}</button>
+                        <p className="muted small">{t('cash.closedByName', { name: closers.data?.get(c.closed_by) ?? '' })}</p>
+                      </div>
+                      <span className={`badge ${c.difference === 0 ? 'badge-neutral' : c.difference > 0 ? 'badge-info' : 'badge-danger'}`}>
+                        {c.difference === 0 ? t('cash.exactShort') : c.difference > 0 ? t('cash.overShort', { amount: Math.abs(c.difference) }) : t('cash.shortShort', { amount: Math.abs(c.difference) })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </aside>
+          </div>
+        </>
       )}
 
-      <section className="panel">
-        <h2>{t('cash.history')}</h2>
-        {history.data?.length === 0 && <p className="muted">{t('cash.noHistory')}</p>}
-        {history.data && history.data.length > 0 && (
-          <div className="table-wrap">
-            <table className="table table-compact">
-              <thead><tr>
-                <th>{t('receipt.date')}</th><th className="num">{t('cash.expected')}</th><th className="num">{t('cash.counted')}</th>
-                <th className="num">{t('cash.difference')}</th><th>{t('cash.reason')}</th><th>{t('cash.closedByShort')}</th>
-              </tr></thead>
-              <tbody>
-                {history.data.map((c) => (
-                  <tr key={c.id}>
-                    <td><button className="link-btn row-link" onClick={() => setDay(c.business_date)}>{fmtDate(c.business_date)}</button></td>
-                    <td className="num">{money(c.expected_cash)}</td>
-                    <td className="num">{money(c.counted_cash)}</td>
-                    <td className={`num ${c.difference === 0 ? 'muted' : 'danger-text'}`}>
-                      {c.difference === 0 ? '—' : money(c.difference)}
-                    </td>
-                    <td className="muted">{c.reason}</td>
-                    <td className="muted">{closers.data?.get(c.closed_by) ?? ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {payingOut && (
+        <Modal title={t('cash.payOut')} onClose={() => setPayingOut(false)}>
+          <form className="dialog-form" onSubmit={(e) => { e.preventDefault(); if (Number(out.amount) > 0) payOut.mutate() }}>
+            <label className="field"><span>{t('cash.outWhat')}</span>
+              <input required autoFocus value={out.note} onChange={(e) => setOut({ ...out, note: e.target.value })} placeholder={t('cash.outWhatHint')} maxLength={200} /></label>
+            <label className="field"><span>{t('pay.amount')}</span>
+              <input type="number" min="1" step="any" dir="ltr" required value={out.amount} onChange={(e) => setOut({ ...out, amount: e.target.value })} /></label>
+            <label className="field"><span>{t('fin.category')}</span>
+              <select value={out.category} onChange={(e) => setOut({ ...out, category: e.target.value as ExpenseCategory })}>
+                {CATEGORIES.filter((c) => !AUTO_CATEGORIES.includes(c)).map((c) => <option key={c} value={c}>{t(`fin.cat.${c}` as MessageKey)}</option>)}
+              </select></label>
+            {payOut.isError && <ErrorNote error={payOut.error} />}
+            <div className="dialog-actions">
+              <button type="submit" className="btn btn-primary" disabled={payOut.isPending}>{t('common.save')}</button>
+              <button type="button" className="btn" onClick={() => setPayingOut(false)}>{t('common.cancel')}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </section>
   )
 }
