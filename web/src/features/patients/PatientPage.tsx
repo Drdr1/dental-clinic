@@ -1,6 +1,6 @@
 import { todayLocal } from '../../lib/dates'
 import { Link, useParams } from 'react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
 import { ageFrom, whatsappLink } from '../../lib/phone'
@@ -25,17 +25,38 @@ import { PatientFiles } from '../files/PatientFiles'
 import { PatientForm } from './PatientForm'
 import { PatientDangerZone } from './PatientDangerZone'
 import { getClinicDoctors, getUpcomingForPatient } from '../appointments/api'
+import { AppointmentDialog } from '../appointments/AppointmentDialog'
+import { Icon } from '../../components/Icon'
+import { supabase } from '../../lib/supabase'
+import { AccountCard, CurrentPlanCard } from './PatientSummaryCards'
 
 export function PatientPage() {
   const { id = '' } = useParams()
   const { t, money, date } = useI18n()
 
   const { clinicId } = useMember()
-  const [dialog, setDialog] = useState<'plan' | 'visit' | 'edit' | 'archive' | null>(null)
-  const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files'>('overview')
+  const [dialog, setDialog] = useState<'plan' | 'visit' | 'dictate' | 'book' | 'edit' | 'archive' | null>(null)
+  const [more, setMore] = useState(false)
+  useEffect(() => {
+    if (!more) return
+    const close = (e: MouseEvent) => { if (!(e.target as Element).closest('.user-menu')) setMore(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [more])
+  const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files' | 'rx'>('overview')
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
   const upcoming = useQuery({ queryKey: ['appointments', id], queryFn: () => getUpcomingForPatient(id), enabled: !!id })
   const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
+  const lastVisit = useQuery({
+    queryKey: ['last-visit', id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('appointments').select('starts_at').eq('patient_id', id)
+        .eq('status', 'done').order('starts_at', { ascending: false }).limit(1)
+      if (error) throw error
+      return data[0]?.starts_at ?? null
+    },
+    enabled: !!id,
+  })
   const ledger = useQuery({
     queryKey: ['ledger', id],
     queryFn: () => getPatientLedger(id, clinicId),
@@ -68,54 +89,67 @@ export function PatientPage() {
 
   return (
     <section className="page patient">
-      <Link to="/patients" className="back-link">{t('common.back')}</Link>
+      <nav className="crumbs"><Link to="/patients">{t('patients.title')}</Link><span>/</span><span>{patient.full_name}</span></nav>
 
-      <header className="patient-head">
-        <div>
-          <h1>{patient.full_name}</h1>
-          <p className="patient-meta">
-            <span dir="ltr">{patient.phone}</span>
-            {age !== null && <span>{t('patient.age', { n: age })}</span>}
-          </p>
+      <section className="panel patient-card">
+        <div className="patient-top">
+          <div className="patient-id">
+            <span className="user-avatar big"><Icon name="patients" /></span>
+            <div>
+              <h1>{patient.full_name}</h1>
+              <p className="patient-meta">
+                {age !== null && <span>{t('patient.age', { n: age })}</span>}
+                <span dir="ltr">{patient.phone}</span>
+              </p>
+            </div>
+          </div>
+          <div className="patient-actions">
+            <a className="btn" href={whatsappLink(patient.whatsapp_phone ?? patient.phone)} target="_blank" rel="noreferrer">
+              {t('patient.whatsapp')}
+            </a>
+            <a className="btn" href={`tel:${patient.phone}`}>{t('patient.call')}</a>
+            <button className="btn" onClick={() => setDialog('book')}>{t('patient.book')}</button>
+            <button className="btn" onClick={() => setDialog('dictate')}>{t('patient.dictate')}</button>
+            <button className="btn btn-primary" onClick={() => setDialog('visit')}>{t('patient.newSession')}</button>
+            <div className="user-menu">
+              <button className="btn icon-square" aria-label={t('nav.more')} aria-expanded={more} onClick={() => setMore((v) => !v)}>
+                <Icon name="more" />
+              </button>
+              {more && (
+                <div className="user-pop" role="menu">
+                  <button role="menuitem" onClick={() => { setMore(false); setDialog('edit') }}>{t('patientForm.edit')}</button>
+                  <button role="menuitem" onClick={() => { setMore(false); setDialog('plan') }}>{t('plan.new')}</button>
+                  <button role="menuitem" onClick={() => { setMore(false); setDialog('archive') }}>{t('archive.action')}</button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="patient-actions">
-          <a className="btn" href={`tel:${patient.phone}`}>{t('patient.call')}</a>
-          <a className="btn" href={whatsappLink(patient.whatsapp_phone ?? patient.phone)} target="_blank" rel="noreferrer">
-            {t('patient.whatsapp')}
-          </a>
-          <button className="btn" onClick={() => setDialog('edit')}>{t('patientForm.edit')}</button>
-          <button className="btn" onClick={() => setDialog('archive')}>{t('archive.action')}</button>
-        </div>
-      </header>
 
-      {patient.archived_at && (
-        <div className="medical-alert" role="note">
-          <strong>{t('archive.banner')}</strong>
-          {patient.archive_reason && <p>{patient.archive_reason}</p>}
-        </div>
-      )}
-      {patient.medical_alerts && (
-        <div className="medical-alert" role="note">
-          <strong>{t('patient.alertTitle')}</strong>
-          <p>{patient.medical_alerts}</p>
-        </div>
-      )}
-      <PatientAllergies patientId={patient.id} groups={patient.allergy_groups ?? []} />
+        <dl className="patient-facts">
+          <div><dt>{t('patientForm.doctor')}</dt><dd>{doctorName ?? t('common.none')}</dd></div>
+          <div><dt>{t('patients.col.lastVisit')}</dt><dd>{lastVisit.data ? date(lastVisit.data) : t('patients.newPatient')}</dd></div>
+          <div><dt>{t('patient.nextVisit')}</dt><dd>{nextAppointment ? date(nextAppointment.starts_at) : t('common.none')}</dd></div>
+          <div className={owed > 0 ? '' : 'is-muted'}><dt>{t('patients.col.owed')}</dt><dd className={overdue > 0 ? 'danger-text' : ''}>{owed > 0 ? money(owed) : t('common.none')}</dd></div>
+          <div className={recallOverdue && !inTreatment ? 'is-danger' : ''}>
+            <dt>{t('patient.recall')}</dt>
+            <dd>{inTreatment ? t('patient.recallPausedShort') : patient.next_recall_due ? date(patient.next_recall_due) : t('common.none')}</dd>
+          </div>
+          {patient.source && <div><dt>{t('patient.cameFrom')}</dt><dd>{t(`source.${patient.source}` as Parameters<typeof t>[0])}{patient.source_note ? ` · ${patient.source_note}` : ''}</dd></div>}
+        </dl>
 
-      <div className="info-bar">
-        {doctorName && <span><em>{t('patientForm.doctor')}</em>{doctorName}</span>}
-        <span><em>{t('patient.nextVisit')}</em>{nextAppointment ? date(nextAppointment.starts_at) : t('common.none')}</span>
-        <span className={recallOverdue && !inTreatment ? 'is-danger' : ''}>
-          <em>{t('patient.recall')}</em>
-          {inTreatment ? t('patient.recallPausedShort') : patient.next_recall_due ? date(patient.next_recall_due) : t('common.none')}
-        </span>
-        <span className={owed > 0 ? 'is-money' : ''}><em>{t('patient.outstanding')}</em>{owed > 0 ? money(owed) : t('common.none')}</span>
-        {overdue > 0 && <span className="is-danger"><em>{t('patient.overdueAmount')}</em>{money(overdue)}</span>}
-      </div>
+        <div className="patient-chips">
+          {patient.archived_at && <span className="badge badge-muted">{t('archive.banner')}{patient.archive_reason ? ` · ${patient.archive_reason}` : ''}</span>}
+          {patient.medical_alerts && <span className="badge badge-danger chip-alert" title={t('patient.alertTitle')}>{patient.medical_alerts}</span>}
+          {plans.some((p) => p.consent_signed) && <span className="chip">{t('patient.consentSigned')}</span>}
+          {overdue > 0 && <span className="badge badge-danger">{t('patient.overdueLine', { amount: money(overdue) })}</span>}
+        </div>
+        <PatientAllergies patientId={patient.id} groups={patient.allergy_groups ?? []} />
+      </section>
 
-      <nav className="segmented tabs" role="tablist">
-        {(['overview', 'treatment', 'account', 'files'] as const).map((k) => (
-          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'is-active' : ''} onClick={() => setTab(k)}>
+      <nav className="tabs2" role="tablist">
+        {(['overview', 'treatment', 'account', 'files', 'rx'] as const).map((k) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
             {t(`tab.${k}` as Parameters<typeof t>[0])}
           </button>
         ))}
@@ -124,6 +158,11 @@ export function PatientPage() {
       <div className="patient-grid">
         {tab === 'overview' && (
           <>
+            <div className="panel-wide"><ToothHistory patientId={id} onAddPlan={() => setDialog('plan')} /></div>
+            <div className="panel-wide split-2">
+              <CurrentPlanCard plans={plans} />
+              <AccountCard balances={balances} perSession={perSession} onPay={() => setTab('account')} />
+            </div>
             <PatientAppointments patient={{
               id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
             }} />
@@ -145,10 +184,6 @@ export function PatientPage() {
 
         {tab === 'treatment' && (
           <>
-            <section className="panel panel-wide">
-              <h2>{t('tooth.title')}</h2>
-              <ToothHistory patientId={id} />
-            </section>
 
             <section className="panel">
               <div className="panel-head">
@@ -173,11 +208,6 @@ export function PatientPage() {
                 ))}
               </ul>
             </section>
-
-            <PatientPrescriptions patient={{
-              id: patient.id, full_name: patient.full_name, medical_alerts: patient.medical_alerts,
-              allergy_groups: patient.allergy_groups ?? [],
-            }} />
 
             <PatientLabCases patient={{
               id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
@@ -223,6 +253,13 @@ export function PatientPage() {
           </section>
         )}
 
+        {tab === 'rx' && (
+          <PatientPrescriptions patient={{
+            id: patient.id, full_name: patient.full_name, medical_alerts: patient.medical_alerts,
+            allergy_groups: patient.allergy_groups ?? [],
+          }} />
+        )}
+
         {tab === 'files' && (
           <>
             <PatientFiles patientId={id} />
@@ -247,7 +284,14 @@ export function PatientPage() {
         }} />
       )}
       {dialog === 'plan' && <NewPlanDialog patientId={id} onClose={() => setDialog(null)} />}
-      {dialog === 'visit' && <SessionDialog patientId={id} plan={null} onClose={() => setDialog(null)} />}
+      {(dialog === 'visit' || dialog === 'dictate') && (
+        <SessionDialog patientId={id} plan={null} dictate={dialog === 'dictate'} onClose={() => setDialog(null)} />
+      )}
+      {dialog === 'book' && (
+        <AppointmentDialog onClose={() => setDialog(null)} initial={{
+          patient: { id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts },
+        }} />
+      )}
     </section>
   )
 }

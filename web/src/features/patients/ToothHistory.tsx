@@ -35,67 +35,81 @@ async function getToothHistory(patientId: string): Promise<ToothEntry[]> {
   }))
 }
 
-/** Read-only chart: what has been done on each tooth, and what's still planned. */
-export function ToothHistory({ patientId }: { patientId: string }) {
+// Simple outlines: a crown with roots for the upper jaw, the same flipped for the lower.
+const UPPER_PATH = 'M5 13c0-5 2-9 7-9s7 4 7 9c0 4-1 7-2 7-1.4 0-1.6-4-5-4s-3.6 4-5 4c-1 0-2-3-2-7z'
+const LOWER_PATH = 'M5 11c0 5 2 9 7 9s7-4 7-9c0-4-1-7-2-7-1.4 0-1.6 4-5 4s-3.6-4-5-4c-1 0-2 3-2 7z'
+
+/** Chart and per-tooth history side by side: what was done on each tooth and what is still planned. */
+export function ToothHistory({ patientId, onAddPlan }: { patientId: string; onAddPlan?: () => void }) {
   const { t, date } = useI18n()
   const [selected, setSelected] = useState<number | null>(null)
   const q = useQuery({ queryKey: ['tooth-history', patientId], queryFn: () => getToothHistory(patientId) })
 
-  if (q.isPending) return <Skeleton rows={2} />
-  if (q.isError) return <ErrorNote error={q.error} onRetry={() => q.refetch()} />
-
   const byTooth = new Map<number, ToothEntry[]>()
-  for (const e of q.data) byTooth.set(e.tooth, [...(byTooth.get(e.tooth) ?? []), e])
-  const shown = selected ? byTooth.get(selected) ?? [] : q.data
+  for (const e of q.data ?? []) byTooth.set(e.tooth, [...(byTooth.get(e.tooth) ?? []), e])
   const state = (n: number) => {
     const list = byTooth.get(n)
     if (!list) return ''
-    return list.some((e) => e.status === 'done') ? 'is-done' : 'is-planned'
+    return list.some((e) => e.status === 'planned') ? 'is-planned' : 'is-done'
   }
+  const shown = selected ? byTooth.get(selected) ?? [] : q.data ?? []
 
-  const row = (teeth: number[]) =>
-    teeth.map((n, i) => (
-      <button key={n} type="button"
-        className={`tooth ${state(n)} ${selected === n ? 'is-selected' : ''} ${i === 7 ? 'is-midline' : ''}`}
-        aria-pressed={selected === n}
-        onClick={() => setSelected(selected === n ? null : n)}>
-        {n}
-      </button>
-    ))
+  const tooth = (n: number, upper: boolean) => (
+    <button key={n} type="button" className={`tooth2 ${state(n)} ${selected === n ? 'is-selected' : ''}`}
+      aria-pressed={selected === n} aria-label={t('plan.tooth', { n })}
+      onClick={() => setSelected(selected === n ? null : n)}>
+      {!upper && <span className="tooth2-n">{n}</span>}
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d={upper ? UPPER_PATH : LOWER_PATH} /></svg>
+      {upper && <span className="tooth2-n">{n}</span>}
+    </button>
+  )
 
   return (
-    <div className="tooth-history">
-      <div className="tooth-chart" dir="ltr">
-        <div className="tooth-side"><span>{t('chart.right')}</span><span>{t('chart.left')}</span></div>
-        <div className="tooth-row">{row(UPPER)}</div>
-        <div className="tooth-row">{row(LOWER)}</div>
-      </div>
-      <div className="tooth-legend">
-        <span><i className="swatch swatch-done" />{t('tooth.done')}</span>
-        <span><i className="swatch swatch-planned" />{t('tooth.planned')}</span>
-        {selected && <button className="link-btn" onClick={() => setSelected(null)}>{t('tooth.showAll')}</button>}
-      </div>
+    <div className="tooth-split">
+      <section className="panel">
+        <div className="panel-head">
+          <h2>{t('tooth.title')}</h2>
+          <span className="muted small">{t('tooth.hint')}</span>
+        </div>
+        {q.isPending && <Skeleton rows={2} />}
+        {q.isError && <ErrorNote error={q.error} onRetry={() => q.refetch()} />}
+        {q.data && (
+          <div className="tooth-chart2" dir="ltr">
+            <div className="tooth-side"><span>{t('chart.right')}</span><span>{t('chart.left')}</span></div>
+            <div className="tooth-row2">{UPPER.map((n) => tooth(n, true))}</div>
+            <div className="tooth-row2 is-lower">{LOWER.map((n) => tooth(n, false))}</div>
+          </div>
+        )}
+        <div className="tooth-legend">
+          <span><i className="swatch swatch-none" />{t('tooth.none')}</span>
+          <span><i className="swatch swatch-planned" />{t('tooth.planned')}</span>
+          <span><i className="swatch swatch-done" />{t('tooth.done')}</span>
+        </div>
+      </section>
 
-      {q.data.length === 0 && <p className="muted">{t('tooth.empty')}</p>}
-      {q.data.length > 0 && (
-        <ul className="plan-list">
-          {shown.length === 0 && <p className="muted">{t('tooth.noneOnTooth', { n: selected ?? 0 })}</p>}
-          {shown.map((e, i) => (
+      <section className="panel">
+        <div className="panel-head">
+          <h2>{selected ? t('plan.tooth', { n: selected }) : t('tooth.allWork')}</h2>
+          {selected && <button className="link-btn" onClick={() => setSelected(null)}>{t('tooth.showAll')}</button>}
+        </div>
+        {q.data && q.data.length === 0 && <p className="muted">{t('tooth.empty')}</p>}
+        {q.data && q.data.length > 0 && shown.length === 0 && <p className="muted">{t('tooth.noneOnTooth', { n: selected ?? 0 })}</p>}
+        <ul className="tooth-log">
+          {shown.slice(0, 12).map((e, i) => (
             <li key={`${e.tooth}-${i}`}>
-              <div className="plan-line">
-                <span><strong>{t('plan.tooth', { n: e.tooth })}</strong> — {e.label}</span>
-                <span className={`badge ${e.status === 'done' ? 'badge-ok' : 'badge-neutral'}`}>
-                  {e.status === 'done' ? t('plan.itemDone') : t('plan.itemPlanned')}
-                </span>
+              <span className="muted small nowrap">{e.at ? date(e.at) : t('plan.itemPlanned')}</span>
+              <div>
+                <strong>{selected ? e.label : `${t('plan.tooth', { n: e.tooth })} · ${e.label}`}</strong>
+                <p className="muted small"><Link to={`/plans/${e.planId}`}>{e.planTitle}</Link></p>
               </div>
-              <p className="plan-sub muted">
-                <Link to={`/plans/${e.planId}`}>{e.planTitle}</Link>
-                {e.at && <> · {date(e.at)}</>}
-              </p>
+              <span className={`badge ${e.status === 'done' ? 'badge-neutral' : 'badge-info'}`}>
+                {e.status === 'done' ? t('plan.itemDone') : t('plan.itemPlanned')}
+              </span>
             </li>
           ))}
         </ul>
-      )}
+        {onAddPlan && <button className="btn" onClick={onAddPlan}>{t('plan.new')}</button>}
+      </section>
     </div>
   )
 }

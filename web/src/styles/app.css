@@ -1257,3 +1257,67 @@ button.chip { cursor: pointer; }
   .list-tools .chips { min-width: 0; flex-wrap: nowrap; overflow-x: auto; margin-inline: -14px; padding-inline: 14px; scrollbar-width: none; }
   .search-box { max-width: none; }
 }
+
+/* ---------- Patient file (Ders v2) ---------- */
+.crumbs { display: flex; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+.crumbs a { color: var(--ink-soft); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.patient-card { gap: 16px; padding: 22px 24px; }
+.patient-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.patient-id { display: flex; align-items: center; gap: 14px; }
+.patient-id h1 { font-size: 1.6rem; }
+.user-avatar.big { width: 56px; height: 56px; }
+.user-avatar.big .icon { width: 26px; height: 26px; }
+.patient-meta { display: flex; gap: 14px; color: var(--ink-soft); font-size: 14px; margin-top: 2px; }
+.patient-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.patient-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 20px; margin: 0; padding-top: 16px; border-top: 1px solid var(--line2); }
+.patient-facts dt { font-size: 12px; color: var(--ink-soft); }
+.patient-facts dd { margin: 2px 0 0; font-weight: 700; }
+.patient-facts .is-danger dd { color: var(--danger); }
+.patient-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.patient-chips:empty { display: none; }
+.chip-alert { white-space: normal; }
+.tabs2 { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs2 button { border: 0; background: none; font: inherit; padding: 10px 16px; color: var(--ink-soft); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tabs2 button.on { color: var(--ink); font-weight: 700; border-bottom-color: var(--gum); }
+.split-2 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.tooth-split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+
+.tooth-chart2 { display: grid; gap: 6px; }
+.tooth-row2 { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; padding-bottom: 8px; }
+.tooth-row2.is-lower { border-top: 1px solid var(--line2); padding-top: 10px; padding-bottom: 0; }
+.tooth-row2 > :nth-child(8) { margin-inline-end: 4px; }
+.tooth2 { display: grid; justify-items: center; gap: 2px; border: 0; background: none; padding: 4px 0; border-radius: 8px; cursor: pointer; font: inherit; color: var(--ink-soft); }
+.tooth2 svg { width: 100%; max-width: 30px; height: 30px; }
+.tooth2 path { fill: #fff; stroke: var(--line-strong); stroke-width: 1.3; }
+.tooth2-n { font-size: 11px; }
+.tooth2:hover { background: var(--grey-soft); }
+.tooth2.is-planned path { fill: #fbd9d4; stroke: var(--danger); }
+.tooth2.is-done path { fill: var(--gum-soft2); stroke: var(--gum); }
+.tooth2.is-selected { background: var(--gum-soft); }
+.tooth2.is-selected .tooth2-n { color: var(--ink); font-weight: 700; }
+.tooth-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.tooth-legend span { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid var(--line-strong); background: #fff; }
+.swatch-planned { background: #fbd9d4; border-color: var(--danger); }
+.swatch-done { background: var(--gum-soft2); border-color: var(--gum); }
+.tooth-log { list-style: none; margin: 0; padding: 0; }
+.tooth-log li { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line2); }
+.tooth-log li:first-child { border-top: 0; padding-top: 0; }
+
+.account-card { gap: 12px; }
+.account-left { display: flex; justify-content: space-between; align-items: baseline; }
+.account-left strong { font-size: 1.75rem; font-weight: 700; }
+.account-split { display: flex; justify-content: space-between; }
+.next-due { display: flex; justify-content: space-between; background: var(--paper); border-radius: 12px; padding: 12px 14px; }
+
+@media (max-width: 1100px) {
+  .split-2, .tooth-split { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .patient-card { padding: 16px; }
+  .patient-actions .btn { flex: 1 1 auto; }
+  .tooth-row2 { gap: 0; }
+  .tooth2 svg { height: 22px; }
+  .tooth2-n { font-size: 9px; }
+}

@@ -14,12 +14,14 @@ import { Icon } from '../../components/Icon'
 export type OpenItem = { id: string; label: string }
 
 type Props = {
+  /** Open with the voice box already showing (the patient file's 'تسجيل بالصوت'). */
+  dictate?: boolean
   patientId: string
   plan: { id: string; title: string; openItems: OpenItem[] } | null
   onClose: () => void
 }
 
-export function SessionDialog({ patientId, plan, onClose }: Props) {
+export function SessionDialog({ patientId, plan, onClose, dictate = false }: Props) {
   const { isDoctor } = useAuth()
   const { clinicId, userId, role } = useMember()
   const { t } = useI18n()
@@ -29,7 +31,7 @@ export function SessionDialog({ patientId, plan, onClose }: Props) {
   const [isRecall, setIsRecall] = useState(!plan)
   const [overrideReason, setOverrideReason] = useState('')
   const [locked, setLocked] = useState(false)
-  const [speaking, setSpeaking] = useState(false)
+  const [speaking, setSpeaking] = useState(dictate)
   const [spoken, setSpoken] = useState('')
   const [filled, setFilled] = useState(false)
 

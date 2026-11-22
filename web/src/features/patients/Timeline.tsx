@@ -12,9 +12,8 @@ const icons: Record<EventKind, string> = {
 
 /** The patient's medical history: what actually happened, newest first. */
 export function Timeline({ patientId }: { patientId: string }) {
-  const { t, date } = useI18n()
+  const { t, date, time } = useI18n()
   const q = useQuery({ queryKey: ['timeline', patientId], queryFn: () => getTimeline(patientId) })
-  const fmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
 
   if (q.isPending) return <Skeleton rows={5} />
   if (q.isError) return <ErrorNote error={q.error} onRetry={() => q.refetch()} />
@@ -28,7 +27,7 @@ export function Timeline({ patientId }: { patientId: string }) {
           <div className="tl-body">
             <div className="tl-head">
               <strong>{t(e.title as Parameters<typeof t>[0])}</strong>
-              <span className="muted">{date(e.at)}{(e.at ?? '').includes('T') && !e.at.endsWith('T09:00:00') ? ` · ${fmt.format(new Date(e.at))}` : ''}</span>
+              <span className="muted">{date(e.at)}{(e.at ?? '').includes('T') && !e.at.endsWith('T09:00:00') ? ` · ${time(e.at)}` : ''}</span>
               {e.link && <Link to={e.link} className="tl-link">{t('timeline.open')}</Link>}
             </div>
             {e.details.length > 0 && <p className="tl-details">{e.details.join(' · ')}</p>}
