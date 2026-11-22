@@ -92,7 +92,7 @@ export function PatientsPage() {
         </div>
         <div className="row-buttons">
           {!isDoctor && <button className="btn" onClick={exportCsv}>{t('patients.export')}</button>}
-          <button className="btn btn-primary phone-only" onClick={() => setAdding(true)}>{t('patients.add')}</button>
+          <button className="btn btn-primary" onClick={() => setAdding(true)}>{t('patients.add')}</button>
         </div>
       </header>
 

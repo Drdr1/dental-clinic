@@ -33,7 +33,6 @@ export function AppShell() {
   const navigate = useNavigate()
   const location = useLocation()
   const onHome = location.pathname === '/today' || location.pathname === '/'
-  const hideBar = location.pathname.startsWith('/appointments') || /^\/patients\/[^/]+/.test(location.pathname)
   useEffect(() => { setMoreOpen(false); setUserOpen(false) }, [location.pathname])
   useEffect(() => {
     if (!userOpen) return
@@ -83,40 +82,36 @@ export function AppShell() {
           {isOwner && <RailLink to="/doctors" icon="doctor" label={t('nav.doctors')} />}
           {isOwner && <RailLink to="/settings" icon="settings" label={t('nav.settings')} />}
         </nav>
+        {/* Who is signed in, with language and sign out, at the foot of the rail. */}
+        <div className="user-menu rail-user">
+          <button className="rail-link" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}
+            aria-label={member.displayName} title={`${member.displayName} · ${t(`role.${member.role}`)}`}>
+            <Icon name="patients" />
+          </button>
+          {userOpen && (
+            <div className="user-pop rail-pop" role="menu">
+              <div className="rail-pop-who"><b>{member.displayName}</b><span>{t(`role.${member.role}`)}</span></div>
+              <button role="menuitem" onClick={() => { setUserOpen(false); setLang(lang === 'ar' ? 'en' : 'ar') }}>
+                <Icon name="globe" />{t('nav.language')}
+              </button>
+              <button role="menuitem" onClick={signOut}><Icon name="logout" />{t('nav.signOut')}</button>
+            </div>
+          )}
+        </div>
       </aside>
 
       <main className="content">
-        {/* Desktop top bar: search, the two things reception adds all day, and who is signed in. */}
-        {/* Search lives on the home page only; Ctrl K still opens it anywhere.
-            The appointments calendar and the patient file have no top bar, as in the design. */}
-        {!hideBar && <div className="appbar">
-          {onHome ? (
-            <button className="appbar-search" onClick={openQuickSearch}>
-              <Icon name="search" />
-              <span>{t('shell.search')}</span>
-              <kbd>Ctrl K</kbd>
-            </button>
-          ) : <span className="appbar-spacer" />}
+        {/* Desktop top bar on the home page only: search and the two things reception adds all day.
+            Every other page starts with its own title; Ctrl K still opens search anywhere. */}
+        {onHome && <div className="appbar">
+          <button className="appbar-search" onClick={openQuickSearch}>
+            <Icon name="search" />
+            <span>{t('shell.search')}</span>
+            <kbd>Ctrl K</kbd>
+          </button>
           <div className="appbar-actions">
             <button className="btn" onClick={() => navigate('/patients?new=1')}>{t('shell.newPatient')}</button>
             <button className="btn btn-primary" onClick={() => navigate('/appointments?new=1')}>{t('shell.newAppointment')}</button>
-            <div className="user-menu">
-              <button className="user-chip" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}>
-                <span className="user-avatar"><Icon name="patients" /></span>
-                <span className="user-text">
-                  <b>{member.displayName}</b>
-                  <span>{t(`role.${member.role}`)}</span>
-                </span>
-              </button>
-              {userOpen && (
-                <div className="user-pop" role="menu">
-                  <button role="menuitem" onClick={() => { setUserOpen(false); setLang(lang === 'ar' ? 'en' : 'ar') }}>
-                    <Icon name="globe" />{t('nav.language')}
-                  </button>
-                  <button role="menuitem" onClick={signOut}><Icon name="logout" />{t('nav.signOut')}</button>
-                </div>
-              )}
-            </div>
           </div>
         </div>}
         <Outlet />

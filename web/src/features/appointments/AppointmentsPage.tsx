@@ -172,7 +172,7 @@ export function AppointmentsPage() {
           <h1>{t('appt.title')}</h1>
           <span className="muted">{heading}{day.data ? ` · ${t('appt.count', { n: day.data.length })}` : ''}</span>
         </div>
-        <button className="btn btn-primary phone-only" onClick={() => setOpen({ kind: 'new' })}>{t('appt.new')}</button>
+        <button className="btn btn-primary" onClick={() => setOpen({ kind: 'new' })}>{t('appt.new')}</button>
       </header>
 
       <div className="toolbar cal-toolbar">

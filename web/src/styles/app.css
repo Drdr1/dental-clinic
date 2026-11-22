@@ -1395,3 +1395,9 @@ button.chip { cursor: pointer; }
 @media (hover: hover) { .hover-row .row-hover-action { opacity: 0; } .hover-row:hover .row-hover-action, .row-hover-action:focus-visible { opacity: 1; } }
 
 .tooth-log li:has(> :nth-child(3)) { grid-template-columns: 86px minmax(0, 1fr) auto; }
+
+.rail-user { margin-top: auto; }
+.rail-user .rail-link { border: 0; background: rgb(255 255 255 / 0.08); cursor: pointer; }
+.rail-pop { inset-inline-end: auto; inset-inline-start: calc(100% + 10px); top: auto; bottom: 0; }
+.rail-pop-who { display: grid; padding: 8px 12px 10px; border-bottom: 1px solid var(--line2); margin-bottom: 4px; }
+.rail-pop-who span { font-size: 12px; color: var(--ink-soft); }
