@@ -5,6 +5,9 @@ import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
 import { Skeleton } from '../../components/Skeleton'
+import { Link } from 'react-router'
+import { supabase } from '../../lib/supabase'
+import type { PickedPatient } from '../../components/PatientPicker'
 import { Modal } from '../../components/Modal'
 import { todayLocal } from '../../lib/dates'
 import { getClinicCalendar, getClinicDoctors, getDay, saveAppointment, type DayAppointment } from './api'
@@ -13,10 +16,9 @@ import { AppointmentDetails } from './AppointmentDetails'
 import { localToIso, minutesOfDay, minutesToTime, shiftDate, timeToMinutes } from './time'
 import { apptStatusKey } from './labels'
 
-const SLOT_PX = 26
 
 type Open =
-  | { kind: 'new'; time?: string; chairId?: string }
+  | { kind: 'new'; time?: string; chairId?: string; patient?: PickedPatient; planId?: string }
   | { kind: 'details'; appt: DayAppointment }
   | { kind: 'edit'; appt: DayAppointment }
   | null
@@ -35,6 +37,7 @@ export function AppointmentsPage() {
     const next = new URLSearchParams(params); next.delete('new'); setParams(next, { replace: true })
   }, [params, setParams])
   const [open, setOpen] = useState<Open>(null)
+  const [view, setView] = useState<'day' | 'list'>('day')
   const [now, setNow] = useState(() => new Date())
   // Dragging an appointment to another slot. The browser's own drag-and-drop
   // refuses to start on a <button> in some builds, so this is done with plain
@@ -65,6 +68,17 @@ export function AppointmentsPage() {
     queryFn: () => getDay(clinicId, date, doctorFilter),
     refetchInterval: 60_000,
   })
+
+  // Accepted plans with work left and nothing booked: the side list reception books from.
+  const unscheduled = useQuery({
+    queryKey: ['unscheduled', clinicId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('unscheduled_treatment').select('*').eq('clinic_id', clinicId).order('accepted_at').limit(8)
+      if (error) throw error
+      return data
+    },
+  })
+  const doctorName = new Map((doctors.data ?? []).map((d) => [d.user_id, d.display_name]))
 
   const applyMove = useMutation({
     mutationFn: async () => {
@@ -135,6 +149,8 @@ export function AppointmentsPage() {
   const openMin = hours ? timeToMinutes(hours.opens_at) : 0
   const closeMin = hours ? timeToMinutes(hours.closes_at) : 0
   const slot = hours?.slot_minutes ?? 15
+  // About 112px an hour whatever the slot length, so a 30-minute visit has room for two lines.
+  const SLOT_PX = Math.max(22, Math.round((112 * slot) / 60))
   const rows = Math.max(0, Math.ceil((closeMin - openMin) / slot))
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const onToday = date === todayLocal()
@@ -152,45 +168,80 @@ export function AppointmentsPage() {
   return (
     <section className="page calendar-page">
       <header className="page-head">
-        <div>
+        <div className="title-line">
           <h1>{t('appt.title')}</h1>
-          <p className="muted">{heading}</p>
+          <span className="muted">{heading}{day.data ? ` · ${t('appt.count', { n: day.data.length })}` : ''}</span>
         </div>
-        <button className="btn btn-primary" onClick={() => setOpen({ kind: 'new' })}>{t('appt.new')}</button>
+        <button className="btn btn-primary phone-only" onClick={() => setOpen({ kind: 'new' })}>{t('appt.new')}</button>
       </header>
 
-      {/* Day navigation first, then the two filters: one row each on a phone. */}
       <div className="toolbar cal-toolbar">
         <div className="day-nav">
-          <button className="btn" onClick={() => setDate(shiftDate(date, -1))}>
-            {onToday ? t('appt.yesterday') : t('appt.prevDay')}
-          </button>
-          {!onToday && <button className="btn" onClick={() => setDate(todayLocal())}>{t('appt.today')}</button>}
-          <button className="btn" onClick={() => setDate(shiftDate(date, 1))}>
-            {onToday ? t('appt.tomorrow') : t('appt.nextDay')}
-          </button>
+          <button className="btn icon-square" aria-label={t('appt.prevDay')} title={t('appt.prevDay')}
+            onClick={() => setDate(shiftDate(date, -1))}><span aria-hidden="true">›</span></button>
+          <button className={`btn${onToday ? ' btn-soft' : ''}`} onClick={() => setDate(todayLocal())}>{t('appt.today')}</button>
+          <button className="btn icon-square" aria-label={t('appt.nextDay')} title={t('appt.nextDay')}
+            onClick={() => setDate(shiftDate(date, 1))}><span aria-hidden="true">‹</span></button>
+          <input type="date" className="date-jump" value={date} aria-label={t('appt.date')}
+            onChange={(e) => e.target.value && setDate(e.target.value)} />
         </div>
-        <input type="date" className="date-jump" value={date} aria-label={t('appt.date')}
-          onChange={(e) => e.target.value && setDate(e.target.value)} />
+        <div className="seg" role="tablist">
+          <button role="tab" aria-selected={view === 'day'} className={view === 'day' ? 'on' : ''} onClick={() => setView('day')}>{t('appt.viewDay')}</button>
+          <button role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}>{t('appt.viewList')}</button>
+        </div>
         {!isDoctorRole && (doctors.data?.length ?? 0) > 1 && (
-          <select className="date-jump" value={filterDoctor} aria-label={t('doc.doctor')}
-            onChange={(e) => setFilterDoctor(e.target.value)}>
-            <option value="">{t('appt.allDoctors')}</option>
-            {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
-          </select>
+          <label className="inline-field">
+            <span className="muted">{t('doc.doctor')}</span>
+            <select className="date-jump" value={filterDoctor}
+              onChange={(e) => setFilterDoctor(e.target.value)}>
+              <option value="">{t('appt.allDoctors')}</option>
+              {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
+            </select>
+          </label>
         )}
+        <ul className="legend" aria-hidden="true">
+          {(['booked', 'arrived', 'in_session', 'done', 'no_show'] as const).map((st) => (
+            <li key={st}><i className={`sw appt-${st}`} />{t(apptStatusKey(st))}</li>
+          ))}
+        </ul>
       </div>
 
       {error && <ErrorNote error={error} onRetry={() => { calendar.refetch(); day.refetch() }} />}
       {(calendar.isPending || day.isPending) && <Skeleton rows={6} variant="list" />}
 
       {hours && day.data && (
-        <>
+        <div className="cal-layout">
+        <div className="cal-main">
           {day.data.length === 0 && <p className="muted">{t('appt.emptyDay')}</p>}
+          {view === 'list' ? (
+            <div className="table-wrap">
+              <table className="table">
+                <thead><tr>
+                  <th>{t('appt.col.time')}</th><th>{t('patients.col.name')}</th><th>{t('appt.col.plan')}</th>
+                  <th>{t('doc.doctor')}</th><th>{t('appt.col.chair')}</th><th>{t('inst.col.status')}</th>
+                </tr></thead>
+                <tbody>
+                  {day.data.map((a) => (
+                    <tr key={a.id} className="click-row" onClick={() => setOpen({ kind: 'details', appt: a })}>
+                      <td className="strong nowrap">{time(a.starts_at)}</td>
+                      <td>{a.patientName}{a.alerts && <span className="alert-dot" aria-label={t('patients.alert')} />}</td>
+                      <td className="muted">{a.planTitle ?? a.notes ?? ''}</td>
+                      <td className="muted">{(a.doctor_id && doctorName.get(a.doctor_id)) || ''}</td>
+                      <td className="muted">{chairs.find((c) => c.id === a.chair_id)?.name ?? ''}</td>
+                      <td><span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
           <div className="cal" style={{ '--chairs': chairs.length } as CSSProperties}>
             <div className="cal-head">
               <span />
-              {chairs.map((c) => <span key={c.id}>{c.name}</span>)}
+              {chairs.map((c) => {
+                const docs = [...new Set(day.data!.filter((a) => a.chair_id === c.id && a.doctor_id).map((a) => doctorName.get(a.doctor_id!)).filter(Boolean))]
+                return <span key={c.id}><b>{c.name}</b>{docs.length > 0 && <small> · {docs.join('، ')}</small>}</span>
+              })}
             </div>
             <div className={`cal-body ${dragging ? 'is-dragging' : ''}`} style={{ height: rows * SLOT_PX }}>
               <div className="cal-times">
@@ -222,12 +273,11 @@ export function AppointmentsPage() {
                       }}
                       onClick={() => { if (!dragged.current) setOpen({ kind: 'details', appt: a }) }}>
                       <span className="cal-appt-line">
-                        <span>{time(a.starts_at)}</span>
                         <strong>{a.patientName}</strong>
                         {a.alerts && <span className="alert-dot" aria-label={t('patients.alert')} />}
                       </span>
                       <span className="cal-appt-sub">
-                        {a.status !== 'booked' ? t(apptStatusKey(a.status)) : a.planTitle ?? a.notes ?? ''}
+                        {[a.planTitle ?? a.notes, time(a.starts_at), a.status !== 'booked' ? t(apptStatusKey(a.status)) : null].filter(Boolean).join(' · ')}
                       </span>
                     </button>
                   ))}
@@ -236,8 +286,33 @@ export function AppointmentsPage() {
               ))}
             </div>
           </div>
-          <p className="muted small drag-hint">{t('appt.dragHint')}</p>
-        </>
+          )}
+          {view === 'day' && <p className="muted small drag-hint">{t('appt.dragHint')}</p>}
+        </div>
+        <aside className="cal-aside">
+          <NowCard appts={day.data} doctorName={doctorName} chairs={chairs} onOpen={(a) => setOpen({ kind: 'details', appt: a })} />
+          {(unscheduled.data?.length ?? 0) > 0 && (
+            <section className="panel">
+              <h2>{t('appt.needsBooking')}</h2>
+              <ul className="work-list">
+                {unscheduled.data!.map((u) => (
+                  <li key={u.treatment_plan_id}>
+                    <div>
+                      <Link to={`/patients/${u.patient_id}`} className="row-link">{u.full_name}</Link>
+                      <p className="muted">{u.title}{u.remaining_items ? ` · ${t('appt.itemsLeft', { n: u.remaining_items })}` : ''}</p>
+                    </div>
+                    <button className="btn btn-small" onClick={() => setOpen({
+                      kind: 'new',
+                      patient: { id: u.patient_id ?? '', full_name: u.full_name ?? '', phone: u.phone ?? '', medical_alerts: null },
+                      planId: u.treatment_plan_id ?? undefined,
+                    })}>{t('appt.book')}</button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </aside>
+        </div>
       )}
 
       {move && (
@@ -265,13 +340,42 @@ export function AppointmentsPage() {
       )}
 
       {open?.kind === 'new' && (
-        <AppointmentDialog onClose={() => setOpen(null)} initial={{ date, time: open.time, chairId: open.chairId }} />
+        <AppointmentDialog onClose={() => setOpen(null)} initial={{ date, time: open.time, chairId: open.chairId, patient: open.patient, planId: open.planId }} />
       )}
       {open?.kind === 'details' && (
         <AppointmentDetails appointment={open.appt} onClose={() => setOpen(null)}
           onEdit={() => setOpen({ kind: 'edit', appt: open.appt })} />
       )}
       {open?.kind === 'edit' && <AppointmentDialog appointment={open.appt} onClose={() => setOpen(null)} />}
+    </section>
+  )
+}
+
+/** The appointment in the chair now, or the one who just walked in, with its next step. */
+function NowCard({ appts, doctorName, chairs, onOpen }: {
+  appts: DayAppointment[]; doctorName: Map<string, string>; chairs: { id: string; name: string }[]
+  onOpen: (a: DayAppointment) => void
+}) {
+  const { t, time } = useI18n()
+  const a = appts.find((x) => x.status === 'in_session') ?? appts.find((x) => x.status === 'arrived')
+  if (!a) return null
+  const who = [a.doctor_id && doctorName.get(a.doctor_id), chairs.find((c) => c.id === a.chair_id)?.name].filter(Boolean).join(' · ')
+  return (
+    <section className="panel now-card">
+      <div className="panel-head">
+        <h2>{a.patientName}</h2>
+        <span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span>
+      </div>
+      {a.alerts && <p className="alert-strip">{a.alerts}</p>}
+      <dl className="facts">
+        <div><dt>{t('appt.col.plan')}</dt><dd>{a.planTitle ?? '—'}</dd></div>
+        <div><dt>{t('appt.col.time')}</dt><dd>{time(a.starts_at)} – {time(a.ends_at)}</dd></div>
+        {who && <div><dt>{t('doc.doctor')}</dt><dd>{who}</dd></div>}
+      </dl>
+      <div className="two-btns">
+        <Link to={`/patients/${a.patient_id}`} className="btn">{t('appt.openFile')}</Link>
+        <button className="btn btn-ink" onClick={() => onOpen(a)}>{t('appt.nextStep')}</button>
+      </div>
     </section>
   )
 }
