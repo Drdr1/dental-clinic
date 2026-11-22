@@ -1,5 +1,5 @@
 # Builds the iOS app on a GitHub Mac and uploads it to TestFlight.
-# Run by hand (Actions → iOS TestFlight → Run workflow) once these exist:
+# Runs when the testflight branch is pushed (or by hand once this file is on main), once these exist:
 #   Variables: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, APPLE_TEAM_ID
 #   Secrets:   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (the whole .p8 file, as text)
 # and an app with bundle ID dev.derops.ders exists in App Store Connect.
@@ -7,6 +7,8 @@ name: iOS TestFlight
 
 on:
   workflow_dispatch:
+  push:
+    branches: [testflight]
 
 jobs:
   testflight:
