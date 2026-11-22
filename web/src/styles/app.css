@@ -114,14 +114,45 @@ a { color: var(--ink); }
 .badge-muted { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
 
 /* ---------- Login ---------- */
-.login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-.login-card {
-  width: min(380px, 100%); display: grid; gap: 18px;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--r-panel); padding: 32px 28px;
+.login { min-height: 100vh; display: flex; background: var(--paper); }
+.login-brand {
+  flex: 1 1 50%; background: var(--navy); color: #fff; padding: 56px;
+  display: flex; flex-direction: column; justify-content: space-between;
 }
-.login-mark { width: 40px; height: 40px; color: var(--gum); }
-.login-card h1 { font-size: var(--step-2); }
+.login-logo { display: flex; align-items: center; gap: 12px; }
+.login-logo-mark {
+  width: 48px; height: 48px; border-radius: 14px; background: #fff; color: var(--gum);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-logo-mark svg { width: 30px; height: 30px; }
+.login-logo b { font-size: 26px; font-weight: 700; }
+.login-logo b span { font-size: 14px; font-weight: 500; color: #b6c2e0; }
+.login-pitch { display: flex; flex-direction: column; gap: 16px; max-width: 460px; }
+.login-pitch h2 { margin: 0; font-size: 36px; font-weight: 700; line-height: 1.35; color: #fff; }
+.login-pitch p { margin: 0; font-size: 17px; color: #d5ddf0; }
+.login-by { font-size: 13px; color: #b6c2e0; }
+.login-side { flex: 1 1 50%; display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 18px; }
+.login-card h1 { margin: 0; font-size: 28px; font-weight: 700; }
+.login-card .field input { min-height: 44px; border-radius: 10px; border-color: var(--line); }
+[dir='rtl'] .login-card .field input:placeholder-shown { text-align: right; }
+.login-card input[type='password']:placeholder-shown { letter-spacing: 3px; }
+.login-card .btn-primary { min-height: 46px; width: 100%; }
+.login-links { display: flex; justify-content: space-between; font-size: 14px; }
+.login-links button, .login-links a { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; cursor: pointer; }
+.login-note, .login-demo {
+  padding: 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+  font-size: 14px; color: var(--ink-soft);
+}
+.login-demo a { color: var(--ink); font-weight: 600; }
+.login-phone-logo { display: none; }
+@media (max-width: 860px) {
+  .login-brand { display: none; }
+  .login-side { padding: 32px 16px; }
+  .login-phone-logo { display: flex; color: var(--ink); }
+  .login-phone-logo b span { color: var(--ink-soft); }
+  .login-phone-logo .login-logo-mark { background: var(--gum); color: #fff; }
+}
 
 .splash { min-height: 100vh; display: grid; place-content: center; gap: 16px; padding: 24px; text-align: center; }
 
