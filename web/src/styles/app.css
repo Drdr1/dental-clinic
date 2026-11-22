@@ -1472,3 +1472,19 @@ button.chip { cursor: pointer; }
 .trend2-label { position: absolute; bottom: -26px; font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
 .trend2 { padding-bottom: 30px; }
 @media (max-width: 860px) { .kpis-3 { grid-template-columns: 1fr; } .split-even { grid-template-columns: 1fr; } .trend2-bar { width: 12px; } .trend2-bars { gap: 8px; } }
+
+/* ---------- Doctors (Ders v2) ---------- */
+.doc-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.doc-card { gap: 14px; }
+.doc-card.is-inactive { opacity: .6; }
+.doc-top { display: flex; align-items: center; gap: 12px; }
+.doc-top .row-link { font-size: 17px; }
+.doc-pill { justify-self: stretch; text-align: center; font-weight: 700; font-size: 12px; }
+.doc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.doc-stats dt { font-size: 12px; color: var(--ink-soft); }
+.doc-stats dd { margin: 2px 0 0; font-size: 19px; font-weight: 700; white-space: nowrap; }
+.doc-money { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--paper); border-radius: 12px; padding: 12px 14px; }
+.doc-money div { display: grid; gap: 2px; }
+.doc-money span { font-size: 12px; color: var(--ink-soft); }
+.btn-danger-line { border-color: #e6b9b2; color: var(--danger); }
+.doc-card > .row-buttons { justify-content: flex-end; }

@@ -12,14 +12,14 @@ function suggestPassword() {
   return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')
 }
 
-function AddStaffDialog({ onClose }: { onClose: () => void }) {
+export function AddStaffDialog({ onClose, initialRole = 'receptionist' }: { onClose: () => void; initialRole?: 'receptionist' | 'doctor' }) {
   const { clinicId } = useMember()
   const { t } = useI18n()
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState(suggestPassword)
-  const [role, setRole] = useState<'receptionist' | 'doctor'>('receptionist')
+  const [role, setRole] = useState<'receptionist' | 'doctor'>(initialRole)
 
   const create = useMutation({
     mutationFn: () => createStaff(clinicId, { email: email.trim(), password, display_name: name.trim(), role }),
@@ -82,7 +82,7 @@ function AddStaffDialog({ onClose }: { onClose: () => void }) {
   )
 }
 
-function PasswordDialog({ userId, name, onClose }: { userId: string; name: string; onClose: () => void }) {
+export function PasswordDialog({ userId, name, onClose }: { userId: string; name: string; onClose: () => void }) {
   const { clinicId } = useMember()
   const { t } = useI18n()
   const [password, setPassword] = useState(suggestPassword)
