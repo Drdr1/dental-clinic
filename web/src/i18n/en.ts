@@ -16,7 +16,7 @@ export const en = {
   'login.by': 'by DerOps · derops.dev',
   'login.forgot': 'Forgot your password?',
   'login.forgotNote': 'Ask the clinic owner; they can set a new password for you from the Team page.',
-  'login.notYet': 'Clinic not on Ders yet?',
+  'login.notYet': 'Clinic not on Dentigo yet?',
   'login.demo': 'Ask for a demo',
   'login.otherLang': 'عربي',
   'login.email': 'Email',

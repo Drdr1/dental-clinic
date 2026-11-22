@@ -1,11 +1,20 @@
-/** The clinic mark: a simple molar outline. */
+import { useId } from 'react'
+
+/** The Dentigo mark: a D with a tooth cut out of it and an AI sparkle. Used wherever a clinic has no logo of its own. */
 export function ToothMark({ className }: { className?: string }) {
+  const id = `dg${useId().replace(/:/g, '')}`
   return (
-    <svg className={className} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <path
-        d="M9.5 4.5c-3.3 0-5.5 2.6-5.5 6.2 0 3 1.2 5 2.2 7.4.9 2.2 1.1 4.7 1.6 7 .4 1.7 1.3 2.4 2.3 2.4 1.4 0 2-1.3 2.4-3.3.5-2.4 1.4-4.4 3.5-4.4s3 2 3.5 4.4c.4 2 1 3.3 2.4 3.3 1 0 1.9-.7 2.3-2.4.5-2.3.7-4.8 1.6-7 1-2.4 2.2-4.4 2.2-7.4 0-3.6-2.2-6.2-5.5-6.2-2.6 0-4 1.3-6.5 1.3S12.1 4.5 9.5 4.5Z"
-        fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"
-      />
+    <svg className={className} viewBox="196 276 336 324" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id={id} gradientUnits="userSpaceOnUse" x1="200" y1="595" x2="494" y2="400">
+          <stop offset="0" stopColor="#1a3de6" />
+          <stop offset=".5" stopColor="#0a7dff" />
+          <stop offset="1" stopColor="#00d4ff" />
+        </linearGradient>
+      </defs>
+      <path d="M211 323H358A136 136 0 0 1 358 595H211Q200 595 200 584V334Q200 323 211 323Z" fill={`url(#${id})`} />
+      <path fill="#fff" d="M247 434C247 406 266 391 290 391C312 391 323 405 342 405S372 391 394 391C418 391 437 406 437 434C437 470 416 524 402 552C398 561 389 561 386 552C378 526 368 488 342 488S306 526 298 552C295 561 286 561 282 552C267 521 247 480 247 434Z" />
+      <path fill="#14c8f5" d="M486 281C490 301 496 313 528 323C496 333 490 345 486 365C482 345 476 333 444 323C476 313 482 301 486 281Z" />
     </svg>
   )
 }

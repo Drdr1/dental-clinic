@@ -18,7 +18,7 @@ export const ar: Messages = {
   'login.by': 'من DerOps · derops.dev',
   'login.forgot': 'نسيت كلمة المرور؟',
   'login.forgotNote': 'كلّم صاحب العيادة، يقدر يحطلك كلمة مرور جديدة من صفحة الفريق.',
-  'login.notYet': 'عيادتك لسه مش على ضرس؟',
+  'login.notYet': 'عيادتك لسه مش على Dentigo؟',
   'login.demo': 'اطلب ديمو',
   'login.otherLang': 'English',
   'login.email': 'البريد الإلكتروني',

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ضرس</string>
-    <string name="title_activity_main">ضرس</string>
+    <string name="app_name">Dentigo</string>
+    <string name="title_activity_main">Dentigo</string>
     <string name="package_name">dev.derops.ders</string>
     <string name="custom_url_scheme">dev.derops.ders</string>
 </resources>

@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // The phone apps load the same built web app from inside the app bundle.
 const config: CapacitorConfig = {
   appId: 'dev.derops.ders',
-  appName: 'ضرس',
+  appName: 'Dentigo',
   webDir: 'dist',
   android: {
     // Serve the bundled app as https://clinic.derops.dev, the origin the API and

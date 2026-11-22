@@ -30,19 +30,10 @@ export function LoginPage() {
     setFailed(bad ? { kind: 'credentials' } : { kind: 'other', detail: `${error.status ?? ''} ${error.message}`.trim() })
   }
 
-  const logo = (cls: string) => (
-    <div className={cls}>
-      <span className="login-logo-mark">
-        <svg aria-hidden="true" viewBox="0 0 48 48" fill="currentColor"><path d="M15 8c4 0 5 2 9 2s5-2 9-2c5 0 7 4 7 9 0 5-3 7-4 12-.5 3-1.2 9-3.5 9-2.8 0-2.5-10-8.5-10s-5.7 10-8.5 10c-2.3 0-3-6-3.5-9-1-5-4-7-4-12 0-5 2-9 7-9z" /></svg>
-      </span>
-      <b>ضرس <span dir="ltr">Ders</span></b>
-    </div>
-  )
-
   return (
     <main className="login">
       <aside className="login-brand">
-        {logo('login-logo')}
+        <img className="login-logo" src="/dentigo-logo-white.svg" alt="Dentigo" />
         <div className="login-pitch">
           <h2>{t('login.pitch')}</h2>
           <p>{t('login.pitchSub')}</p>
@@ -52,7 +43,7 @@ export function LoginPage() {
 
       <div className="login-side">
         <form className="login-card" onSubmit={onSubmit}>
-          {logo('login-logo login-phone-logo')}
+          <img className="login-phone-logo" src="/dentigo-logo.svg" alt="Dentigo" />
           <div>
             <h1>{t('login.heading')}</h1>
             <span className="muted">{t('login.sub')}</span>
