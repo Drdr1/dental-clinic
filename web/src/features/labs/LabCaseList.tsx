@@ -10,14 +10,10 @@ import { templates, waMessage } from '../../lib/whatsapp'
 import { getLabs, updateCase, type LabCase } from './api'
 import { LabCaseDialog } from './LabCaseDialog'
 
-const tone: Record<string, string> = {
-  at_lab: 'neutral', awaiting_tryin: 'neutral', tryin_ready: 'info',
-  awaiting_delivery: 'neutral', delivered: 'info', received: 'info', fitted: 'ok', cancelled: 'muted',
-}
 
 export function LabCaseList({ cases, showPatient = true }: { cases: LabCase[]; showPatient?: boolean }) {
   const { clinicId, clinicName } = useMember()
-  const { t, date, money } = useI18n()
+  const { t, day, time } = useI18n()
   const queryClient = useQueryClient()
   const labs = useQuery({ queryKey: ['labs', clinicId], queryFn: () => getLabs(clinicId) })
   const labPhone = new Map((labs.data ?? []).map((l) => [l.id, l.phone]))
@@ -42,7 +38,7 @@ export function LabCaseList({ cases, showPatient = true }: { cases: LabCase[]; s
   return (
     <>
       {update.isError && <ErrorNote error={update.error} />}
-      <ul className="work-list lab-list">
+      <ul className="lab-cards">
         {cases.map((c) => {
           const phone = c.lab_id ? labPhone.get(c.lab_id) : null
           const stage = (c.stage ?? 'at_lab') as string
@@ -50,66 +46,69 @@ export function LabCaseList({ cases, showPatient = true }: { cases: LabCase[]; s
             clinic: clinicName, description: c.description ?? '', patient: c.full_name ?? '',
             sentOn: c.sent_on ?? '', expectedOn: c.expected_on ?? '',
           })) : null
+          // The five steps of a case, the try-in only when this work has one. Steps up to
+          // and including where the case is now are filled; a late step turns red.
+          const keys = ['scan', 'lab', ...(c.needs_tryin ? ['tryin'] : []), 'back', 'fitted']
+          const at = stage === 'fitted' ? 'fitted'
+            : stage === 'received' || stage === 'delivered' ? 'back'
+            : stage === 'tryin_ready' ? 'tryin'
+            : stage === 'awaiting_delivery' ? (c.needs_tryin ? 'tryin' : 'lab')
+            : stage === 'awaiting_tryin' ? (c.stage_late ? 'tryin' : 'lab')
+            : c.sent_on === todayLocal() ? 'scan' : 'lab'
+          const current = Math.max(0, keys.indexOf(at))
+          const today = todayLocal()
+          const right = c.stage_late ? { text: t('lab.lateBy', { n: c.days_late ?? 0 }), danger: true }
+            : c.fitted_on ? { text: t('lab.fittedOn', { date: day(c.fitted_on) }), danger: false }
+            : c.received_on ? { text: c.received_on === today ? t('lab.backToday') : t('lab.backOn', { date: day(c.received_on) }), danger: false }
+            : c.sent_on === today ? { text: t('lab.sentToday'), danger: false }
+            : c.next_due ? { text: t('lab.dueOn', { date: day(c.next_due) }), danger: false }
+            : null
+          const sub = [c.description, c.item_name && c.units ? `${c.units} ${t('lab.unitsShort')}` : null,
+            c.shade ? t('plan.shade', { s: c.shade }) : null, c.lab_name].filter(Boolean).join(' · ')
           return (
-            <li key={c.id}>
-              <div>
-                <div className="plan-line">
-                  <strong>{c.description}</strong>
-                  <span className={`badge badge-${tone[stage] ?? 'neutral'}`}>
-                    {t(`lab.stage.${stage}` as Parameters<typeof t>[0])}
-                  </span>
-                  {c.stage_late && <span className="badge badge-danger">{t('lab.lateBy', { n: c.days_late ?? 0 })}</span>}
-                  {c.at_risk && <span className="badge badge-danger">{t('lab.atRisk')}</span>}
-                </div>
-                <p className="muted">
-                  {showPatient && <><Link to={`/patients/${c.patient_id}`}>{c.full_name}</Link>{' — '}</>}
-                  {c.lab_name}
-                  {c.shade && <> — {t('lab.shade')} <span dir="ltr">{c.shade}</span></>}
-                  {c.item_name && <> — {c.item_name}{c.units ? ` × ${c.units}` : ''}</>}
-                  {c.lab_fee != null && <> — {money(c.lab_fee)}</>}
-                </p>
-                <p className="muted">
-                  {c.doctor_name
-                    ? <>{t('lab.doctor')}: {c.doctor_name}</>
-                    : <span className="badge badge-danger">{t('lab.noDoctorYet')}</span>}
-                </p>
-                <p className="muted lab-dates">
-                  {t('lab.scanShort', { date: date(c.sent_on) })}
-                  {c.tryin_received_on && <> · {t('lab.tryinInShort', { date: date(c.tryin_received_on) })}</>}
-                  {c.tryin_done_on && <> · {t('lab.tryinDoneShort', { date: date(c.tryin_done_on) })}</>}
-                  {c.received_on && <> · {t('lab.receivedShort', { date: date(c.received_on), n: c.turnaround_days ?? 0 })}</>}
-                  {c.fitted_on && <> · {t('lab.fittedShort', { date: date(c.fitted_on) })}</>}
-                  {!c.fitted_on && c.next_due && (
-                    <> · <span className={c.stage_late ? 'danger-text' : ''}>{t('lab.dueShort', { date: date(c.next_due) })}</span></>
+            <li key={c.id} className="lab-card">
+              <div className="lab-card-top">
+                <div>
+                  {showPatient
+                    ? <Link to={`/patients/${c.patient_id}`} className="row-link strong">{c.full_name}</Link>
+                    : <strong>{c.description}</strong>}
+                  <p className="muted small">{showPatient ? sub : [c.full_name, c.shade ? t('plan.shade', { s: c.shade }) : null].filter(Boolean).join(' · ')}</p>
+                  {c.at_risk && c.next_appointment_at && !c.fitted_on && (
+                    <p className="danger-text small">{t('lab.atRiskLine', { date: day(c.next_appointment_at), time: time(c.next_appointment_at) })}</p>
                   )}
-                  {c.next_appointment_at && !c.fitted_on && <> · {t('lab.nextAppt', { date: date(c.next_appointment_at) })}</>}
-                </p>
-                {c.lab_fee != null && c.lab_fee > 0 && (
-                  <p className="muted small">
-                    {t('lab.billedIn', { date: date(c.billed_on) })}{' '}
-                    <button className="link-btn" onClick={() => { setRebill(c); setBillDate(c.billed_on ?? todayLocal()) }}>
-                      {t('lab.changeMonth')}
-                    </button>
-                  </p>
-                )}
+                  {!c.at_risk && c.next_appointment_at && c.received_on && !c.fitted_on && (
+                    <p className="small">{t('lab.fitAppt', { date: day(c.next_appointment_at), time: time(c.next_appointment_at) })}</p>
+                  )}
+                  {!c.doctor_name && <span className="badge badge-danger">{t('lab.noDoctorYet')}</span>}
+                </div>
+                {right && <span className={`small nowrap ${right.danger ? 'late-text' : 'muted'}`}>{right.text}</span>}
               </div>
-              <div className="work-meta">
+
+              <ol className="lab-steps" style={{ ['--n' as string]: keys.length }}>
+                {keys.map((k, i) => (
+                  <li key={k} className={`${i <= current ? 'done' : ''} ${i === current ? 'now' : ''} ${i === current && c.stage_late ? 'late' : ''}`}>
+                    <i />{t(`lab.step.${k}` as Parameters<typeof t>[0])}
+                  </li>
+                ))}
+              </ol>
+
+              <div className="lab-actions">
                 {stage === 'awaiting_tryin' && (
                   <>
-                    <button className="btn btn-small btn-primary" disabled={update.isPending}
+                    <button className="btn btn-small btn-ink" disabled={update.isPending}
                       onClick={() => update.mutate({ id: c.id!, patch: { tryin_received_on: todayLocal() } })}>
                       {t('lab.markTryinIn')}
                     </button>
-                    {chase && <a className="btn btn-small" target="_blank" rel="noreferrer" href={chase}>{t('lab.chase')}</a>}
+                    {chase && <a className="btn btn-small" target="_blank" rel="noreferrer" href={chase}>{t('lab.askLab')}</a>}
                   </>
                 )}
                 {stage === 'tryin_ready' && (
                   <>
-                    <button className="btn btn-small btn-primary" disabled={update.isPending}
+                    <button className="btn btn-small btn-ink" disabled={update.isPending}
                       onClick={() => update.mutate({ id: c.id!, patch: { tryin_done_on: todayLocal() } })}>
                       {t('lab.markTryinDone')}
                     </button>
-                    <button className="link-btn" disabled={update.isPending}
+                    <button className="link-btn small" disabled={update.isPending}
                       onClick={() => update.mutate({ id: c.id!, patch: { tryin_received_on: null } })}>
                       {t('lab.undoTryinIn')}
                     </button>
@@ -117,37 +116,42 @@ export function LabCaseList({ cases, showPatient = true }: { cases: LabCase[]; s
                 )}
                 {(stage === 'awaiting_delivery' || stage === 'at_lab') && (
                   <>
-                    <button className="btn btn-small btn-primary" disabled={update.isPending}
+                    <button className="btn btn-small btn-ink" disabled={update.isPending}
                       onClick={() => update.mutate({ id: c.id!, patch: { received_on: todayLocal() } })}>
                       {t('lab.markReceived')}
                     </button>
                     <button className="btn btn-small" onClick={() => { setPostpone(c); setNewDate(c.expected_on ?? todayLocal()) }}>
-                      {t('lab.postpone')}
+                      {t('lab.postponeShort')}
                     </button>
-                    {chase && <a className="btn btn-small" target="_blank" rel="noreferrer" href={chase}>{t('lab.chase')}</a>}
+                    {chase && <a className="btn btn-small" target="_blank" rel="noreferrer" href={chase}>{t('lab.askLab')}</a>}
                   </>
                 )}
                 {(stage === 'delivered' || stage === 'received') && (
                   <>
-                    <button className="btn btn-small btn-primary" disabled={update.isPending}
+                    <button className="btn btn-small btn-ink" disabled={update.isPending}
                       onClick={() => update.mutate({ id: c.id!, patch: { fitted_on: todayLocal() } })}>
                       {t('lab.markFitted')}
                     </button>
-                    <button className="link-btn" disabled={update.isPending}
+                    <button className="link-btn small" disabled={update.isPending}
                       onClick={() => update.mutate({ id: c.id!, patch: { received_on: null } })}>
                       {t('lab.undoReceived')}
                     </button>
                   </>
                 )}
-                {!c.fitted_on && (
-                  <button className="btn btn-small" onClick={() => setEditing(c)}>{t('common.edit')}</button>
-                )}
-                {!c.fitted_on && (
-                  <button className="link-btn danger-link" disabled={update.isPending}
-                    onClick={() => { if (confirm(t('lab.cancelConfirm'))) update.mutate({ id: c.id!, patch: { cancelled_at: new Date().toISOString() } }) }}>
-                    {t('lab.cancel')}
-                  </button>
-                )}
+                <span className="lab-more">
+                  {!c.fitted_on && <button className="link-btn small" onClick={() => setEditing(c)}>{t('common.edit')}</button>}
+                  {c.lab_fee != null && c.lab_fee > 0 && (
+                    <button className="link-btn small" onClick={() => { setRebill(c); setBillDate(c.billed_on ?? todayLocal()) }}>
+                      {t('lab.changeMonth')}
+                    </button>
+                  )}
+                  {!c.fitted_on && (
+                    <button className="link-btn small danger-link" disabled={update.isPending}
+                      onClick={() => { if (confirm(t('lab.cancelConfirm'))) update.mutate({ id: c.id!, patch: { cancelled_at: new Date().toISOString() } }) }}>
+                      {t('lab.cancel')}
+                    </button>
+                  )}
+                </span>
               </div>
             </li>
           )
