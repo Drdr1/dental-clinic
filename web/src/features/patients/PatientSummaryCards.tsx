@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
 import { Skeleton } from '../../components/Skeleton'
 import { getPlan } from '../plans/api'
+import { supabase } from '../../lib/supabase'
 import type { PlanBalance, PlanOverview, PlanSummary } from './api'
 
 /** The plan being worked on now: its items, tooth by tooth, and how far along it is. */
@@ -16,14 +17,26 @@ export function CurrentPlanCard({ plans }: { plans: PlanOverview[] }) {
     enabled: !!current?.treatment_plan_id,
   })
   if (!current) return null
+  const labs = useQuery({
+    queryKey: ['plan-labs', current?.treatment_plan_id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('lab_case_status').select('plan_item_id, received_on, cancelled_at')
+        .eq('patient_id', current!.patient_id!)
+      if (error) throw error
+      return new Set(data.filter((l) => !l.received_on && !l.cancelled_at && l.plan_item_id).map((l) => l.plan_item_id as string))
+    },
+    enabled: !!current?.patient_id,
+  })
   const items = (q.data?.items ?? []).filter((i) => i.status !== 'cancelled')
+  // A tooth with sessions already done on its plan but this item still open is being worked on.
+  const started = (q.data?.sessions ?? []).length > 0
   const names = new Map((q.data?.procedures ?? []).map((p) => [p.id, p.name]))
   const done = items.filter((i) => i.status === 'done').length
 
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2><Link to={`/plans/${current.treatment_plan_id}`} className="row-link">{current.title}</Link></h2>
+        <h2><Link to={`/plans/${current.treatment_plan_id}`} className="row-link">{t('patient.currentPlan')}</Link></h2>
         {items.length > 0 && <span className="muted small">{t('patient.itemsDone', { done, n: items.length })}</span>}
       </div>
       {q.isPending && <Skeleton rows={3} />}
@@ -41,9 +54,10 @@ export function CurrentPlanCard({ plans }: { plans: PlanOverview[] }) {
                   <td>{i.tooth_number ?? '—'}</td>
                   <td className="nowrap">{money(i.price)}</td>
                   <td>
-                    <span className={`badge ${i.status === 'done' ? 'badge-neutral' : 'badge-muted'}`}>
-                      {i.status === 'done' ? t('plan.itemDone') : t('plan.itemPlanned')}
-                    </span>
+                    {i.status === 'done' ? <span className="badge badge-neutral">{t('patient.st.done')}</span>
+                      : labs.data?.has(i.id) ? <span className="badge badge-info">{t('patient.st.lab')}</span>
+                      : started && current.status === 'active' ? <span className="badge badge-info">{t('patient.st.ongoing')}</span>
+                      : <span className="badge badge-muted">{t('patient.st.notYet')}</span>}
                   </td>
                 </tr>
               ))}
@@ -57,14 +71,14 @@ export function CurrentPlanCard({ plans }: { plans: PlanOverview[] }) {
 }
 
 /** Money at a glance: what is left, what was paid, and when the next installment falls due. */
-export function AccountCard({ balances, perSession, onPay }: {
+export function AccountCard({ balances, perSession, onPay, nextInstallment }: {
   balances: PlanSummary[]; perSession: PlanBalance[]; onPay: () => void
+  nextInstallment: { remaining: number | null; due_date: string | null } | null
 }) {
   const { t, money, date } = useI18n()
   const owed = balances.reduce((s, b) => s + (b.outstanding ?? 0), 0) + perSession.reduce((s, b) => s + (b.outstanding ?? 0), 0)
   const paid = balances.reduce((s, b) => s + (b.total_paid ?? 0), 0) + perSession.reduce((s, b) => s + (b.paid ?? 0), 0)
   const total = owed + paid
-  const nextDue = balances.map((b) => b.next_due_date).filter((d): d is string => !!d).sort()[0]
   const overdue = balances.reduce((s, b) => s + (b.overdue_amount ?? 0), 0)
 
   return (
@@ -82,10 +96,10 @@ export function AccountCard({ balances, perSession, onPay }: {
             <span>{t('patient.totalAmount', { amount: money(total) })}</span>
           </div>
           {overdue > 0 && <p className="alert-strip">{t('patient.overdueLine', { amount: money(overdue) })}</p>}
-          {nextDue && (
+          {nextInstallment?.due_date && (
             <div className="next-due">
               <span>{t('patient.nextInstallment')}</span>
-              <strong>{date(nextDue)}</strong>
+              <strong>{money(nextInstallment.remaining)} · {date(nextInstallment.due_date)}</strong>
             </div>
           )}
         </>

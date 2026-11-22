@@ -1,5 +1,5 @@
 import { todayLocal } from '../../lib/dates'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
@@ -32,9 +32,10 @@ import { AccountCard, CurrentPlanCard } from './PatientSummaryCards'
 
 export function PatientPage() {
   const { id = '' } = useParams()
-  const { t, money, date } = useI18n()
+  const { t, money, date, time } = useI18n()
 
   const { clinicId } = useMember()
+  const navigate = useNavigate()
   const [dialog, setDialog] = useState<'plan' | 'visit' | 'dictate' | 'book' | 'edit' | 'archive' | null>(null)
   const [more, setMore] = useState(false)
   useEffect(() => {
@@ -54,6 +55,16 @@ export function PatientPage() {
         .eq('status', 'done').order('starts_at', { ascending: false }).limit(1)
       if (error) throw error
       return data[0]?.starts_at ?? null
+    },
+    enabled: !!id,
+  })
+  const xrays = useQuery({
+    queryKey: ['xray-count', id],
+    queryFn: async () => {
+      const { count, error } = await supabase.from('patient_files').select('id', { count: 'exact', head: true })
+        .eq('patient_id', id).eq('kind', 'xray')
+      if (error) throw error
+      return count ?? 0
     },
     enabled: !!id,
   })
@@ -99,7 +110,7 @@ export function PatientPage() {
               <h1>{patient.full_name}</h1>
               <p className="patient-meta">
                 {age !== null && <span>{t('patient.age', { n: age })}</span>}
-                <span dir="ltr">{patient.phone}</span>
+                <a dir="ltr" href={`tel:${patient.phone}`} className="phone-link">{patient.phone}</a>
               </p>
             </div>
           </div>
@@ -107,7 +118,6 @@ export function PatientPage() {
             <a className="btn" href={whatsappLink(patient.whatsapp_phone ?? patient.phone)} target="_blank" rel="noreferrer">
               {t('patient.whatsapp')}
             </a>
-            <a className="btn" href={`tel:${patient.phone}`}>{t('patient.call')}</a>
             <button className="btn" onClick={() => setDialog('book')}>{t('patient.book')}</button>
             <button className="btn" onClick={() => setDialog('dictate')}>{t('patient.dictate')}</button>
             <button className="btn btn-primary" onClick={() => setDialog('visit')}>{t('patient.newSession')}</button>
@@ -117,6 +127,7 @@ export function PatientPage() {
               </button>
               {more && (
                 <div className="user-pop" role="menu">
+                  <a role="menuitem" href={`tel:${patient.phone}`}>{t('patient.call')}</a>
                   <button role="menuitem" onClick={() => { setMore(false); setDialog('edit') }}>{t('patientForm.edit')}</button>
                   <button role="menuitem" onClick={() => { setMore(false); setDialog('plan') }}>{t('plan.new')}</button>
                   <button role="menuitem" onClick={() => { setMore(false); setDialog('archive') }}>{t('archive.action')}</button>
@@ -129,22 +140,21 @@ export function PatientPage() {
         <dl className="patient-facts">
           <div><dt>{t('patientForm.doctor')}</dt><dd>{doctorName ?? t('common.none')}</dd></div>
           <div><dt>{t('patients.col.lastVisit')}</dt><dd>{lastVisit.data ? date(lastVisit.data) : t('patients.newPatient')}</dd></div>
-          <div><dt>{t('patient.nextVisit')}</dt><dd>{nextAppointment ? date(nextAppointment.starts_at) : t('common.none')}</dd></div>
+          <div><dt>{t('patient.nextVisit')}</dt><dd>{nextAppointment ? `${date(nextAppointment.starts_at)} ${time(nextAppointment.starts_at)}` : t('common.none')}</dd></div>
           <div className={owed > 0 ? '' : 'is-muted'}><dt>{t('patients.col.owed')}</dt><dd className={overdue > 0 ? 'danger-text' : ''}>{owed > 0 ? money(owed) : t('common.none')}</dd></div>
-          <div className={recallOverdue && !inTreatment ? 'is-danger' : ''}>
-            <dt>{t('patient.recall')}</dt>
-            <dd>{inTreatment ? t('patient.recallPausedShort') : patient.next_recall_due ? date(patient.next_recall_due) : t('common.none')}</dd>
-          </div>
-          {patient.source && <div><dt>{t('patient.cameFrom')}</dt><dd>{t(`source.${patient.source}` as Parameters<typeof t>[0])}{patient.source_note ? ` · ${patient.source_note}` : ''}</dd></div>}
+          <div><dt>{t('patient.cameFrom')}</dt><dd>{patient.source ? t(`source.${patient.source}` as Parameters<typeof t>[0]) : t('patientForm.sourceUnknown')}</dd></div>
         </dl>
 
         <div className="patient-chips">
           {patient.archived_at && <span className="badge badge-muted">{t('archive.banner')}{patient.archive_reason ? ` · ${patient.archive_reason}` : ''}</span>}
-          {patient.medical_alerts && <span className="badge badge-danger chip-alert" title={t('patient.alertTitle')}>{patient.medical_alerts}</span>}
-          {plans.some((p) => p.consent_signed) && <span className="chip">{t('patient.consentSigned')}</span>}
-          {overdue > 0 && <span className="badge badge-danger">{t('patient.overdueLine', { amount: money(overdue) })}</span>}
+          {(patient.medical_alerts ?? '').split(/[،,\n]+/).map((a) => a.trim()).filter(Boolean).map((a, i) => (
+            <span key={i} className={i === 0 ? 'pill pill-danger' : 'pill'}>{a}</span>
+          ))}
+          {(patient.allergy_groups ?? []).length > 0 && <span className="pill pill-danger">{t('patient.allergyGroups', { n: (patient.allergy_groups ?? []).length })}</span>}
+          {plans.some((p) => p.consent_signed) && <span className="pill">{t('patient.contractSigned')}</span>}
+          {(xrays.data ?? 0) > 0 && <span className="pill">{t('patient.xrays', { n: xrays.data ?? 0 })}</span>}
+          {recallOverdue && !inTreatment && <span className="pill">{t('patient.recallDueChip')}</span>}
         </div>
-        <PatientAllergies patientId={patient.id} groups={patient.allergy_groups ?? []} />
       </section>
 
       <nav className="tabs2" role="tablist">
@@ -158,11 +168,22 @@ export function PatientPage() {
       <div className="patient-grid">
         {tab === 'overview' && (
           <>
-            <div className="panel-wide"><ToothHistory patientId={id} onAddPlan={() => setDialog('plan')} /></div>
+            <div className="panel-wide"><ToothHistory patientId={id} onAddForTooth={() => {
+              const active = plans.find((p) => p.status === 'active' || p.status === 'draft' || p.status === 'presented')
+              if (active?.treatment_plan_id) navigate(`/plans/${active.treatment_plan_id}`)
+              else setDialog('plan')
+            }} /></div>
             <div className="panel-wide split-2">
               <CurrentPlanCard plans={plans} />
-              <AccountCard balances={balances} perSession={perSession} onPay={() => setTab('account')} />
+              <AccountCard balances={balances} perSession={perSession} onPay={() => setTab('account')}
+                nextInstallment={(ledger.data?.installments ?? []).filter((r) => (r.remaining ?? 0) > 0 && r.due_date)
+                  .sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))[0] ?? null} />
             </div>
+          </>
+        )}
+
+        {tab === 'treatment' && (
+          <>
             <PatientAppointments patient={{
               id: patient.id, full_name: patient.full_name, phone: patient.phone, medical_alerts: patient.medical_alerts,
             }} />
@@ -179,11 +200,6 @@ export function PatientPage() {
               </div>
               <Timeline patientId={id} />
             </section>
-          </>
-        )}
-
-        {tab === 'treatment' && (
-          <>
 
             <section className="panel">
               <div className="panel-head">
@@ -253,6 +269,9 @@ export function PatientPage() {
           </section>
         )}
 
+        {tab === 'rx' && (
+          <section className="panel panel-wide"><PatientAllergies patientId={patient.id} groups={patient.allergy_groups ?? []} /></section>
+        )}
         {tab === 'rx' && (
           <PatientPrescriptions patient={{
             id: patient.id, full_name: patient.full_name, medical_alerts: patient.medical_alerts,

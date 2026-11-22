@@ -32,6 +32,8 @@ export function AppShell() {
   const [userOpen, setUserOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const onHome = location.pathname === '/today' || location.pathname === '/'
+  const hideBar = location.pathname.startsWith('/appointments') || /^\/patients\/[^/]+/.test(location.pathname)
   useEffect(() => { setMoreOpen(false); setUserOpen(false) }, [location.pathname])
   useEffect(() => {
     if (!userOpen) return
@@ -85,12 +87,16 @@ export function AppShell() {
 
       <main className="content">
         {/* Desktop top bar: search, the two things reception adds all day, and who is signed in. */}
-        <div className="appbar">
-          <button className="appbar-search" onClick={openQuickSearch}>
-            <Icon name="search" />
-            <span>{t('shell.search')}</span>
-            <kbd>Ctrl K</kbd>
-          </button>
+        {/* Search lives on the home page only; Ctrl K still opens it anywhere.
+            The appointments calendar and the patient file have no top bar, as in the design. */}
+        {!hideBar && <div className="appbar">
+          {onHome ? (
+            <button className="appbar-search" onClick={openQuickSearch}>
+              <Icon name="search" />
+              <span>{t('shell.search')}</span>
+              <kbd>Ctrl K</kbd>
+            </button>
+          ) : <span className="appbar-spacer" />}
           <div className="appbar-actions">
             <button className="btn" onClick={() => navigate('/patients?new=1')}>{t('shell.newPatient')}</button>
             <button className="btn btn-primary" onClick={() => navigate('/appointments?new=1')}>{t('shell.newAppointment')}</button>
@@ -112,7 +118,7 @@ export function AppShell() {
               )}
             </div>
           </div>
-        </div>
+        </div>}
         <Outlet />
       </main>
 
