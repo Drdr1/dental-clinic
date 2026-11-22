@@ -373,6 +373,9 @@ export type Database = {
           booking_horizon_days: number
           booking_min_notice_hours: number
           booking_slug: string | null
+          booking_show_prices: boolean
+          closed_weekdays: number[]
+          address: string | null
           cash_float: number
           closes_at: string
           commission_basis: string
@@ -400,6 +403,9 @@ export type Database = {
           booking_horizon_days?: number
           booking_min_notice_hours?: number
           booking_slug?: string | null
+          booking_show_prices?: boolean
+          closed_weekdays?: number[]
+          address?: string | null
           cash_float?: number
           closes_at?: string
           commission_basis?: string
@@ -427,6 +433,9 @@ export type Database = {
           booking_horizon_days?: number
           booking_min_notice_hours?: number
           booking_slug?: string | null
+          booking_show_prices?: boolean
+          closed_weekdays?: number[]
+          address?: string | null
           cash_float?: number
           closes_at?: string
           commission_basis?: string
@@ -3192,6 +3201,13 @@ export type Database = {
         Returns: Json
       }
       booking_clinic: { Args: { p_slug: string }; Returns: Json }
+      booking_day: {
+        Args: { p_date: string; p_procedure: string; p_slug: string }
+        Returns: {
+          free: boolean
+          slot: string
+        }[]
+      }
       booking_slots: {
         Args: { p_date: string; p_procedure: string; p_slug: string }
         Returns: {

@@ -28,6 +28,7 @@ const known: Array<[RegExp, MessageKey]> = [
   [/TOO_SOON/i, 'err.tooSoon'],
   [/TOO_FAR/i, 'err.tooFar'],
   [/OUTSIDE_HOURS/i, 'err.outsideHours'],
+  [/CLINIC_CLOSED_DAY/i, 'err.clinicClosedDay'],
   [/PHONE_INVALID/i, 'err.phoneInvalid'],
   [/NAME_REQUIRED/i, 'err.nameRequired'],
   [/BOOKING_UNAVAILABLE|SERVICE_UNAVAILABLE/i, 'book.unavailable'],

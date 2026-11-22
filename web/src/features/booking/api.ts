@@ -1,9 +1,11 @@
 import { supabase } from '../../lib/supabase'
 
-export type BookingService = { id: string; name: string; minutes: number }
+export type BookingService = { id: string; name: string; minutes: number; price: number | null }
 export type BookingClinic = {
   clinic: string
   logo: string | null
+  address: string | null
+  closed_weekdays: number[]
   timezone: string
   opens_at: string
   closes_at: string
@@ -25,6 +27,13 @@ export async function getSlots(slug: string, date: string, procedureId: string):
   const { data, error } = await supabase.rpc('booking_slots', { p_slug: slug, p_date: date, p_procedure: procedureId })
   if (error) throw error
   return ((data ?? []) as Array<{ slot: string } | string>).map((r) => (typeof r === 'string' ? r : r.slot))
+}
+
+/** Every slot in the day, with the taken ones marked, so the page can cross them out. */
+export async function getDay(slug: string, date: string, procedureId: string): Promise<{ slot: string; free: boolean }[]> {
+  const { data, error } = await supabase.rpc('booking_day', { p_slug: slug, p_date: date, p_procedure: procedureId })
+  if (error) throw error
+  return (data ?? []) as { slot: string; free: boolean }[]
 }
 
 export async function book(args: {
