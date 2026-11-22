@@ -127,6 +127,10 @@ export function MaterialsPage() {
                       <td>
                         <button className="link-btn row-link strong" onClick={() => setOpen({ kind: 'history', m })}>{m.name}</button>
                         {!m.active && <span className="badge badge-muted"> {t('mat.inactive')}</span>}
+                        <span className="row-hover-action mat-links">
+                          <button className="link-btn small" onClick={() => setOpen({ kind: 'edit', m })}>{t('mat.editShort')}</button>
+                          {role === 'owner' && <button className="link-btn small" onClick={() => setOpen({ kind: 'recipe', m })}>{t('mat.recipe')}</button>}
+                        </span>
                       </td>
                       <td>
                         <div className="stock-cell">
@@ -138,7 +142,7 @@ export function MaterialsPage() {
                       <td className="hide-phone nowrap">{m.last_unit_cost != null ? money(m.last_unit_cost) : '—'}</td>
                       <td className="hide-phone">{m.supplier_name ?? '—'}</td>
                       <td>
-                        <span className="row-buttons mat-actions">
+                        <div className="mat-actions">
                           {m.is_low && m.supplier_phone && (
                             <a className="btn btn-small btn-ink" target="_blank" rel="noreferrer"
                               href={waMessage(m.supplier_phone, templates.orderMaterial({ clinic: clinicName, material: m.name ?? '', unit: m.unit ?? '' }))}>
@@ -148,11 +152,7 @@ export function MaterialsPage() {
                           <button className="btn btn-small" onClick={() => setOpen({ kind: 'buy', m })}>{t('mat.buy')}</button>
                           <button className="btn btn-small" onClick={() => setOpen({ kind: 'use', m })}>{t('mat.use')}</button>
                           <button className="btn btn-small" onClick={() => setOpen({ kind: 'count', m })}>{t('mat.count')}</button>
-                          <span className="row-hover-action mat-links">
-                            <button className="link-btn small" onClick={() => setOpen({ kind: 'edit', m })}>{t('mat.editShort')}</button>
-                            {role === 'owner' && <button className="link-btn small" onClick={() => setOpen({ kind: 'recipe', m })}>{t('mat.recipe')}</button>}
-                          </span>
-                        </span>
+                        </div>
                       </td>
                     </tr>
                   )
