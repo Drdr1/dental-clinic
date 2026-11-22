@@ -81,3 +81,24 @@ export async function deleteMaterial(materialId: string, force = false) {
   const { error } = await supabase.rpc('delete_material', { p_material: materialId, p_force: force })
   if (error) throw error
 }
+
+/** The page's top numbers: purchases this month and the last stock count. */
+export async function getMaterialSummary(clinicId: string) {
+  const d = new Date()
+  const monthStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+  const [buys, counts] = await Promise.all([
+    supabase.from('material_movements').select('total_cost, occurred_on').eq('clinic_id', clinicId)
+      .eq('kind', 'purchase').gte('occurred_on', monthStart),
+    supabase.from('material_movements').select('quantity, occurred_on').eq('clinic_id', clinicId)
+      .eq('kind', 'adjustment').order('occurred_on', { ascending: false }).limit(200),
+  ])
+  if (buys.error) throw buys.error
+  if (counts.error) throw counts.error
+  const lastCount = counts.data[0]?.occurred_on ?? null
+  return {
+    monthBuys: buys.data.reduce((s, r) => s + (r.total_cost ?? 0), 0),
+    monthBuyCount: buys.data.length,
+    lastCount,
+    lastCountDiff: lastCount ? counts.data.filter((r) => r.occurred_on === lastCount).reduce((s, r) => s + Math.abs(r.quantity), 0) : 0,
+  }
+}

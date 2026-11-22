@@ -1423,3 +1423,12 @@ button.chip { cursor: pointer; }
 .speed-list li { display: grid; gap: 6px; }
 .kpi-bar.is-bad span { background: var(--danger); }
 .late-text { color: var(--danger); font-weight: 700; }
+
+/* ---------- Materials (Ders v2) ---------- */
+.stock-cell { display: grid; gap: 6px; min-width: 140px; }
+.mat-actions { justify-content: flex-end; flex-wrap: nowrap; }
+.mat-links { display: inline-flex; gap: 10px; }
+.count-grid { display: grid; gap: 8px; max-height: 55dvh; overflow-y: auto; }
+.count-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line2); }
+.count-row input { width: 100px; }
+@media (max-width: 860px) { .mat-actions { flex-wrap: wrap; } .mat-links { display: none; } }
