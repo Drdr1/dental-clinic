@@ -1105,6 +1105,7 @@ tr.is-void-row td:last-child { text-decoration: none; }
 button.chip { cursor: pointer; }
 .chip.on { background: var(--ink); color: #fff; }
 .chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chips .check { white-space: nowrap; flex: none; }
 .link-strong { font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
 .today-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -1232,4 +1233,27 @@ button.chip { cursor: pointer; }
   .cal-toolbar .date-jump { width: 100%; min-width: 0; }
   .cal-toolbar .inline-field > .muted { display: none; }
   .cal-toolbar .inline-field, .cal-toolbar .inline-field select { width: 100%; }
+}
+
+/* ---------- Patients list (Ders v2) ---------- */
+.list-panel { padding: 20px; gap: 16px; }
+.list-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-box { flex: 1 1 280px; max-width: 450px; display: flex; align-items: center; gap: 10px; min-height: 46px; padding-inline: 14px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink-soft); background: var(--surface); }
+.search-box:focus-within { border-color: var(--gum); box-shadow: var(--focus); }
+.search-box input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: var(--ink); }
+.chip-lg { padding: 7px 14px; font-size: 13px; }
+.table-scroll { overflow-x: auto; margin-inline: -4px; }
+.table-plain th { border-bottom-color: var(--line); }
+.table-plain td { padding-block: 14px; }
+.who { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.who p { margin-top: 1px; }
+.next-today { color: var(--navy); font-weight: 700; }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.badge-info { background: var(--gum-soft); color: #1a3f9e; }
+@media (max-width: 860px) {
+  .table-plain .hide-phone { display: none; }
+  .list-panel { padding: 14px; }
+  .list-tools { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .list-tools .chips { min-width: 0; flex-wrap: nowrap; overflow-x: auto; margin-inline: -14px; padding-inline: 14px; scrollbar-width: none; }
+  .search-box { max-width: none; }
 }

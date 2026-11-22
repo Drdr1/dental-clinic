@@ -159,3 +159,100 @@ export async function searchMyPatients(clinicId: string, doctorId: string, q: st
       outstanding: r.outstanding ?? 0, overdueCount: 0,
     }))
 }
+
+export type PatientFilter = 'all' | 'overdue' | 'alerts' | 'new' | 'recall'
+export type ListedPatient = PatientRow & Pick<Patient, 'date_of_birth' | 'primary_doctor_id' | 'created_at'> & {
+  lastVisit: string | null
+  nextAppointment: string | null
+}
+export const PAGE_SIZE = 25
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+
+async function overdueIds(clinicId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('patient_balance').select('patient_id')
+    .eq('clinic_id', clinicId).gt('overdue_count', 0)
+  if (error) throw error
+  return [...new Set(data.map((r) => r.patient_id).filter((id): id is string => !!id))]
+}
+
+/** The patients list: one page, filtered, with balances, last visit and next appointment. */
+export async function listPatients(clinicId: string, opts: {
+  q: string; filter: PatientFilter; archived: boolean; page: number; pageSize?: number
+}): Promise<{ rows: ListedPatient[]; total: number }> {
+  const size = opts.pageSize ?? PAGE_SIZE
+  let query = supabase.from('patients')
+    .select('id, full_name, phone, medical_alerts, archived_at, date_of_birth, primary_doctor_id, created_at', { count: 'exact' })
+    .eq('clinic_id', clinicId)
+  if (!opts.archived) query = query.is('archived_at', null)
+
+  if (opts.filter === 'alerts') query = query.not('medical_alerts', 'is', null).neq('medical_alerts', '')
+  if (opts.filter === 'new') query = query.gte('created_at', daysAgo(30))
+  if (opts.filter === 'recall') query = query.lte('next_recall_due', todayIso())
+  if (opts.filter === 'overdue') {
+    const ids = await overdueIds(clinicId)
+    if (!ids.length) return { rows: [], total: 0 }
+    query = query.in('id', ids)
+  }
+
+  const term = cleanSearch(opts.q)
+  if (term) {
+    const digits = term.replace(/\D/g, '')
+    query = digits.length >= 3
+      ? query.or(`full_name.ilike.%${term}%,phone.ilike.%${digits}%,whatsapp_phone.ilike.%${digits}%`)
+      : query.ilike('full_name', `%${term}%`)
+  }
+
+  const from = opts.page * size
+  const { data: patients, error, count } = await query.order('full_name').range(from, from + size - 1)
+  if (error) throw error
+  if (!patients.length) return { rows: [], total: count ?? 0 }
+  const ids = patients.map((p) => p.id)
+
+  const [balances, past, upcoming] = await Promise.all([
+    supabase.from('patient_balance').select('patient_id, outstanding, overdue_count').in('patient_id', ids),
+    supabase.from('appointments').select('patient_id, starts_at').in('patient_id', ids)
+      .eq('status', 'done').order('starts_at', { ascending: false }).limit(500),
+    supabase.from('appointments').select('patient_id, starts_at').in('patient_id', ids)
+      .in('status', ['booked', 'arrived', 'in_session']).gte('starts_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
+      .order('starts_at').limit(500),
+  ])
+  for (const r of [balances, past, upcoming]) if (r.error) throw r.error
+
+  const totals = new Map<string, { outstanding: number; overdueCount: number }>()
+  for (const b of balances.data ?? []) {
+    if (b.patient_id) totals.set(b.patient_id, { outstanding: b.outstanding ?? 0, overdueCount: b.overdue_count ?? 0 })
+  }
+  const first = (rows: { patient_id: string; starts_at: string }[]) => {
+    const m = new Map<string, string>()
+    for (const r of rows) if (!m.has(r.patient_id)) m.set(r.patient_id, r.starts_at)
+    return m
+  }
+  const last = first(past.data ?? []), next = first(upcoming.data ?? [])
+
+  return {
+    total: count ?? patients.length,
+    rows: patients.map((p) => ({
+      ...p,
+      ...(totals.get(p.id) ?? { outstanding: 0, overdueCount: 0 }),
+      lastVisit: last.get(p.id) ?? null,
+      nextAppointment: next.get(p.id) ?? null,
+    })),
+  }
+}
+
+/** The numbers on the filter chips. */
+export async function patientCounts(clinicId: string) {
+  const base = () => supabase.from('patients').select('id', { count: 'exact', head: true })
+    .eq('clinic_id', clinicId).is('archived_at', null)
+  const [all, alerts, fresh, recall, overdue] = await Promise.all([
+    base(),
+    base().not('medical_alerts', 'is', null).neq('medical_alerts', ''),
+    base().gte('created_at', daysAgo(30)),
+    base().lte('next_recall_due', todayIso()),
+    overdueIds(clinicId),
+  ])
+  for (const r of [all, alerts, fresh, recall]) if (r.error) throw r.error
+  return { all: all.count ?? 0, alerts: alerts.count ?? 0, new: fresh.count ?? 0, recall: recall.count ?? 0, overdue: overdue.length }
+}
