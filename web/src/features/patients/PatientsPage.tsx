@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { Link } from 'react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
@@ -14,6 +15,13 @@ export function PatientsPage() {
   const { t, money } = useI18n()
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
+  // ?new=1 from the top bar's "مريض جديد" opens the form straight away.
+  const [params, setParams] = useSearchParams()
+  useEffect(() => {
+    if (!params.get('new')) return
+    setAdding(true)
+    setParams({}, { replace: true })
+  }, [params, setParams])
   const [showArchived, setShowArchived] = useState(false)
   const q = useDebounced(search)
 

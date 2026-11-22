@@ -3,6 +3,27 @@ import { todayLocal } from '../../lib/dates'
 import { getDay } from '../appointments/api'
 import { getLowStock } from '../materials/api'
 
+export type DayTotal = { day: string; total: number }
+
+function weekStart() {
+  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6); return d
+}
+const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+/** Payments summed per local calendar day, oldest first, every day present even when empty. */
+function byDay(rows: { amount: number; received_at: string }[]): DayTotal[] {
+  const start = weekStart()
+  const days: DayTotal[] = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start); d.setDate(start.getDate() + i); return { day: localDay(d), total: 0 }
+  })
+  const index = new Map(days.map((d, i) => [d.day, i]))
+  for (const r of rows) {
+    const i = index.get(localDay(new Date(r.received_at)))
+    if (i !== undefined) days[i].total += r.amount
+  }
+  return days
+}
+
 export async function getToday(clinicId: string) {
   const [agenda, recall, labs, unscheduled, appointments, lowStock, payments] = await Promise.all([
     supabase.from('installment_agenda').select('*').eq('clinic_id', clinicId).order('due_date'),
@@ -13,8 +34,9 @@ export async function getToday(clinicId: string) {
     supabase.from('unscheduled_treatment').select('*').eq('clinic_id', clinicId).order('accepted_at'),
     getDay(clinicId, todayLocal()),
     getLowStock(clinicId),
-    supabase.from('payments').select('amount').eq('clinic_id', clinicId)
-      .gte('received_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
+    // Seven days of takings, today last: the KPI and the week chart both read it.
+    supabase.from('payments').select('amount, received_at').eq('clinic_id', clinicId)
+      .gte('received_at', weekStart().toISOString()),
   ])
   for (const r of [agenda, recall, labs, unscheduled, payments]) if (r.error) throw r.error
 
@@ -27,6 +49,8 @@ export async function getToday(clinicId: string) {
     for (const p of data) titles.set(p.id, p.title)
   }
 
+  const week = byDay(payments.data ?? [])
+
   return {
     agenda: agenda.data ?? [],
     recall: recall.data ?? [],
@@ -37,6 +61,7 @@ export async function getToday(clinicId: string) {
     planTitles: titles,
     appointments,
     lowStock,
-    collectedToday: (payments.data ?? []).reduce((sum, p) => sum + p.amount, 0),
+    week,
+    collectedToday: week[week.length - 1].total,
   }
 }

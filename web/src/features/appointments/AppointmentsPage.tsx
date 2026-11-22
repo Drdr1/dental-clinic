@@ -28,6 +28,12 @@ export function AppointmentsPage() {
   const [params, setParams] = useSearchParams()
   const date = params.get('date') ?? todayLocal()
   const setDate = (d: string) => setParams(d === todayLocal() ? {} : { date: d })
+  // ?new=1 from the top bar's "موعد جديد" opens the form straight away.
+  useEffect(() => {
+    if (!params.get('new')) return
+    setOpen({ kind: 'new' })
+    const next = new URLSearchParams(params); next.delete('new'); setParams(next, { replace: true })
+  }, [params, setParams])
   const [open, setOpen] = useState<Open>(null)
   const [now, setNow] = useState(() => new Date())
   // Dragging an appointment to another slot. The browser's own drag-and-drop

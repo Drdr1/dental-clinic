@@ -11,7 +11,7 @@ import { confirmBooking, getPendingBookings } from './api'
 /** Online bookings waiting for reception to call and confirm. */
 export function PendingBookings() {
   const { clinicId, clinicName } = useMember()
-  const { t, date } = useI18n()
+  const { t, date, time } = useI18n()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['pending-bookings', clinicId], queryFn: () => getPendingBookings(clinicId) })
   const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
@@ -35,29 +35,21 @@ export function PendingBookings() {
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2>{t('book.pendingTitle', { n: q.data.length })}</h2>
-        <Link className="btn" to="/appointments">{t('today.openCalendar')}</Link>
+        <h2>{t('book.pendingShort')}</h2>
+        <span className="badge badge-new">{t('book.newCount', { n: q.data.length })}</span>
       </div>
       {confirm.isError && <ErrorNote error={confirm.error} />}
-      <ul className="work-list">
+      <ul className="work-list bookings">
         {q.data.map((b) => (
           <li key={b.id}>
             <div>
               <Link to={`/patients/${b.patient_id}`} className="row-link strong">{b.full_name}</Link>
               <p className="muted">
-                {date(b.starts_at)} · {new Date(b.starts_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
-                {b.service_name && ` · ${b.service_name}`}
+                {[b.service_name, date(b.starts_at), time(b.starts_at)].filter(Boolean).join(' · ')}
               </p>
               {b.notes && <p className="muted small">{b.notes}</p>}
             </div>
-            <div className="work-meta">
-              <a className="btn btn-small" href={`tel:${b.phone}`}>{t('patient.call')}</a>
-              <a className="btn btn-small" target="_blank" rel="noreferrer"
-                href={waMessage(b.whatsapp_phone ?? b.phone, templates.appointment({
-                  clinic: clinicName, name: b.full_name, startsAt: b.starts_at,
-                }))}>
-                {t('appt.confirmWhatsapp')}
-              </a>
+            <div className="booking-actions">
               {(doctors.data?.length ?? 0) > 0 && (
                 <select className="cell-select" aria-label={t('doc.doctor')}
                   value={picked[b.id] ?? ''}
@@ -66,9 +58,16 @@ export function PendingBookings() {
                   {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
                 </select>
               )}
-              <button className="btn btn-small btn-primary"
+              <button className="btn btn-small btn-ink"
                 disabled={confirm.isPending || ((doctors.data?.length ?? 0) > 0 && !picked[b.id])}
                 onClick={() => confirm.mutate(b.id)}>{t('book.confirm')}</button>
+              <a className="btn btn-small" target="_blank" rel="noreferrer"
+                href={waMessage(b.whatsapp_phone ?? b.phone, templates.appointment({
+                  clinic: clinicName, name: b.full_name, startsAt: b.starts_at,
+                }))}
+                aria-label={t('appt.confirmWhatsapp')} title={t('appt.confirmWhatsapp')}>
+                {t('book.whatsapp')}
+              </a>
             </div>
           </li>
         ))}
