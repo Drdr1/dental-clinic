@@ -49,7 +49,10 @@ export function TodayPage() {
   const yesterday = week.length > 1 ? week[week.length - 2].total : 0
   const diff = collectedToday - yesterday
 
-  const firstName = (member.displayName || '').trim().split(/\s+/)[0] ?? ''
+  // "د. محمد درديري" greets as "د. محمد", not just "د.".
+  const nameParts = (member.displayName || '').trim().split(/\s+/)
+  const isTitle = /^(د\.?|دكتور|دكتورة|dr\.?)$/i.test(nameParts[0] ?? '')
+  const firstName = (isTitle ? nameParts.slice(0, 2) : nameParts.slice(0, 1)).join(' ')
   const greeting = now.getHours() < 14 ? 'today.greetMorning' : 'today.greetEvening'
   const nowMin = now.getHours() * 60 + now.getMinutes()
 
