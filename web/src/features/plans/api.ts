@@ -14,11 +14,11 @@ export async function getPlan(planId: string) {
 
   const [items, patient, summary, procedures, sessions, payments, staff] = await Promise.all([
     supabase.from('treatment_plan_items').select('*').eq('plan_id', planId).order('created_at'),
-    supabase.from('patients').select('id, full_name, medical_alerts, payer_id, payers(id, name, discount_percent)')
+    supabase.from('patients').select('id, full_name, phone, whatsapp_phone, medical_alerts, payer_id, payers(id, name, discount_percent)')
       .eq('id', plan.patient_id).single(),
     supabase.from('installment_plan_summary').select('*').eq('treatment_plan_id', planId).eq('status', 'active').maybeSingle(),
     supabase.from('procedures').select('id, name, default_price').eq('clinic_id', plan.clinic_id).eq('active', true).order('name'),
-    supabase.from('sessions').select('id, performed_at, notes, lock_override, override_reason')
+    supabase.from('sessions').select('id, performed_at, notes, lock_override, override_reason, doctor_id, performed_by')
       .eq('treatment_plan_id', planId).order('performed_at', { ascending: false }),
     // Every payment on the plan. Filtering to installment_plan_id = null
     // used to hide money taken against a schedule that was later

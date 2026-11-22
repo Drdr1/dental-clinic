@@ -79,11 +79,7 @@ const TOOTH_PATH = 'M6 22 Q6 4 14 3 Q22 4 22 22 Q26 24 25 31 Q24 38 14 38 Q4 38 
 
 /** Chart and per-tooth history side by side, like the paper chart: tap a tooth to see what was done on it. */
 export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; onAddForTooth?: (tooth: number) => void }) {
-  const { t, date, lang } = useI18n()
-  // "14 نوفمبر" as in the design; the year only when it isn't this year.
-  const short = (iso: string) => new Date(iso).getFullYear() === new Date().getFullYear()
-    ? new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long' }).format(new Date(iso))
-    : date(iso)
+  const { t, day } = useI18n()
   const [picked, setPicked] = useState<number | null>(null)
   const q = useQuery({ queryKey: ['tooth-history', patientId], queryFn: () => getToothHistory(patientId) })
 
@@ -151,7 +147,7 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
         <ul className="tooth-log">
           {visits.map((v) => (
             <li key={v.id}>
-              <span className="muted small nowrap">{short(v.at)}</span>
+              <span className="muted small nowrap">{day(v.at)}</span>
               <div>
                 <strong>{v.title}</strong>
                 {(v.doctor || v.notes) && <p className="muted small">{[v.doctor, v.notes].filter(Boolean).join(' · ')}</p>}

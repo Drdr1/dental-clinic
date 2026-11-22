@@ -11,6 +11,8 @@ type I18n = {
   t: (key: MessageKey, vars?: Record<string, string | number>) => string
   money: (value: number | null | undefined) => string
   date: (value: string | null | undefined) => string
+  /** "14 نوفمبر": day and month, with the year only when it is not this year. */
+  day: (value: string | null | undefined) => string
   /** Minutes since midnight, "HH:MM[:SS]" or an ISO timestamp → a 12-hour clock. */
   time: (value: string | number | null | undefined) => string
 }
@@ -46,6 +48,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     // Western digits in both languages: that's what patients and staff read on receipts.
     const locale = lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-EG'
     const moneyFmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 })
+    const dayFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' })
     const dateFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' })
     const currency = lang === 'ar' ? 'ج.م' : 'EGP'
     return {
@@ -60,6 +63,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       money: (v) => (v == null ? '—' : `\u2066${moneyFmt.format(v)}\u2069 ${currency}`),
       // Dates from Postgres `date` columns are plain YYYY-MM-DD; parse as local noon to avoid TZ shifts.
       date: (v) => (v ? dateFmt.format(new Date(v.length === 10 ? `${v}T12:00:00` : v)) : '—'),
+      day: (v) => {
+        if (!v) return '—'
+        const d = new Date(v.length === 10 ? `${v}T12:00:00` : v)
+        return (d.getFullYear() === new Date().getFullYear() ? dayFmt : dateFmt).format(d)
+      },
       // The clinic reads the clock as 6:45 م, never 18:45. Stored values stay
       // 24-hour; this is only how they are shown.
       time: (v) => {

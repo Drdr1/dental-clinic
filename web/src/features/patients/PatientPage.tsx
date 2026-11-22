@@ -1,5 +1,5 @@
 import { todayLocal } from '../../lib/dates'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useI18n } from '../../i18n'
@@ -35,6 +35,7 @@ export function PatientPage() {
   const { t, money, date, time } = useI18n()
 
   const { clinicId } = useMember()
+  const [search] = useSearchParams()
   const navigate = useNavigate()
   const [dialog, setDialog] = useState<'plan' | 'visit' | 'dictate' | 'book' | 'edit' | 'archive' | null>(null)
   const [more, setMore] = useState(false)
@@ -44,7 +45,8 @@ export function PatientPage() {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [more])
-  const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files' | 'rx'>('overview')
+  const [tab, setTab] = useState<'overview' | 'treatment' | 'account' | 'files' | 'rx'>(
+    () => (['treatment', 'account', 'files', 'rx'].includes(search.get('tab') ?? '') ? search.get('tab') : 'overview') as 'overview')
   const file = useQuery({ queryKey: ['patient', id], queryFn: () => getPatientFile(id), enabled: !!id })
   const upcoming = useQuery({ queryKey: ['appointments', id], queryFn: () => getUpcomingForPatient(id), enabled: !!id })
   const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
