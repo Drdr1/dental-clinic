@@ -1709,3 +1709,61 @@ button.chip { cursor: pointer; }
   .rp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }
 .page.reports { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- Audit log (design 11) ---------- */
+.au-grid { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.au-grid > .au-panel { flex: 2 1 560px; }
+.au-side { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.au-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.au-panel h2 { margin: 0; font-size: 18px; }
+.au-cats { display: flex; flex-wrap: wrap; gap: 8px; }
+.au-cats button { border: 0; font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; background: #eef1f6; color: var(--ink); cursor: pointer; }
+.au-cats button.on { background: var(--ink); color: #fff; font-weight: 600; }
+.au-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.au-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+.au-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.au-switch i { width: 46px; height: 26px; border-radius: 999px; background: #bcc6d6; position: relative; transition: background .15s; }
+.au-switch i::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: inset-inline-start .15s; }
+.au-switch input:checked + i { background: var(--gum); }
+.au-switch input:checked + i::after { inset-inline-start: 23px; }
+.au-switch input:focus-visible + i { outline: 2px solid var(--gum); outline-offset: 2px; }
+.au-select { min-height: 42px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; font-size: 14px; padding: 0 12px; color: var(--ink); }
+.au-day { display: flex; flex-direction: column; }
+.au-day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0 10px; border-bottom: 1px solid var(--line2); }
+.au-day-head h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.au-day-head span { font-size: 13px; color: var(--ink-soft); }
+.au-list { list-style: none; margin: 0; padding: 0; }
+.au-list li { display: flex; gap: 16px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--line2); }
+.au-list li:last-child { border-bottom: 0; }
+.au-time { flex: none; width: 58px; font-size: 13px; color: var(--ink-soft); padding-top: 2px; white-space: nowrap; }
+.au-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.au-who { margin: 0; font-size: 14px; display: flex; gap: 6px; align-items: baseline; }
+.au-who b { font-weight: 700; font-size: 15px; }
+.au-who span { font-size: 12px; color: var(--ink-soft); }
+.au-main { margin: 0; font-size: 15px; }
+.au-main b { font-weight: 700; }
+.au-old { color: var(--ink-soft); }
+.au-patient { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.au-sub { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.au-tags { flex: none; display: flex; gap: 6px; }
+.rp-tag.is-danger { background: var(--danger-soft); color: var(--danger); }
+.au-more { width: 100%; }
+.au-week { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.au-week > div { background: var(--paper); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; }
+.au-week > div.is-danger { background: var(--danger-soft); color: var(--danger); }
+.au-week span { font-size: 13px; color: var(--ink-soft); }
+.au-week .is-danger span { color: var(--danger); }
+.au-week b { font-size: 26px; font-weight: 700; line-height: 1.2; }
+.au-people { list-style: none; margin: 0; padding: 0; }
+.au-people li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line2); }
+.au-people li b { font-weight: 600; }
+.au-people li > span { display: flex; gap: 8px; align-items: center; }
+.au-rules { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-soft); font-size: 14px; }
+.au-note { margin: 0; background: var(--paper); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--ink-soft); }
+@media (max-width: 560px) {
+  .au-list li { flex-wrap: wrap; gap: 6px 12px; }
+  .au-time { width: auto; order: 0; }
+  .au-tags { order: 1; margin-inline-start: auto; }
+  .au-body { order: 2; flex-basis: 100%; }
+}
+.au-main bdi { white-space: nowrap; }

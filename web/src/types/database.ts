@@ -34,6 +34,29 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          actor_name: string | null
+          actor_role: Database["public"]["Enums"]["member_role"] | null
+          at: string
+          category: string
+          clinic_id: string
+          data: Json
+          id: number
+          patient_id: string | null
+          patient_name: string | null
+          sensitive: boolean
+        }
+        Insert: {
+          id?: never
+        }
+        Update: {
+          id?: never
+        }
+        Relationships: []
+      }
       allergy_groups: {
         Row: {
           code: string
@@ -3207,6 +3230,10 @@ export type Database = {
           free: boolean
           slot: string
         }[]
+      }
+      audit_week: {
+        Args: { p_clinic: string }
+        Returns: Json
       }
       clinic_report: {
         Args: { p_clinic: string; p_from: string; p_to: string }

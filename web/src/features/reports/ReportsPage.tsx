@@ -7,6 +7,10 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { toIsoDate, todayLocal } from '../../lib/dates'
 import { getReport, type Report } from './api'
 import { ReviewsPanel, Stars } from './ReviewsPanel'
+import { AuditLog } from './AuditLog'
+import { exportAudit } from './auditText'
+import type { AuditFilter } from './auditApi'
+import { useSearchParams } from 'react-router'
 
 type Preset = 'this' | 'last' | 'three'
 
@@ -204,11 +208,16 @@ function Numbers({ r, preset, from }: { r: Report; preset: Preset; from: string 
 
 export function ReportsPage() {
   const { clinicId, role } = useMember()
-  const { t, lang } = useI18n()
+  const i18n = useI18n()
+  const { t, lang } = i18n
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'audit' ? 'audit' : 'numbers'
+  const [f, setF] = useState<AuditFilter>({ category: null, sensitive: false, actor: null })
+  const [exporting, setExporting] = useState(false)
   const [preset, setPreset] = useState<Preset>('this')
   const range = rangeFor(preset)
   const enabled = role === 'owner'
-  const q = useQuery({ queryKey: ['reports', clinicId, range.from, range.to], queryFn: () => getReport(clinicId, range.from, range.to), enabled })
+  const q = useQuery({ queryKey: ['reports', clinicId, range.from, range.to], queryFn: () => getReport(clinicId, range.from, range.to), enabled: enabled && tab === 'numbers' })
 
   if (!enabled) return <section className="page"><p className="empty">{t('fin.ownerOnly')}</p></section>
 
@@ -220,21 +229,33 @@ export function ReportsPage() {
       <header className="page-head">
         <div>
           <h1>{t('rp.title')}</h1>
-          <p className="muted">{preset === 'three' ? t('rp.last3') : monthName} · {t('fin.ownerOnlyShort')}</p>
+          <p className="muted">{tab === 'audit' ? t('au.sub') : `${preset === 'three' ? t('rp.last3') : monthName} · ${t('fin.ownerOnlyShort')}`}</p>
         </div>
         <div className="row-buttons">
           <div className="seg">
-            <button className="on">{t('rp.numbers')}</button>
+            <button className={tab === 'numbers' ? 'on' : ''} onClick={() => setParams({}, { replace: true })}>{t('rp.numbers')}</button>
+            <button className={tab === 'audit' ? 'on' : ''} onClick={() => setParams({ tab: 'audit' }, { replace: true })}>{t('rp.audit')}</button>
           </div>
+          {tab === 'audit' ? (
+            <button className="btn" disabled={exporting}
+              onClick={async () => { setExporting(true); try { await exportAudit(clinicId, f, i18n) } finally { setExporting(false) } }}>
+              {t('au.export')}
+            </button>
+          ) : (
           <div className="seg">
             <button className={preset === 'this' ? 'on' : ''} onClick={() => setPreset('this')}>{t('fin.thisMonth')}</button>
             <button className={preset === 'last' ? 'on' : ''} onClick={() => setPreset('last')}>{t('fin.lastMonth')}</button>
             <button className={preset === 'three' ? 'on' : ''} onClick={() => setPreset('three')}>{t('rp.last3')}</button>
           </div>
+          )}
         </div>
       </header>
-      {q.isError && <ErrorNote error={q.error} onRetry={() => q.refetch()} />}
-      {q.data && <Numbers r={q.data} preset={preset} from={range.from} />}
+      {tab === 'audit' ? <AuditLog f={f} setF={setF} /> : (
+        <>
+          {q.isError && <ErrorNote error={q.error} onRetry={() => q.refetch()} />}
+          {q.data && <Numbers r={q.data} preset={preset} from={range.from} />}
+        </>
+      )}
     </section>
   )
 }
