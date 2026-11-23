@@ -34,6 +34,8 @@ PubkeyAuthentication yes
 MaxAuthTries 3
 AllowUsers $NEW_USER
 CONF
+# Newer Ubuntu starts sshd on demand, so this folder may not exist yet; the config test needs it.
+mkdir -p /run/sshd
 sshd -t
 systemctl restart ssh
 
