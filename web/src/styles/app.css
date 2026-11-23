@@ -1862,3 +1862,14 @@ button.chip { cursor: pointer; }
 .sub-banner.is-danger { background: var(--danger-soft); color: var(--danger); }
 .st-badge.is-trial { background: #fff4e5; color: #8a4b00; }
 .st-badge.is-past_due, .st-badge.is-suspended { background: var(--danger-soft); color: var(--danger); }
+
+/* The rail never squeezes the logo or the account button away; on shorter
+   screens the icons tighten up so everything still fits. */
+.rail-logo, .rail-user { flex: none; }
+@media (max-height: 960px) {
+  .rail { padding: 12px 0; gap: 4px; }
+  .rail-logo { margin-bottom: 8px; }
+  .rail-nav { gap: 4px; }
+  .rail-link { width: 44px; height: 42px; border-radius: 12px; }
+  .rail-divider { margin: 3px 0; }
+}
