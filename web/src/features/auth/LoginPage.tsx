@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './AuthProvider'
 import { useI18n } from '../../i18n'
-import { ToothMark } from '../../components/ToothMark'
+import { DersMark } from '../../components/DersMark'
 
 export function LoginPage() {
   const { session, loading } = useAuth()
@@ -29,7 +29,7 @@ export function LoginPage() {
   return (
     <main className="login">
       <form className="login-card" onSubmit={onSubmit}>
-        <ToothMark className="login-mark" />
+        <DersMark className="login-mark" />
         <h1>{t('login.title')}</h1>
         <label className="field">
           <span>{t('login.email')}</span>

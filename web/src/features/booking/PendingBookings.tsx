@@ -35,8 +35,8 @@ export function PendingBookings() {
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2>{t('book.pendingTitle', { n: q.data.length })}</h2>
-        <Link className="btn" to="/appointments">{t('today.openCalendar')}</Link>
+        <h2>{t('book.pendingTitle')}</h2>
+        <span className="pill">{t('book.pendingNew', { n: q.data.length })}</span>
       </div>
       {confirm.isError && <ErrorNote error={confirm.error} />}
       <ul className="work-list">
@@ -66,7 +66,7 @@ export function PendingBookings() {
                   {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
                 </select>
               )}
-              <button className="btn btn-small btn-primary"
+              <button className="btn btn-small btn-ink"
                 disabled={confirm.isPending || ((doctors.data?.length ?? 0) > 0 && !picked[b.id])}
                 onClick={() => confirm.mutate(b.id)}>{t('book.confirm')}</button>
             </div>

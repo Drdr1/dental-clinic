@@ -28,7 +28,13 @@ export function AppointmentsPage() {
   const [params, setParams] = useSearchParams()
   const date = params.get('date') ?? todayLocal()
   const setDate = (d: string) => setParams(d === todayLocal() ? {} : { date: d })
-  const [open, setOpen] = useState<Open>(null)
+  const [openHere, setOpenHere] = useState<Open>(null)
+  // The top bar and the Today page land here with ?new=1 (and maybe a chair) to book straight away.
+  const open: Open = openHere ?? (params.get('new') === '1' ? { kind: 'new', chairId: params.get('chair') ?? undefined } : null)
+  const setOpen = (next: Open) => {
+    setOpenHere(next)
+    if (!next && params.has('new')) setParams(date === todayLocal() ? {} : { date }, { replace: true })
+  }
   const [now, setNow] = useState(() => new Date())
   // Dragging an appointment to another slot. The browser's own drag-and-drop
   // refuses to start on a <button> in some builds, so this is done with plain

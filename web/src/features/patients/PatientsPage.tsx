@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
@@ -13,7 +13,11 @@ export function PatientsPage() {
   const { clinicId, role, userId } = useMember()
   const { t, money } = useI18n()
   const [search, setSearch] = useState('')
-  const [adding, setAdding] = useState(false)
+  const [addingHere, setAdding] = useState(false)
+  // The top bar's "new patient" button lands here with ?new=1.
+  const [params, setParams] = useSearchParams()
+  const adding = addingHere || params.get('new') === '1'
+  const closeForm = () => { setAdding(false); if (params.has('new')) setParams({}, { replace: true }) }
   const [showArchived, setShowArchived] = useState(false)
   const q = useDebounced(search)
 
@@ -93,7 +97,7 @@ export function PatientsPage() {
         </div>
       )}
 
-      {adding && <PatientForm onClose={() => setAdding(false)} />}
+      {adding && <PatientForm onClose={closeForm} />}
     </section>
   )
 }

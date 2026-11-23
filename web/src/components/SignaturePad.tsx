@@ -19,7 +19,7 @@ export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) 
     ctx.lineWidth = 2.2
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = '#13322f'
+    ctx.strokeStyle = '#12224a'
   }, [])
 
   const point = (e: React.PointerEvent) => {
