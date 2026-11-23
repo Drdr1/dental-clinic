@@ -1,0 +1,42 @@
+# Test server: certificates via the normal HTTP check, so the two DNS records
+# must be "DNS only" (grey cloud) in Cloudflare, not proxied.
+{
+	email {$ACME_EMAIL}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+}
+
+test.dentano.app {
+	import security_headers
+	header X-Frame-Options "DENY"
+	root * /srv/clinic
+	encode zstd gzip
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@html path / /index.html
+	header @html Cache-Control "no-cache"
+	try_files {path} /index.html
+	file_server
+}
+
+test-api.dentano.app {
+	import security_headers
+	@api path /rest/v1/* /auth/v1/* /storage/v1/* /functions/v1/*
+	handle @api {
+		request_body {
+			max_size 25MB
+		}
+		reverse_proxy api-gw:8000
+	}
+	handle {
+		respond "Not found" 404
+	}
+}
