@@ -17,8 +17,9 @@ import { LogoSection } from './LogoSection'
 import { DeletedPatientsSection } from './DeletedPatientsSection'
 import { FeaturesSection } from './FeaturesSection'
 import { SubscriptionCard } from './SubscriptionCard'
+import { ReviewsSection } from './ReviewsSection'
 
-type Tab = 'clinic' | 'hours' | 'prices' | 'features' | 'installments' | 'booking' | 'team' | 'payers' | 'partners' | 'drugs' | 'deleted'
+type Tab = 'clinic' | 'hours' | 'prices' | 'features' | 'installments' | 'booking' | 'reviews' | 'team' | 'payers' | 'partners' | 'drugs' | 'deleted'
 
 export function SettingsPage() {
   const { clinicId, role, clinicName } = useMember()
@@ -31,7 +32,7 @@ export function SettingsPage() {
 
   if (role !== 'owner') return <section className="page"><p className="empty">{t('settings.ownerOnly')}</p></section>
 
-  const tabs: Tab[] = ['clinic', 'hours', 'prices', 'features', ...(hasInstallments ? ['installments' as const] : []), 'booking',
+  const tabs: Tab[] = ['clinic', 'hours', 'prices', 'features', ...(hasInstallments ? ['installments' as const] : []), 'booking', 'reviews',
     'team', ...(hasPayers ? ['payers' as const] : []), 'partners', 'drugs', 'deleted']
   const asked = params.get('s') as Tab | null
   const tab: Tab = asked && tabs.includes(asked) ? asked : 'clinic'
@@ -48,6 +49,7 @@ export function SettingsPage() {
       features: <FeaturesSection />,
       installments: <ClinicSection key={clinicKey} initial={q.data.clinic} part="installments" />,
       booking: <BookingSection />,
+      reviews: <ReviewsSection />,
       team: <TeamSection />,
       payers: <PayersSection />,
       partners: <PartnersSection />,

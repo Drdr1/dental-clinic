@@ -1806,3 +1806,51 @@ button.chip { cursor: pointer; }
   .st-nav button.on, :root[dir="ltr"] .st-nav button.on, [dir="ltr"] .st-nav button.on { box-shadow: none; }
 }
 .settings.st-page { max-width: 1600px; }
+
+/* ---------- Post-visit review (design 15) ---------- */
+.rv-page { min-height: 100dvh; background: var(--paper); display: flex; justify-content: center; padding: 24px 16px; }
+.rv-card { width: 100%; max-width: 420px; min-height: min(720px, calc(100dvh - 48px)); background: #f6f8fc; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+.rv-head { background: #1d3a8a; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 32px 20px 26px; text-align: center; }
+.rv-head b { font-size: 19px; font-weight: 700; }
+.rv-logo { width: 56px; height: 56px; border-radius: 14px; background: #fff; display: grid; place-items: center; overflow: hidden; }
+.rv-logo img { width: 100%; height: 100%; object-fit: cover; }
+.rv-logo svg { width: 36px; height: 36px; }
+.rv-form { display: flex; flex-direction: column; flex: 1; }
+.rv-body { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 30px 22px 10px; }
+.rv-body h1 { margin: 0; font-size: 22px; font-weight: 700; }
+.rv-body p { margin: 0; color: var(--ink-soft); line-height: 1.7; }
+.rv-stars { display: flex; gap: 8px; margin-top: 8px; }
+.rv-stars button { border: 0; background: none; padding: 2px; cursor: pointer; }
+.rv-stars svg { width: 42px; height: 42px; fill: none; stroke: #bcc6d6; stroke-width: 1.4; stroke-linejoin: round; }
+.rv-stars button.on svg { fill: var(--gum); stroke: var(--gum); }
+.rv-stars button:focus-visible { outline: 2px solid var(--gum); border-radius: 8px; }
+.rv-scale { width: 100%; display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-soft); padding: 0 6px; }
+.rv-comment { width: 100%; display: flex; flex-direction: column; gap: 8px; text-align: start; margin-top: 14px; font-weight: 600; font-size: 14px; }
+.rv-comment textarea { font: inherit; font-weight: 400; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; resize: vertical; }
+.rv-foot { padding: 14px 22px 24px; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.rv-wide { width: 100%; justify-content: center; }
+.rv-note { margin: 0; text-align: center; font-size: 12px; color: var(--ink-soft); }
+.rv-icon { width: 72px; height: 72px; border-radius: 50%; background: var(--gum-soft); color: var(--gum); display: grid; place-items: center; margin-bottom: 8px; }
+.rv-icon .icon { width: 30px; height: 30px; }
+.rv-stars-done { display: flex; gap: 6px; margin-top: 8px; }
+.rv-stars-done svg { width: 24px; height: 24px; fill: #dfe5ee; }
+.rv-stars-done svg.on { fill: var(--gum); }
+.btn-link { background: none; border-color: transparent; color: var(--gum); text-decoration: underline; text-underline-offset: 3px; }
+.rv-cell { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.rv-sent { border: 0; background: none; font: inherit; font-size: 13px; color: var(--ink-soft); cursor: pointer; padding: 0; }
+.rv-sent:hover { color: var(--ink); text-decoration: underline; }
+.rv-follow ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rv-follow li { background: var(--danger-soft); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.rv-follow-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rv-follow p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+.rp-low { display: flex; flex-direction: column; gap: 4px; }
+.rp-low h3 { margin: 4px 0 0; font-size: 15px; font-weight: 700; }
+.rp-low ul { list-style: none; margin: 0; padding: 0; }
+.rp-low li { padding: 14px 0; border-top: 1px solid var(--line2); display: flex; flex-direction: column; gap: 6px; }
+.rp-low-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rp-low li p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+.rp-low-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rp-low-btns { display: flex; gap: 8px; }
+.rp-low-btns .icon { width: 16px; height: 16px; }
+.rv-foot .btn, .rp-low-btns .btn { gap: 6px; }
+.btn-small .icon { width: 16px; height: 16px; } .btn-small:has(.icon) { gap: 6px; }

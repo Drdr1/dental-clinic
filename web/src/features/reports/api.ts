@@ -19,12 +19,21 @@ export type Report = {
   reviews?: {
     avg: number | null; count: number; requested: number
     dist: Record<string, number>; google: number; follow_up: number
-    low: { id: string; patient: string; stars: number; comment: string | null; doctor: string | null; day: string; phone: string | null }[]
+    low: { id: string; patient: string; stars: number; comment: string | null; doctor: string | null; at: string; phone: string | null }[]
+    by_doctor: Record<string, number>
   }
 }
 
 export async function getReport(clinicId: string, from: string, to: string): Promise<Report> {
-  const { data, error } = await supabase.rpc('clinic_report', { p_clinic: clinicId, p_from: from, p_to: to })
-  if (error) throw error
-  return data as unknown as Report
+  const args = { p_clinic: clinicId, p_from: from, p_to: to }
+  const [main, rev] = await Promise.all([supabase.rpc('clinic_report', args), supabase.rpc('clinic_report_reviews', args)])
+  if (main.error) throw main.error
+  if (rev.error) throw rev.error
+  const r = main.data as unknown as Report
+  const reviews = rev.data as unknown as NonNullable<Report['reviews']>
+  return {
+    ...r,
+    reviews,
+    doctors: r.doctors.map((d) => ({ ...d, rating: reviews.by_doctor[d.user_id] ?? null })),
+  }
 }

@@ -12,6 +12,8 @@ export type Membership = {
   displayName: string
   /** Parts of the system the owner switched off in Settings → Features. */
   disabledFeatures: string[]
+  /** Post-visit review requests are switched on. */
+  reviewsEnabled: boolean
 }
 
 type AuthState = {
@@ -60,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     supabase
       .from('clinic_members')
-      .select('clinic_id, role, display_name, clinics(name, disabled_features)')
+      .select('clinic_id, role, display_name, clinics(name, disabled_features, reviews_enabled)')
       .eq('user_id', userId)
       .eq('active', true)
       .order('created_at')
@@ -80,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: data.role as Role,
             displayName: data.display_name,
             disabledFeatures: clinic?.disabled_features ?? [],
+            reviewsEnabled: !!clinic?.reviews_enabled,
           })
         }
         setMemberLoaded(true)

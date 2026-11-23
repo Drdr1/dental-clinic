@@ -20,6 +20,7 @@ import { DoctorPage } from './features/doctors/DoctorPage'
 import { PublicFormPage } from './features/forms/PublicFormPage'
 import { BookingPage } from './features/booking/BookingPage'
 import { AgreementPage } from './features/agreements/AgreementPage'
+import { ReviewPage } from './features/reviews/ReviewPage'
 import { ReportsPage } from './features/reports/ReportsPage'
 import { PrescriptionPage } from './features/prescriptions/PrescriptionPage'
 
@@ -29,6 +30,8 @@ export const router = createBrowserRouter([
   { path: '/f/:token', element: <PublicFormPage /> },
   // Public: online booking, no login.
   { path: '/book/:slug', element: <BookingPage /> },
+  // Public: the patient's post-visit review link, no login.
+  { path: '/r/:token', element: <ReviewPage /> },
   {
     element: <RequireAuth />,
     children: [

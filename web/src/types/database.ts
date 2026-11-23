@@ -34,6 +34,40 @@ export type Database = {
   }
   public: {
     Tables: {
+      review_requests: {
+        Row: {
+          answered_at: string | null
+          appointment_id: string
+          clinic_id: string
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          doctor_id: string | null
+          expires_at: string
+          went_to_google: boolean
+          id: string
+          patient_id: string
+          rating: number | null
+          resolved_at: string | null
+          resolved_by: string | null
+          token: string
+        }
+        Insert: {
+          id?: never
+        }
+        Update: {
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_requests_patient_id_clinic_id_fkey"
+            columns: ["patient_id", "clinic_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id", "clinic_id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -390,6 +424,8 @@ export type Database = {
       }
       clinics: {
         Row: {
+          google_review_url: string | null
+          reviews_enabled: boolean
           assistant_monthly_limit: number
           disabled_features: string[]
           plan_name: string
@@ -425,6 +461,8 @@ export type Database = {
           timezone: string
         }
         Insert: {
+          google_review_url?: string | null
+          reviews_enabled?: boolean
           assistant_monthly_limit?: number
           disabled_features?: string[]
           plan_name?: string
@@ -460,6 +498,8 @@ export type Database = {
           timezone?: string
         }
         Update: {
+          google_review_url?: string | null
+          reviews_enabled?: boolean
           assistant_monthly_limit?: number
           disabled_features?: string[]
           plan_name?: string
@@ -3245,6 +3285,30 @@ export type Database = {
           free: boolean
           slot: string
         }[]
+      }
+      request_review: {
+        Args: { p_appointment: string }
+        Returns: string
+      }
+      resolve_review: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      get_review: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      submit_review: {
+        Args: { p_comment: string; p_rating: number; p_token: string }
+        Returns: Json
+      }
+      review_to_google: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
+      clinic_report_reviews: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: Json
       }
       subscription_status: {
         Args: { p_clinic: string }

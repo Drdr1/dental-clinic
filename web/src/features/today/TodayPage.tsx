@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { FollowUpCard, ReviewCell } from '../reviews/ReviewBits'
+import { getReviewsFor } from '../reviews/api'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
@@ -26,6 +28,12 @@ export function TodayPage() {
   const q = useQuery({ queryKey: ['today', clinicId], queryFn: () => getToday(clinicId), refetchInterval: 60_000 })
   const calendar = useQuery({ queryKey: ['calendar', clinicId], queryFn: () => getClinicCalendar(clinicId) })
   const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
+  const doneIds = (q.data?.appointments ?? []).filter((a) => a.status === 'done').map((a) => a.id)
+  const reviews = useQuery({
+    queryKey: ['reviews-today', clinicId, doneIds.join(',')], queryFn: () => getReviewsFor(clinicId, doneIds),
+    enabled: member.reviewsEnabled && doneIds.length > 0,
+  })
+  const reviewOf = new Map((reviews.data ?? []).map((r) => [r.appointment_id, r]))
   const [doctorFilter, setDoctorFilter] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(id) }, [])
@@ -152,7 +160,9 @@ export function TodayPage() {
                     </div>
                     {meta && <p className="muted">{meta}</p>}
                   </div>
-                  <span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span>
+                  {member.reviewsEnabled && a.status === 'done'
+                    ? <ReviewCell appointmentId={a.id} patientName={a.patientName} phone={a.patientPhone} review={reviewOf.get(a.id)} />
+                    : <span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span>}
                 </li>
               )
             })}
@@ -161,6 +171,7 @@ export function TodayPage() {
         </section>
 
         <div className="today-side">
+          <FollowUpCard />
           <PendingBookings />
 
           {labs.length > 0 && (
