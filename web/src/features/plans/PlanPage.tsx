@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams, useNavigate } from 'react-router'
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth, useFeature } from '../auth/AuthProvider'
 import { supabase } from '../../lib/supabase'
@@ -29,7 +29,14 @@ export function PlanPage() {
   const navigate = useNavigate()
   const [dialog, setDialog] = useState<Dialog>(null)
   const [reason, setReason] = useState('')
-  const [adding, setAdding] = useState(false)
+  // Coming from a tooth in the patient file (?tooth=15): open the form with that tooth picked.
+  const [params, setParams] = useSearchParams()
+  const fromTooth = Number(params.get('tooth'))
+  const [startTeeth] = useState<number[]>(() => (fromTooth >= 11 && fromTooth <= 48 ? [fromTooth] : []))
+  const [adding, setAdding] = useState(startTeeth.length > 0)
+  useEffect(() => {
+    if (params.has('tooth')) setParams((p) => { p.delete('tooth'); return p }, { replace: true })
+  }, [params, setParams])
   const [more, setMore] = useState(false)
   const [allInstallments, setAllInstallments] = useState(false)
   useEffect(() => {
@@ -288,6 +295,7 @@ export function PlanPage() {
                   planId={planId}
                   procedures={procedures}
                   markedTeeth={new Set(live.map((i) => i.tooth_number).filter((n): n is number => n != null))}
+                  initialTeeth={startTeeth}
                 />
               </div>
             )}

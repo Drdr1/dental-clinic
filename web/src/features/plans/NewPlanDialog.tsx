@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
 import { createPlan } from './api'
 
-export function NewPlanDialog({ patientId, onClose }: { patientId: string; onClose: () => void }) {
+export function NewPlanDialog({ patientId, tooth, onClose }: { patientId: string; tooth?: number | null; onClose: () => void }) {
   const { clinicId } = useMember()
   const { t } = useI18n()
   const navigate = useNavigate()
@@ -15,7 +15,7 @@ export function NewPlanDialog({ patientId, onClose }: { patientId: string; onClo
 
   const create = useMutation({
     mutationFn: () => createPlan(clinicId, patientId, title),
-    onSuccess: (planId) => navigate(`/plans/${planId}`),
+    onSuccess: (planId) => navigate(tooth ? `/plans/${planId}?tooth=${tooth}` : `/plans/${planId}`),
   })
 
   function onSubmit(e: FormEvent) {

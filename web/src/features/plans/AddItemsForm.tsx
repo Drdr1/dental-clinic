@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
@@ -6,17 +6,23 @@ import { ToothChart } from '../../components/ToothChart'
 import { ErrorNote } from '../../components/ErrorNote'
 import { addItems, type Procedure } from './api'
 
-type Props = { planId: string; procedures: Procedure[]; markedTeeth: Set<number> }
+type Props = { planId: string; procedures: Procedure[]; markedTeeth: Set<number>; initialTeeth?: number[] }
 
 /** Pick a procedure, tap the teeth it applies to (or none), confirm the price per tooth. */
-export function AddItemsForm({ planId, procedures, markedTeeth }: Props) {
+export function AddItemsForm({ planId, procedures, markedTeeth, initialTeeth }: Props) {
   const { clinicId } = useMember()
   const { t, money } = useI18n()
   const queryClient = useQueryClient()
   const [procedureId, setProcedureId] = useState('')
   const [price, setPrice] = useState('')
-  const [teeth, setTeeth] = useState<Set<number>>(new Set())
+  const [teeth, setTeeth] = useState<Set<number>>(() => new Set(initialTeeth ?? []))
   const [note, setNote] = useState('')
+  // Opened from a tooth in the patient file: bring the form into view.
+  const formRef = useRef<HTMLFormElement>(null)
+  const cameWithTooth = (initialTeeth?.length ?? 0) > 0
+  useEffect(() => {
+    if (cameWithTooth) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [cameWithTooth])
 
   const priceValue = Number(price)
   const lineCount = Math.max(teeth.size, 1)
@@ -62,7 +68,7 @@ export function AddItemsForm({ planId, procedures, markedTeeth }: Props) {
   }
 
   return (
-    <form className="add-items" onSubmit={onSubmit}>
+    <form className="add-items" onSubmit={onSubmit} ref={formRef}>
       <h3>{t('plan.addTitle')}</h3>
       <div className="field-row">
         <label className="field">

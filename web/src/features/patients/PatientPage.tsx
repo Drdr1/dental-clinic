@@ -38,6 +38,7 @@ export function PatientPage() {
   const [search] = useSearchParams()
   const navigate = useNavigate()
   const [dialog, setDialog] = useState<'plan' | 'visit' | 'dictate' | 'book' | 'edit' | 'archive' | null>(null)
+  const [planTooth, setPlanTooth] = useState<number | null>(null)
   const [more, setMore] = useState(false)
   useEffect(() => {
     if (!more) return
@@ -170,10 +171,10 @@ export function PatientPage() {
       <div className="patient-grid">
         {tab === 'overview' && (
           <>
-            <div className="panel-wide"><ToothHistory patientId={id} onAddForTooth={() => {
+            <div className="panel-wide"><ToothHistory patientId={id} onAddForTooth={(tooth) => {
               const active = plans.find((p) => p.status === 'active' || p.status === 'draft' || p.status === 'presented')
-              if (active?.treatment_plan_id) navigate(`/plans/${active.treatment_plan_id}`)
-              else setDialog('plan')
+              if (active?.treatment_plan_id) navigate(`/plans/${active.treatment_plan_id}?tooth=${tooth}`)
+              else { setPlanTooth(tooth); setDialog('plan') }
             }} /></div>
             <div className="panel-wide split-2">
               <CurrentPlanCard plans={plans} />
@@ -304,7 +305,7 @@ export function PatientPage() {
           national_id: patient.national_id, address: patient.address,
         }} />
       )}
-      {dialog === 'plan' && <NewPlanDialog patientId={id} onClose={() => setDialog(null)} />}
+      {dialog === 'plan' && <NewPlanDialog patientId={id} tooth={planTooth} onClose={() => { setDialog(null); setPlanTooth(null) }} />}
       {(dialog === 'visit' || dialog === 'dictate') && (
         <SessionDialog patientId={id} plan={null} dictate={dialog === 'dictate'} onClose={() => setDialog(null)} />
       )}
