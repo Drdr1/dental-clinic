@@ -13,8 +13,8 @@
 	}
 }
 
-# ---------------- Clinic app (static React build) ----------------
-clinic.derops.dev {
+# ---------------- Dentano app (static React build) ----------------
+my.dentano.app {
 	import security_headers
 	header {
 		X-Frame-Options "DENY"
@@ -35,7 +35,8 @@ clinic.derops.dev {
 }
 
 # ---------------- Supabase API (only the routes the app uses) ----------------
-clinic-api.derops.dev {
+# clinic-api.derops.dev stays for phone apps installed before the move.
+api.dentano.app, clinic-api.derops.dev {
 	import security_headers
 
 	@api path /rest/v1/* /auth/v1/* /storage/v1/* /functions/v1/*
@@ -50,6 +51,17 @@ clinic-api.derops.dev {
 	handle {
 		respond "Not found" 404
 	}
+}
+
+# ---------------- Old app address → new one (keeps bookmarks, booking and review links) ----------------
+clinic.derops.dev {
+	redir https://my.dentano.app{uri} 301
+}
+
+# ---------------- dentano.app → the app, until there is a product site ----------------
+dentano.app, www.dentano.app {
+	import security_headers
+	redir https://my.dentano.app{uri} 302
 }
 
 # ---------------- Main site ----------------

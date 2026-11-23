@@ -40,7 +40,7 @@ const TEETH = new Set([
 
 function cors(extra: HeadersInit = {}): HeadersInit {
   return {
-    'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://clinic.derops.dev',
+    'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://my.dentano.app',
     'Access-Control-Allow-Headers': 'authorization, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     ...extra,
@@ -68,11 +68,12 @@ function rest(url: string, anon: string, jwt: string) {
   }
 }
 
-// The web app and the iOS app (capacitor://clinic.derops.dev) are the only callers.
-// The Android app is served as https://clinic.derops.dev, so it matches the first.
+// The web app and the iOS app (capacitor://my.dentano.app) are the callers; the
+// Android app is served as https://my.dentano.app, so it matches the first. The
+// clinic.derops.dev origins are phone apps installed before the move.
 const ORIGINS = [
-  Deno.env.get('ALLOWED_ORIGIN') ?? 'https://clinic.derops.dev',
-  ...(Deno.env.get('EXTRA_ORIGINS') ?? 'capacitor://clinic.derops.dev').split(',').map((o) => o.trim()).filter(Boolean),
+  Deno.env.get('ALLOWED_ORIGIN') ?? 'https://my.dentano.app',
+  ...(Deno.env.get('EXTRA_ORIGINS') ?? 'capacitor://my.dentano.app,https://clinic.derops.dev,capacitor://clinic.derops.dev').split(',').map((o) => o.trim()).filter(Boolean),
 ]
 
 Deno.serve(async (req) => {

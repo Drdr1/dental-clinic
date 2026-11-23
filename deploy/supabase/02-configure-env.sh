@@ -2,8 +2,8 @@
 # Sets the clinic's production values in ~/supabase/.env.
 # Run from ~/supabase AFTER utils/generate-keys.sh and utils/add-new-auth-keys.sh.
 set -euo pipefail
-APP="${1:-https://clinic.derops.dev}"
-API="${2:-https://clinic-api.derops.dev}"
+APP="${1:-https://my.dentano.app}"
+API="${2:-https://api.dentano.app}"
 [ -f .env ] || { echo "Run from ~/supabase (no .env here)"; exit 1; }
 cp .env ".env.bak.$(date +%s)"
 
@@ -22,8 +22,10 @@ set_var COMPOSE_FILE "docker-compose.yml:docker-compose.override.yml"
 set_var SUPABASE_PUBLIC_URL "$API"
 set_var API_EXTERNAL_URL "$API/auth/v1"
 set_var SITE_URL "$APP"
-set_var ADDITIONAL_REDIRECT_URLS "$APP"
+set_var ADDITIONAL_REDIRECT_URLS "$APP,https://clinic.derops.dev"
 set_var CLINIC_APP_ORIGIN "$APP"
+# The iOS app's origin, plus the old address for phone apps installed before the move.
+set_var CLINIC_EXTRA_ORIGINS "capacitor://${APP#https://},https://clinic.derops.dev,capacitor://clinic.derops.dev"
 
 # Staff accounts are created by the owner from Settings only.
 set_var DISABLE_SIGNUP "true"

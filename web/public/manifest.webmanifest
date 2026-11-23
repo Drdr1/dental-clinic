@@ -1,7 +1,7 @@
 {
-  "name": "Dentigo",
-  "short_name": "Dentigo",
-  "description": "Dentigo — إدارة عيادة الأسنان",
+  "name": "Dentano",
+  "short_name": "Dentano",
+  "description": "Dentano — إدارة عيادة الأسنان",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/today",

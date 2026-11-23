@@ -1,6 +1,6 @@
 import { useId } from 'react'
 
-/** The Dentigo mark: a D with a tooth cut out of it and an AI sparkle. Used wherever a clinic has no logo of its own. */
+/** The Dentano mark: a D with a tooth cut out of it and an AI sparkle. Used wherever a clinic has no logo of its own. */
 export function ToothMark({ className }: { className?: string }) {
   const id = `dg${useId().replace(/:/g, '')}`
   return (

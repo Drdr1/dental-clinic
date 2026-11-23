@@ -131,7 +131,7 @@ language plpgsql security definer set search_path = public, pg_temp as $$
 begin
   if tg_op = 'DELETE' then
     if not exists (select 1 from public.clinics where id = old.clinic_id)
-       or current_setting('dentigo.purging_patient', true) = 'on' then return null; end if;
+       or current_setting('dentano.purging_patient', true) = 'on' then return null; end if;
     perform public._audit(old.clinic_id, 'appointments', 'appt.delete', true, old.patient_id, jsonb_build_object(
       'at', old.starts_at, 'chair', (select name from public.chairs where id = old.chair_id),
       'doctor', (select display_name from public.clinic_members where clinic_id = old.clinic_id and user_id = old.doctor_id)));
@@ -185,7 +185,7 @@ begin
     'name', new.full_name, 'phone', new.phone, 'reason', new.reason));
   -- The patient's appointments are removed next, in the same transaction; this
   -- one row already says it, so they are not logged one by one.
-  perform set_config('dentigo.purging_patient', 'on', true);
+  perform set_config('dentano.purging_patient', 'on', true);
   return null;
 end;
 $$;

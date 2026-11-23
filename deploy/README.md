@@ -1,6 +1,7 @@
 # Clinic deployment — Hetzner CPX12 (2 GB) + Cloudflare
 
-Server: `167.233.126.114` · App: `https://clinic.derops.dev` · API: `https://clinic-api.derops.dev`
+Server: `167.233.126.114` · App: `https://my.dentano.app` · API: `https://api.dentano.app`
+(`clinic.derops.dev` redirects to the app; `clinic-api.derops.dev` still serves phone apps installed before the move.)
 
 Run the steps in order. Each ends with a **Check** — don't continue until it passes.
 `laptop$` = your machine, `server$` = SSH session as your admin user.
@@ -9,7 +10,7 @@ Run the steps in order. Each ends with a **Check** — don't continue until it p
 
 ## 0. What you need before starting
 
-- The Cloudflare API token (Zone → DNS → Edit, limited to `derops.dev`).
+- The Cloudflare API token (Zone → DNS → Edit, limited to `derops.dev` and `dentano.app`).
 - DNS already pointing at the server (done: `clinic`, `clinic-api`, `derops.dev`, `www`, `*`).
 - This folder unzipped on your laptop at `~/dental-clinic/deploy`.
 
@@ -170,7 +171,7 @@ laptop$ nano web/.env.production        # paste SUPABASE_PUBLISHABLE_KEY
 laptop$ cd web && SERVER=clinic bash ../deploy/web/deploy-web.sh
 ```
 
-**Check — open https://clinic.derops.dev and sign in as the owner:**
+**Check — open https://my.dentano.app and sign in as the owner:**
 1. Settings → Clinic: set the real hours, grace period, cash float.
 2. Settings → Procedures: add the real price list.
 3. Settings → Drugs: **your brother reviews every default dose.**
@@ -232,7 +233,7 @@ The row counts must match the live app. Repeat this monthly.
 
 ## 8. Monitoring
 
-- **UptimeRobot** or **Better Stack** (free): HTTPS monitor on `https://clinic.derops.dev`,
+- **UptimeRobot** or **Better Stack** (free): HTTPS monitor on `https://my.dentano.app`,
   every 5 minutes, alerts to your e-mail/Telegram.
 - **healthchecks.io**: backups and disk (step 7).
 
@@ -258,7 +259,25 @@ The row counts must match the live app. Repeat this monthly.
 - Caddy exposes only `/rest/v1`, `/auth/v1`, `/storage/v1`, `/functions/v1`. The dashboard
   route returns 404.
 - Public sign-up is disabled; accounts are created by the owner in Settings.
-- The staff Edge Function only accepts browser calls from `https://clinic.derops.dev`.
+- The assistant and dictation functions only accept browser calls from `https://my.dentano.app` (and the phone apps).
 - Backups are encrypted with a key the server doesn't have.
 - Patient data is health data. Before real use, confirm with someone who knows Egypt's
   data-protection law whether hosting it in Germany is acceptable.
+
+
+---
+
+## Moving an existing server from clinic.derops.dev to dentano.app
+
+1. **Cloudflare:** add the `dentano.app` site, then set the two nameservers it shows in
+   Namecheap (Domain → Nameservers → Custom DNS). Add A records for `@`, `www`, `my` and
+   `api` → `167.233.126.114`, proxied. SSL/TLS mode: Full (strict).
+2. **Cloudflare API token** used by Caddy: edit it so its zone list includes `dentano.app`.
+3. **Caddy:** copy the new `deploy/caddy/Caddyfile` to the server and reload Caddy.
+4. **Supabase:** `cd ~/supabase && bash ~/setup/supabase/02-configure-env.sh` (defaults are
+   the new addresses), then `docker compose up -d`.
+5. **App:** in `web/.env.production` set `VITE_SUPABASE_URL=https://api.dentano.app`, then deploy.
+6. **GitHub:** set the repository variable `VITE_SUPABASE_URL` to `https://api.dentano.app`
+   before the next phone-app build.
+
+Everyone signs in once more on the new address (a browser keeps logins per site).

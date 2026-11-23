@@ -7,4 +7,4 @@ SERVER="${SERVER:-clinic}"
 npx tsc -b
 npx vite build --mode production
 rsync -az --delete dist/ "$SERVER:/srv/clinic/"
-echo "Deployed. Open https://clinic.derops.dev (hard-refresh once)."
+echo "Deployed. Open https://my.dentano.app (hard-refresh once)."

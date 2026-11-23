@@ -33,7 +33,7 @@ export function LoginPage() {
   return (
     <main className="login">
       <aside className="login-brand">
-        <img className="login-logo" src="/dentigo-logo-white.svg" alt="Dentigo" />
+        <img className="login-logo" src="/dentano-logo-white.svg" alt="Dentano" />
         <div className="login-pitch">
           <h2>{t('login.pitch')}</h2>
           <p>{t('login.pitchSub')}</p>
@@ -43,7 +43,7 @@ export function LoginPage() {
 
       <div className="login-side">
         <form className="login-card" onSubmit={onSubmit}>
-          <img className="login-phone-logo" src="/dentigo-logo.svg" alt="Dentigo" />
+          <img className="login-phone-logo" src="/dentano-logo.svg" alt="Dentano" />
           <div>
             <h1>{t('login.heading')}</h1>
             <span className="muted">{t('login.sub')}</span>

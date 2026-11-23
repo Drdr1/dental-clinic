@@ -44,7 +44,8 @@ services:
   # ---- edge functions: restrict CORS to the clinic app ----------------------
   functions:
     environment:
-      ALLOWED_ORIGIN: ${CLINIC_APP_ORIGIN:-https://clinic.derops.dev}
+      ALLOWED_ORIGIN: ${CLINIC_APP_ORIGIN:-https://my.dentano.app}
+      EXTRA_ORIGINS: ${CLINIC_EXTRA_ORIGINS:-capacitor://my.dentano.app,https://clinic.derops.dev,capacitor://clinic.derops.dev}
 
   # ---- Postgres: localhost port for migrations/backups, 2 GB tuning ---------
   db:
