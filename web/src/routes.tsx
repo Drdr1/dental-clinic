@@ -20,6 +20,7 @@ import { DoctorPage } from './features/doctors/DoctorPage'
 import { PublicFormPage } from './features/forms/PublicFormPage'
 import { BookingPage } from './features/booking/BookingPage'
 import { AgreementPage } from './features/agreements/AgreementPage'
+import { ReportsPage } from './features/reports/ReportsPage'
 import { PrescriptionPage } from './features/prescriptions/PrescriptionPage'
 
 export const router = createBrowserRouter([
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
           { path: 'materials', element: <MaterialsPage /> },
           { path: 'finance', element: <FinancePage /> },
           { path: 'cash', element: <CashPage /> },
+          { path: 'reports', element: <ReportsPage /> },
           { path: 'doctors', element: <DoctorsPage /> },
           { path: 'doctors/:id', element: <DoctorPage /> },
           { path: 'patients', element: <PatientsPage /> },

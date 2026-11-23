@@ -79,6 +79,7 @@ export function AppShell() {
           {(canCash || isOwner) && <span className="rail-divider" aria-hidden="true" />}
           {canCash && <RailLink to="/cash" icon="cash" label={t('nav.cash')} />}
           {isOwner && <RailLink to="/finance" icon="finance" label={t('nav.finance')} />}
+          {isOwner && <RailLink to="/reports" icon="reports" label={t('nav.reports')} />}
           {isOwner && <RailLink to="/doctors" icon="doctor" label={t('nav.doctors')} />}
           {isOwner && <RailLink to="/settings" icon="settings" label={t('nav.settings')} />}
         </nav>
@@ -144,6 +145,7 @@ export function AppShell() {
               <NavLink to="/materials" className="nav-link"><Icon name="materials" />{t('nav.materials')}</NavLink>
               {isOwner && <NavLink to="/doctors" className="nav-link"><Icon name="doctor" />{t('nav.doctors')}</NavLink>}
               {isOwner && <NavLink to="/finance" className="nav-link"><Icon name="finance" />{t('nav.finance')}</NavLink>}
+              {isOwner && <NavLink to="/reports" className="nav-link"><Icon name="reports" />{t('nav.reports')}</NavLink>}
               {canCash && <NavLink to="/cash" className="nav-link"><Icon name="cash" />{t('nav.cash')}</NavLink>}
               {isOwner && <NavLink to="/settings" className="nav-link"><Icon name="settings" />{t('nav.settings')}</NavLink>}
             </nav>

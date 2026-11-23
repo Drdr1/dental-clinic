@@ -3208,6 +3208,10 @@ export type Database = {
           slot: string
         }[]
       }
+      clinic_report: {
+        Args: { p_clinic: string; p_from: string; p_to: string }
+        Returns: Json
+      }
       booking_slots: {
         Args: { p_date: string; p_procedure: string; p_slug: string }
         Returns: {
