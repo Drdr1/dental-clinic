@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMember } from '../auth/AuthProvider'
+import { useFeature, useMember } from '../auth/AuthProvider'
 import { Link } from 'react-router'
 import { useI18n } from '../../i18n'
 import type { MessageKey } from '../../i18n/en'
@@ -102,6 +102,7 @@ export function FinancePage() {
   const [adding, setAdding] = useState(false)
   const [voiding, setVoiding] = useState<Expense | null>(null)
   const enabled = role === 'owner'
+  const hasCommission = useFeature('commission')
   const summary = useQuery({ queryKey: ['finance', 'summary', clinicId, range], queryFn: () => getSummary(clinicId, range.from, range.to), enabled })
   const prevRange = preset === 'this' ? monthRange(-1) : null
   const prev = useQuery({
@@ -230,7 +231,7 @@ export function FinancePage() {
                   <li><span>{t('fin.stockValue')}</span><strong>{money(s.stock_value)}</strong></li>
                 </ul>
               </section>
-              {(earnings.data?.length ?? 0) > 0 && (
+              {hasCommission && (earnings.data?.length ?? 0) > 0 && (
                 <section className="panel">
                   <div className="panel-head">
                     <h2>{t('fin.doctorShares')}</h2>

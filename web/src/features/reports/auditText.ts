@@ -95,6 +95,9 @@ export function describe(r: AuditRow, i: T): Described {
       out.vals.name = s('name'); out.rich.name = 'b'
       change(t(`role.${s('from')}` as MessageKey), t(`role.${s('to')}` as MessageKey))
       break
+    case 'feature.on': case 'feature.off':
+      out.vals.feature = d.feature ? t(`st.f.${s('feature')}` as MessageKey) : ''
+      break
     case 'member.on': case 'member.off':
       out.vals.name = s('name'); out.rich.name = 'b'
       break

@@ -1767,3 +1767,42 @@ button.chip { cursor: pointer; }
   .au-body { order: 2; flex-basis: 100%; }
 }
 .au-main bdi { white-space: nowrap; }
+
+/* ---------- Settings (design 13) ---------- */
+.page.st-page { grid-template-columns: minmax(0, 1fr); }
+.st-grid { display: grid; grid-template-columns: 260px minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.st-nav { display: flex; flex-direction: column; gap: 2px; padding: 12px; position: sticky; top: 20px; }
+.st-nav button { border: 0; background: none; font: inherit; font-size: 15px; text-align: start; padding: 10px 14px; border-radius: 12px; color: var(--ink); cursor: pointer; }
+.st-nav button:hover { background: var(--paper); }
+.st-nav button.on { background: var(--gum-soft); font-weight: 700; box-shadow: inset -3px 0 0 var(--gum); }
+:root[dir="ltr"] .st-nav button.on, [dir="ltr"] .st-nav button.on { box-shadow: inset 3px 0 0 var(--gum); }
+.st-body { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.st-body > .panel, .st-body > form.panel { margin: 0; }
+.st-aside { display: flex; flex-direction: column; gap: 20px; }
+.st-panel { display: flex; flex-direction: column; gap: 12px; }
+.st-panel h2 { margin: 0; font-size: 18px; }
+.st-lead { margin: 0; font-size: 14px; }
+.st-features { list-style: none; margin: 0; padding: 0; }
+.st-features li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-top: 1px solid var(--line2); }
+.st-features li > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.st-features b { font-weight: 700; }
+.st-features span { font-size: 14px; color: var(--ink-soft); }
+.st-badge { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--gum-soft); color: var(--navy); }
+.st-plan { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.st-plan > b { font-size: 18px; font-weight: 700; }
+.st-plan strong { font-size: 20px; font-weight: 700; }
+.st-sub-line { margin: 0; }
+.st-usage { display: flex; flex-direction: column; gap: 8px; }
+.st-usage > div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.st-manage { width: 100%; justify-content: center; }
+@media (max-width: 1180px) {
+  .st-grid { grid-template-columns: 220px minmax(0, 1fr); }
+  .st-aside { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .st-grid { grid-template-columns: minmax(0, 1fr); }
+  .st-nav { position: static; flex-direction: row; overflow-x: auto; padding: 6px; scrollbar-width: none; }
+  .st-nav button { white-space: nowrap; padding: 8px 12px; font-size: 14px; }
+  .st-nav button.on, :root[dir="ltr"] .st-nav button.on, [dir="ltr"] .st-nav button.on { box-shadow: none; }
+}
+.settings.st-page { max-width: 1600px; }

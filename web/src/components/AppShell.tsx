@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
-import { useAuth, useMember } from '../features/auth/AuthProvider'
+import { useAuth, useFeature, useMember } from '../features/auth/AuthProvider'
 import { useI18n } from '../i18n'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
@@ -24,6 +24,9 @@ export function AppShell() {
   const { signOut } = useAuth()
   const { t, lang, setLang } = useI18n()
   const isOwner = member.role === 'owner'
+  const hasLabs = useFeature('labs')
+  const hasMaterials = useFeature('materials')
+  const hasAssistant = useFeature('assistant')
   // The drawer is reception's work too; the money reports are not.
   const canCash = isOwner || member.role === 'receptionist'
 
@@ -73,9 +76,9 @@ export function AppShell() {
           <RailLink to="/today" icon="today" label={t('nav.today')} />
           <RailLink to="/appointments" icon="calendar" label={t('nav.appointments')} />
           <RailLink to="/patients" icon="patients" label={t('nav.patients')} />
-          <RailLink to="/labs" icon="lab" label={t('nav.labs')} />
-          <RailLink to="/materials" icon="materials" label={t('nav.materials')} />
-          <RailLink to="/assistant" icon="assistant" label={t('nav.assistant')} />
+          {hasLabs && <RailLink to="/labs" icon="lab" label={t('nav.labs')} />}
+          {hasMaterials && <RailLink to="/materials" icon="materials" label={t('nav.materials')} />}
+          {hasAssistant && <RailLink to="/assistant" icon="assistant" label={t('nav.assistant')} />}
           {(canCash || isOwner) && <span className="rail-divider" aria-hidden="true" />}
           {canCash && <RailLink to="/cash" icon="cash" label={t('nav.cash')} />}
           {isOwner && <RailLink to="/finance" icon="finance" label={t('nav.finance')} />}
@@ -140,9 +143,9 @@ export function AppShell() {
               <button className="nav-link" onClick={() => { setMoreOpen(false); openQuickSearch() }}>
                 <Icon name="search" />{t('quick.open')}
               </button>
-              <NavLink to="/assistant" className="nav-link"><Icon name="assistant" />{t('nav.assistant')}</NavLink>
-              <NavLink to="/labs" className="nav-link"><Icon name="lab" />{t('nav.labs')}</NavLink>
-              <NavLink to="/materials" className="nav-link"><Icon name="materials" />{t('nav.materials')}</NavLink>
+              {hasAssistant && <NavLink to="/assistant" className="nav-link"><Icon name="assistant" />{t('nav.assistant')}</NavLink>}
+              {hasLabs && <NavLink to="/labs" className="nav-link"><Icon name="lab" />{t('nav.labs')}</NavLink>}
+              {hasMaterials && <NavLink to="/materials" className="nav-link"><Icon name="materials" />{t('nav.materials')}</NavLink>}
               {isOwner && <NavLink to="/doctors" className="nav-link"><Icon name="doctor" />{t('nav.doctors')}</NavLink>}
               {isOwner && <NavLink to="/finance" className="nav-link"><Icon name="finance" />{t('nav.finance')}</NavLink>}
               {isOwner && <NavLink to="/reports" className="nav-link"><Icon name="reports" />{t('nav.reports')}</NavLink>}

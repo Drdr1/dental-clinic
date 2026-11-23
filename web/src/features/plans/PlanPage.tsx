@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '../auth/AuthProvider'
+import { useAuth, useFeature } from '../auth/AuthProvider'
 import { supabase } from '../../lib/supabase'
 import { whatsappLink } from '../../lib/phone'
 import { useI18n } from '../../i18n'
@@ -23,6 +23,7 @@ type Dialog = 'installments' | 'revise' | 'decline' | 'cancelInstallments' | 'ca
 export function PlanPage() {
   const { planId = '' } = useParams()
   const { t, money, day } = useI18n()
+  const hasInstallments = useFeature('installments')
   const { isDoctor } = useAuth()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -426,12 +427,14 @@ export function PlanPage() {
             <section className="panel">
               <h2>{t('plan.payMethodTitle')}</h2>
               <div className="pay-options">
+                {(hasInstallments || installments) && (
                 <button type="button" className={`pay-opt${installments ? ' on' : ''}`}
                   disabled={!(st === 'draft' || st === 'presented') || live.length === 0}
                   onClick={() => setDialog('installments')}>
                   <strong>{t('plan.byInstallments')}</strong>
                   <span>{t('plan.byInstallmentsHint')}</span>
                 </button>
+                )}
                 <button type="button" className={`pay-opt${(st === 'active' || st === 'completed') && !installments ? ' on' : ''}`}
                   disabled={!(st === 'draft' || st === 'presented') || live.length === 0}
                   onClick={() => status.mutate({ to: 'active' })}>

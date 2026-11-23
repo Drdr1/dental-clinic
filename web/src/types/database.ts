@@ -390,6 +390,11 @@ export type Database = {
       }
       clinics: {
         Row: {
+          assistant_monthly_limit: number
+          disabled_features: string[]
+          plan_name: string
+          plan_price: number | null
+          plan_renews_on: string | null
           admin_percent: number
           booking_daily_limit: number
           booking_enabled: boolean
@@ -420,6 +425,11 @@ export type Database = {
           timezone: string
         }
         Insert: {
+          assistant_monthly_limit?: number
+          disabled_features?: string[]
+          plan_name?: string
+          plan_price?: number | null
+          plan_renews_on?: string | null
           admin_percent?: number
           booking_daily_limit?: number
           booking_enabled?: boolean
@@ -450,6 +460,11 @@ export type Database = {
           timezone?: string
         }
         Update: {
+          assistant_monthly_limit?: number
+          disabled_features?: string[]
+          plan_name?: string
+          plan_price?: number | null
+          plan_renews_on?: string | null
           admin_percent?: number
           booking_daily_limit?: number
           booking_enabled?: boolean
@@ -3230,6 +3245,10 @@ export type Database = {
           free: boolean
           slot: string
         }[]
+      }
+      subscription_status: {
+        Args: { p_clinic: string }
+        Returns: Json
       }
       audit_week: {
         Args: { p_clinic: string }

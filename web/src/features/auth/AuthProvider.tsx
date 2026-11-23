@@ -10,6 +10,8 @@ export type Membership = {
   clinicName: string
   role: Role
   displayName: string
+  /** Parts of the system the owner switched off in Settings → Features. */
+  disabledFeatures: string[]
 }
 
 type AuthState = {
@@ -58,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     supabase
       .from('clinic_members')
-      .select('clinic_id, role, display_name, clinics(name)')
+      .select('clinic_id, role, display_name, clinics(name, disabled_features)')
       .eq('user_id', userId)
       .eq('active', true)
       .order('created_at')
@@ -77,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             clinicName: clinic?.name ?? '',
             role: data.role as Role,
             displayName: data.display_name,
+            disabledFeatures: clinic?.disabled_features ?? [],
           })
         }
         setMemberLoaded(true)
@@ -107,6 +110,12 @@ export function useAuth() {
 }
 
 /** For screens under <RequireAuth>, where a membership is guaranteed. */
+/** False when the owner switched this part of the system off. */
+export function useFeature(name: 'installments' | 'labs' | 'commission' | 'materials' | 'assistant' | 'payers'): boolean {
+  const ctx = useContext(AuthContext)
+  return !ctx?.member?.disabledFeatures.includes(name)
+}
+
 export function useMember(): Membership {
   const { member } = useAuth()
   if (!member) throw new Error('useMember used outside an authenticated clinic route')

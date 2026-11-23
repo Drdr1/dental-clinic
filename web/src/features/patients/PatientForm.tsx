@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMember } from '../auth/AuthProvider'
+import { useFeature, useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { isValidPhone, normalizePhone } from '../../lib/phone'
 import { todayLocal } from '../../lib/dates'
@@ -22,6 +22,7 @@ export type EditablePatient = {
 /** One form for adding and for editing a patient. */
 export function PatientForm({ patient, onClose }: { patient?: EditablePatient; onClose: () => void }) {
   const { clinicId } = useMember()
+  const hasPayers = useFeature('payers')
   const { t } = useI18n()
   const navigate = useNavigate()
   const qc = useQueryClient()
@@ -155,7 +156,7 @@ export function PatientForm({ patient, onClose }: { patient?: EditablePatient; o
             <span>{t('patientForm.source')}</span>
             <select name="source" value={source} onChange={(e) => setSource(e.target.value)}>
               <option value="">{t('patientForm.sourceUnknown')}</option>
-              {SOURCES.map((x) => <option key={x} value={x}>{t(`source.${x}` as Parameters<typeof t>[0])}</option>)}
+              {SOURCES.filter((x) => hasPayers || x !== 'payer' || patient?.source === 'payer').map((x) => <option key={x} value={x}>{t(`source.${x}` as Parameters<typeof t>[0])}</option>)}
             </select>
           </label>
           <label className="field">

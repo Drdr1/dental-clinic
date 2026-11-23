@@ -7,7 +7,9 @@ import { saveClinic, type ClinicSettings } from './api'
 
 const hhmm = (t: string) => t.slice(0, 5)
 
-export function ClinicSection({ initial }: { initial: ClinicSettings }) {
+export type ClinicPart = 'clinic' | 'hours' | 'installments'
+
+export function ClinicSection({ initial, part }: { initial: ClinicSettings; part: ClinicPart }) {
   const { clinicId } = useMember()
   const { reloadMember } = useAuth()
   const { t } = useI18n()
@@ -31,31 +33,14 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
 
   return (
     <form className="panel settings-form" onSubmit={onSubmit}>
-      <h2>{t('settings.clinic')}</h2>
+      <h2>{t(part === 'clinic' ? 'settings.clinic' : part === 'hours' ? 'settings.hours' : 'settings.installmentRules')}</h2>
+      {part === 'clinic' && <>
       <label className="field">
         <span>{t('settings.clinicName')}</span>
         <input required value={s.name} onChange={(e) => set('name', e.target.value)} maxLength={80} />
         <small className="hint">{t('settings.clinicNameHint')}</small>
       </label>
 
-      <div className="field-row">
-        <label className="field">
-          <span>{t('settings.opensAt')}</span>
-          <input type="time" required value={s.opens_at} onChange={(e) => set('opens_at', e.target.value)} />
-        </label>
-        <label className="field">
-          <span>{t('settings.closesAt')}</span>
-          <input type="time" required value={s.closes_at} onChange={(e) => set('closes_at', e.target.value)}
-            aria-invalid={!hoursValid} />
-        </label>
-        <label className="field">
-          <span>{t('settings.slot')}</span>
-          <select value={s.slot_minutes} onChange={(e) => set('slot_minutes', Number(e.target.value))}>
-            {[10, 15, 20, 30].map((m) => <option key={m} value={m}>{t('appt.minutes', { n: m })}</option>)}
-          </select>
-        </label>
-      </div>
-      {!hoursValid && <p className="form-error">{t('settings.hoursInvalid')}</p>}
 
       <label className="field">
         <span>{t('settings.cashFloat')}</span>
@@ -82,7 +67,28 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
         <small className="hint">{t('settings.adminPercentHint')}</small>
       </label>
 
-      <h3>{t('settings.installmentRules')}</h3>
+      </>}
+      {part === 'hours' && <>
+      <div className="field-row">
+        <label className="field">
+          <span>{t('settings.opensAt')}</span>
+          <input type="time" required value={s.opens_at} onChange={(e) => set('opens_at', e.target.value)} />
+        </label>
+        <label className="field">
+          <span>{t('settings.closesAt')}</span>
+          <input type="time" required value={s.closes_at} onChange={(e) => set('closes_at', e.target.value)}
+            aria-invalid={!hoursValid} />
+        </label>
+        <label className="field">
+          <span>{t('settings.slot')}</span>
+          <select value={s.slot_minutes} onChange={(e) => set('slot_minutes', Number(e.target.value))}>
+            {[10, 15, 20, 30].map((m) => <option key={m} value={m}>{t('appt.minutes', { n: m })}</option>)}
+          </select>
+        </label>
+      </div>
+      {!hoursValid && <p className="form-error">{t('settings.hoursInvalid')}</p>}
+      </>}
+      {part === 'installments' && <>
 
       <label className="field">
         <span>{t('inst.dueDay')}</span>
@@ -131,6 +137,8 @@ export function ClinicSection({ initial }: { initial: ClinicSettings }) {
           <small className="hint">{t('settings.legalVenueHint')}</small>
         </label>
       </div>
+
+      </>}
 
       {save.isError && <ErrorNote error={save.error} />}
       <div className="dialog-actions">
