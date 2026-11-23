@@ -172,8 +172,16 @@ export function PatientPage() {
         {tab === 'overview' && (
           <>
             <div className="panel-wide"><ToothHistory patientId={id} onAddForTooth={(tooth) => {
-              const active = plans.find((p) => p.status === 'active' || p.status === 'draft' || p.status === 'presented')
-              if (active?.treatment_plan_id) navigate(`/plans/${active.treatment_plan_id}?tooth=${tooth}`)
+              // The plan the work belongs in: one under way first, then one proposed, then a draft,
+              // newest first. A plan on instalments is left alone (new work would change a signed
+              // schedule), so the tooth goes into a new plan instead.
+              const rank = { active: 0, presented: 1, draft: 2 } as Record<string, number>
+              const onSchedule = new Set(balances.map((b) => b.treatment_plan_id))
+              const target = plans
+                .filter((p) => p.treatment_plan_id && p.status && p.status in rank && !onSchedule.has(p.treatment_plan_id))
+                .sort((a, b) => rank[a.status!] - rank[b.status!]
+                  || (b.accepted_at ?? b.presented_at ?? '').localeCompare(a.accepted_at ?? a.presented_at ?? ''))[0]
+              if (target?.treatment_plan_id) navigate(`/plans/${target.treatment_plan_id}?tooth=${tooth}`)
               else { setPlanTooth(tooth); setDialog('plan') }
             }} /></div>
             <div className="panel-wide split-2">
@@ -249,7 +257,12 @@ export function PatientPage() {
                         <p className="muted">{t('patient.perSessionPaid', { paid: money(b.paid), total: money(b.net_total) })}</p>
                       </div>
                       <div className="work-meta">
-                        <strong>{t('patient.perSessionOwed', { amount: money(b.outstanding) })}</strong>
+                        <div className="num">
+                          <strong className={(b.outstanding ?? 0) > 0 ? '' : 'muted'}>
+                            {(b.outstanding ?? 0) > 0 ? t('patient.owesNow', { amount: money(b.outstanding) }) : t('patient.nothingOwed')}
+                          </strong>
+                          <p className="muted small">{t('patient.planLeft', { amount: money(b.plan_remaining) })}</p>
+                        </div>
                         <Link className="btn btn-small" to={`/plans/${b.treatment_plan_id}`}>{t('pay.open')}</Link>
                       </div>
                     </li>

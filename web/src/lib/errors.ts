@@ -42,6 +42,11 @@ const known: Array<[RegExp, MessageKey]> = [
   [/ALLERGY_CONFLICT/i, 'err.allergyConflict'],
   [/Only a doctor can write prescriptions/i, 'err.doctorOnly'],
   [/ALREADY_CLOSED/i, 'err.alreadyClosed'],
+  [/DAY_CLOSED/i, 'err.dayClosed'],
+  [/DISCOUNT_TOO_BIG/i, 'err.discountTooBig'],
+  [/ITEM_DONE/i, 'err.itemDone'],
+  [/ON_SCHEDULE/i, 'err.onSchedule'],
+  [/NOTHING_LEFT/i, 'err.nothingLeft'],
   [/DIFFERENCE_REASON/i, 'err.differenceReason'],
   [/Failed to fetch|NetworkError/i, 'err.offline'],
 ]

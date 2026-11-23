@@ -9,23 +9,32 @@ import { Skeleton } from '../../components/Skeleton'
 const UPPER = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28]
 const LOWER = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38]
 
-type ToothEntry = { tooth: number; label: string; procedure: string; status: 'done' | 'planned'; at: string | null; planId: string; planTitle: string }
+type ToothEntry = { tooth: number; label: string; procedure: string; status: 'done' | 'planned'; at: string | null; planId: string; planTitle: string; planStatus: string }
 
 /** What the chart paints a tooth as. Read from the procedures done on it, so nothing extra has to be recorded. */
-export type ToothCondition = 'healthy' | 'needs' | 'filling' | 'root_canal' | 'crown' | 'missing'
+export type ToothCondition = 'healthy' | 'needs' | 'filling' | 'root_canal' | 'crown' | 'implant' | 'missing'
 const KIND: [ToothCondition, RegExp][] = [
+  ['implant', /زرع|implant/i],
   ['missing', /خلع|extract/i],
   ['crown', /تاج|كراون|زيركون|كوبري|بريدج|فينير|crown|bridge|veneer|zircon/i],
-  ['root_canal', /عصب|root|rct|endo/i],
+  ['root_canal', /عصب|بلب|بوست|root|rct|endo|pulp|\bpost\b/i],
   ['filling', /حشو|filling|composite|amalgam/i],
 ]
-const RANK: ToothCondition[] = ['missing', 'crown', 'root_canal', 'filling']
+// When several things were done on one tooth, the one that shows on the chart.
+const RANK: ToothCondition[] = ['implant', 'missing', 'crown', 'root_canal', 'filling']
+// Work still to do counts only on a plan that is proposed or under way, not a
+// draft the doctor is still writing, nor a plan that was turned down or closed.
+const OPEN_PLAN = new Set(['presented', 'active'])
+
 function conditionOf(list: ToothEntry[] | undefined): ToothCondition {
   if (!list?.length) return 'healthy'
-  const done = list.filter((e) => e.status === 'done')
-  if (!done.length) return 'needs'
-  const kinds = done.map((e) => KIND.find(([, re]) => re.test(e.procedure))?.[0]).filter((k): k is ToothCondition => !!k)
-  return RANK.find((k) => kinds.includes(k)) ?? (list.some((e) => e.status === 'planned') ? 'needs' : 'filling')
+  // Anything still to do on the tooth comes first: that is what the doctor needs to see.
+  if (list.some((e) => e.status === 'planned' && OPEN_PLAN.has(e.planStatus))) return 'needs'
+  const kinds = list.filter((e) => e.status === 'done')
+    .map((e) => KIND.find(([, re]) => re.test(e.procedure))?.[0])
+    .filter((k): k is ToothCondition => !!k)
+  // Done work that leaves no mark (a cleaning, say) keeps the tooth healthy.
+  return RANK.find((k) => kinds.includes(k)) ?? 'healthy'
 }
 
 type ToothSession = { id: string; at: string; planId: string | null; doctor: string; notes: string }
@@ -33,7 +42,7 @@ type ToothData = { entries: ToothEntry[]; sessions: ToothSession[] }
 
 async function getToothHistory(patientId: string): Promise<ToothData> {
   const [plansRes, sessions] = await Promise.all([
-    supabase.from('treatment_plans').select('id, title, clinic_id').eq('patient_id', patientId),
+    supabase.from('treatment_plans').select('id, title, clinic_id, status').eq('patient_id', patientId),
     supabase.from('sessions').select('id, performed_at, treatment_plan_id, doctor_id, performed_by, notes')
       .eq('patient_id', patientId).order('performed_at'),
   ])
@@ -55,6 +64,7 @@ async function getToothHistory(patientId: string): Promise<ToothData> {
   const names = new Map((procedures.data ?? []).map((p) => [p.id, p.name]))
   const when = new Map((sessions.data ?? []).map((s) => [s.id, s.performed_at]))
   const titles = new Map(plans.map((p) => [p.id, p.title]))
+  const statuses = new Map(plans.map((p) => [p.id, p.status as string]))
   const people = new Map((staff.data ?? []).map((m) => [m.user_id, m.display_name]))
   return {
     entries: (items.data ?? []).map((i) => ({
@@ -65,6 +75,7 @@ async function getToothHistory(patientId: string): Promise<ToothData> {
       at: i.done_in_session_id ? when.get(i.done_in_session_id) ?? null : null,
       planId: i.plan_id,
       planTitle: titles.get(i.plan_id) ?? '',
+      planStatus: statuses.get(i.plan_id) ?? '',
     })),
     sessions: (sessions.data ?? []).map((s) => ({
       id: s.id, at: s.performed_at, planId: s.treatment_plan_id,
@@ -98,7 +109,7 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
     const what = [...new Set(toothItems.filter((e) => e.planId === s.planId).map((e) => e.label))].join('، ')
     return { ...s, title: inPlan.length > 1 ? t('tooth.sessionN', { what, n: inPlan.indexOf(s) + 1 }) : what }
   }).reverse()
-  const planned = toothItems.filter((e) => e.status === 'planned')
+  const planned = toothItems.filter((e) => e.status === 'planned' && OPEN_PLAN.has(e.planStatus))
   const cond = (n: number) => conditionOf(byTooth.get(n))
 
   const tooth = (n: number, upper: boolean) => (
@@ -131,7 +142,7 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
           </div>
         )}
         <div className="tooth-legend">
-          {(['healthy', 'needs', 'filling', 'root_canal', 'crown', 'missing'] as const).map((c) => (
+          {(['healthy', 'needs', 'filling', 'root_canal', 'crown', 'implant', 'missing'] as const).map((c) => (
             <span key={c}><i className={`swatch c-${c}`} />{t(`tooth.c.${c}`)}</span>
           ))}
         </div>

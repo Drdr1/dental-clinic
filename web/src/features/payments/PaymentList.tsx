@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useAuth } from '../auth/AuthProvider'
+import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import type { Payment } from './api'
 import { ReversePaymentDialog } from './ReversePaymentDialog'
@@ -8,7 +8,8 @@ import { methodKey } from './labels'
 
 export function PaymentList({ payments, staffNames }: { payments: Payment[]; staffNames: Map<string, string> }) {
   const { t, money, date } = useI18n()
-  const { isDoctor } = useAuth()
+  // Reversing money is the owner's call (the database enforces it too).
+  const isOwner = useMember().role === 'owner'
   const [reversing, setReversing] = useState<Payment | null>(null)
   const reversedIds = new Set(payments.map((p) => p.reverses_payment_id).filter(Boolean))
 
@@ -35,7 +36,7 @@ export function PaymentList({ payments, staffNames }: { payments: Payment[]; sta
                 {p.note && <span className="muted">{p.note}</span>}
                 <span className="payment-actions">
                   <Link to={`/receipts/${p.id}`} target="_blank" rel="noreferrer">{t('payments.print')}</Link>
-                  {isDoctor && !isReversal && !wasReversed && (
+                  {isOwner && !isReversal && !wasReversed && (
                     <button className="link-btn danger-link" onClick={() => setReversing(p)}>{t('payments.reverse')}</button>
                   )}
                 </span>

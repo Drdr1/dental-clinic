@@ -1321,6 +1321,7 @@ button.chip { cursor: pointer; }
 .tooth2.c-filling path { fill: #cfdffc; stroke: var(--gum); }
 .tooth2.c-root_canal path { fill: var(--gum); stroke: #1a3f9e; }
 .tooth2.c-crown path { fill: var(--ink); stroke: var(--ink); }
+.tooth2.c-implant path { fill: var(--ok-soft); stroke: var(--ok); }
 .tooth2.c-missing path { fill: #fff; stroke: #8a98ae; stroke-dasharray: 3 3; }
 .tooth2.is-selected { background: none; }
 .tooth2.is-selected .tooth2-n { color: var(--ink); font-weight: 700; }
@@ -1331,10 +1332,12 @@ button.chip { cursor: pointer; }
 .swatch.c-filling { background: #cfdffc; border-color: var(--gum); }
 .swatch.c-root_canal { background: var(--gum); border-color: var(--gum); }
 .swatch.c-crown { background: var(--ink); border-color: var(--ink); }
+.swatch.c-implant { background: var(--ok-soft); border-color: var(--ok); }
 .swatch.c-missing { background: none; border-style: dashed; }
 .badge.tb-root_canal, .badge.tb-filling { background: var(--gum); color: #fff; }
 .badge.tb-crown { background: var(--ink); color: #fff; }
 .badge.tb-needs { background: var(--danger-soft); color: var(--danger); }
+.badge.tb-implant { background: var(--ok-soft); color: var(--ok); }
 .badge.tb-missing { background: var(--grey-soft); color: var(--ink-soft); }
 .btn-block { width: 100%; }
 .phone-link { color: inherit; text-decoration: none; }

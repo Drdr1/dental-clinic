@@ -208,11 +208,15 @@ begin
     (c, today - 12, 'marketing', 1500, 'card', 'إعلان فيسبوك', owner);
 
   -- ---------- Lab work ----------
-  insert into public.lab_cases (clinic_id, patient_id, lab_id, description, shade, sent_on, expected_on, received_on, doctor_id, units, unit_price, created_by)
-  values
-    (c, pid[2], lab, 'تاج زيركون ضرس 36', 'A2', today - 9, today - 2, today - 3, owner, 1, 1200, owner),
-    (c, pid[7], lab, 'تاجين بورسلين 11 و21', 'A1', today - 4, today + 3, null, owner, 2, 800, owner),
-    (c, pid[11], lab, 'تاج زيركون ضرس 46', 'A3', today - 12, today - 4, null, doc, 1, 1200, doc);
+  -- item_id is what prices the case (and books the lab expense).
+  insert into public.lab_cases (clinic_id, patient_id, lab_id, item_id, description, shade, sent_on, expected_on, received_on, doctor_id, units, created_by)
+  select c, x.pid, lab, li.id, x.descr, x.shade, x.sent, x.expected, x.received, x.doctor, x.units, x.doctor
+  from (values
+    (pid[2],  'تاج زيركون', 'تاج زيركون ضرس 36',    'A2', today - 9,  today - 2, today - 3, owner, 1),
+    (pid[7],  'تاج بورسلين', 'تاجين بورسلين 11 و21', 'A1', today - 4,  today + 3, null::date, owner, 2),
+    (pid[11], 'تاج زيركون', 'تاج زيركون ضرس 46',    'A3', today - 12, today - 4, null::date, doc, 1)
+  ) as x(pid, item, descr, shade, sent, expected, received, doctor, units)
+  join public.lab_items li on li.lab_id = lab and li.name = x.item;
 
   -- ---------- Post-visit reviews ----------
   insert into public.review_requests (clinic_id, appointment_id, patient_id, doctor_id, created_at, rating, comment, answered_at, went_to_google)

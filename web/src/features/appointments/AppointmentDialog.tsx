@@ -5,7 +5,7 @@ import { useI18n } from '../../i18n'
 import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
 import { PatientPicker, type PickedPatient } from '../../components/PatientPicker'
-import { getClinicCalendar, getPatientDoctor, getPatientPlans, saveAppointment, type DayAppointment, getClinicDoctors } from './api'
+import { getClinicCalendar, getDay, getPatientDoctor, getPatientPlans, saveAppointment, type DayAppointment, getClinicDoctors } from './api'
 import { localDateOf, localToIso, minutesOfDay, minutesToTime, timeToMinutes } from './time'
 
 const DURATIONS = [15, 30, 45, 60, 90, 120]
@@ -65,6 +65,22 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
     for (let m = timeToMinutes(opens_at); m < timeToMinutes(closes_at); m += slot_minutes) out.push(minutesToTime(m))
     return out
   }, [calendar.data])
+
+  // A doctor can be booked on two chairs at once (some work two chairs on purpose),
+  // so this warns instead of refusing. Same chair is refused by the database.
+  const doctorDay = useQuery({
+    queryKey: ['day', clinicId, date, doctorId],
+    queryFn: () => getDay(clinicId, date, doctorId),
+    enabled: !!date && !!doctorId,
+  })
+  const clash = useMemo(() => {
+    if (!date || !time || !doctorDay.data) return null
+    const start = Date.parse(localToIso(date, time))
+    const end = start + duration * 60000
+    return doctorDay.data.find((a) => a.id !== appointment?.id && a.status !== 'no_show'
+      && a.chair_id !== effectiveChair
+      && Date.parse(a.starts_at) < end && Date.parse(a.ends_at) > start) ?? null
+  }, [doctorDay.data, date, time, duration, appointment?.id, effectiveChair])
 
   // Every appointment belongs to a doctor: that is what puts it on his calendar,
   // and what decides whose collections and lab bills it counts towards.
@@ -161,6 +177,12 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
             </label>
           )}
         </div>
+
+        {clash && (
+          <p className="warn-note" role="note">
+            {t('err.doctorBusy')} ({clash.patientName} · {clock(minutesToTime(minutesOfDay(clash.starts_at)))})
+          </p>
+        )}
 
         <label className="field">
           <span>{t('appt.notes')}</span>

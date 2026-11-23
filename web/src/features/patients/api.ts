@@ -93,7 +93,7 @@ export async function getPatientFile(patientId: string) {
       .order('presented_at', { ascending: false, nullsFirst: true }),
     supabase.from('installment_plan_summary').select('*').eq('patient_id', patientId).eq('status', 'active'),
     supabase.from('treatment_plan_balance').select('*').eq('patient_id', patientId)
-      .eq('billing', 'per_session').gt('outstanding', 0),
+      .eq('billing', 'per_session').gt('plan_remaining', 0),
   ])
   if (patient.error) throw patient.error
   if (plans.error) throw plans.error

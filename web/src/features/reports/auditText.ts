@@ -49,6 +49,14 @@ export function describe(r: AuditRow, i: T): Described {
       reason()
       break
     }
+    case 'cash.reopen':
+      out.vals.counted = m('counted'); out.rich.counted = 'b'
+      out.vals.day = d.day ? new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${s('day')}T12:00:00`)) : ''
+      reason()
+      break
+    case 'session.notes':
+      if (d.from) out.sub.push(t('au.wasNote', { note: s('from').slice(0, 140) }))
+      break
     case 'appt.status':
       change(t(`appt.status.${s('from')}` as MessageKey), t(`appt.status.${s('to')}` as MessageKey))
       break

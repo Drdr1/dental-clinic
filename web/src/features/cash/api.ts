@@ -52,6 +52,12 @@ export async function closeDay(clinicId: string, date: string, counted: number, 
   if (error) throw error
 }
 
+/** Owner only: undo a day's closing so cash can be added to it again. The old count goes to the audit log. */
+export async function reopenDay(clinicId: string, date: string, reason: string) {
+  const { error } = await supabase.rpc('reopen_cash_day', { p_clinic: clinicId, p_date: date, p_reason: reason.trim() })
+  if (error) throw error
+}
+
 export async function getClosings(clinicId: string): Promise<Closing[]> {
   const { data, error } = await supabase.from('cash_closings').select('*').eq('clinic_id', clinicId)
     .order('business_date', { ascending: false }).limit(60)

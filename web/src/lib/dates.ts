@@ -1,6 +1,23 @@
-/** Today's date as YYYY-MM-DD in the browser's timezone (the clinic's), not UTC. */
+let clinicTimeZone: string | undefined
+
+/** Set once the clinic is known: every "today" below is then the clinic's day. */
+export function setClinicTimeZone(tz: string | null | undefined) {
+  clinicTimeZone = tz || undefined
+}
+
+/** The calendar date (YYYY-MM-DD) of a moment, in the clinic's timezone (the browser's until it is known). */
+export function clinicDate(d: Date): string {
+  if (!clinicTimeZone) return toIsoDate(d)
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: clinicTimeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+  } catch {
+    return toIsoDate(d)
+  }
+}
+
+/** Today's date as YYYY-MM-DD in the clinic's timezone, not UTC. */
 export function todayLocal(): string {
-  return toIsoDate(new Date())
+  return clinicDate(new Date())
 }
 
 export function toIsoDate(d: Date): string {

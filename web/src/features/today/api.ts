@@ -1,30 +1,35 @@
 import { supabase } from '../../lib/supabase'
-import { todayLocal } from '../../lib/dates'
+import { clinicDate, todayLocal } from '../../lib/dates'
 import { getDay } from '../appointments/api'
 import { getLowStock } from '../materials/api'
 
 export type DayTotal = { day: string; total: number }
 
-function weekStart() {
-  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6); return d
-}
-const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
-/** Payments summed per local calendar day, oldest first, every day present even when empty. */
-function byDay(rows: { amount: number; received_at: string }[]): DayTotal[] {
-  const start = weekStart()
-  const days: DayTotal[] = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start); d.setDate(start.getDate() + i); return { day: localDay(d), total: 0 }
+/** The last seven clinic days, oldest first (YYYY-MM-DD). Noon avoids daylight-saving edges. */
+function lastSevenDays(): string[] {
+  const [y, m, d] = todayLocal().split('-').map(Number)
+  return Array.from({ length: 7 }, (_, i) => {
+    const x = new Date(Date.UTC(y, m - 1, d - 6 + i, 12))
+    return x.toISOString().slice(0, 10)
   })
-  const index = new Map(days.map((d, i) => [d.day, i]))
+}
+
+/** Payments summed per clinic day, oldest first, every day present even when empty. */
+function byDay(days: string[], rows: { amount: number; received_at: string }[]): DayTotal[] {
+  const out: DayTotal[] = days.map((day) => ({ day, total: 0 }))
+  const index = new Map(days.map((d, i) => [d, i]))
   for (const r of rows) {
-    const i = index.get(localDay(new Date(r.received_at)))
-    if (i !== undefined) days[i].total += r.amount
+    const i = index.get(clinicDate(new Date(r.received_at)))
+    if (i !== undefined) out[i].total += r.amount
   }
-  return days
+  return out
 }
 
 export async function getToday(clinicId: string) {
+  const days = lastSevenDays()
+  // A day early, to be safe across timezones; byDay keeps only the seven clinic days.
+  const [sy, sm, sd] = days[0].split('-').map(Number)
+  const since = new Date(Date.UTC(sy, sm - 1, sd - 1))
   const [agenda, recall, labs, unscheduled, appointments, lowStock, payments] = await Promise.all([
     supabase.from('installment_agenda').select('*').eq('clinic_id', clinicId).order('due_date'),
     supabase.from('recall_list').select('*').eq('clinic_id', clinicId).eq('has_upcoming_appointment', false)
@@ -36,7 +41,7 @@ export async function getToday(clinicId: string) {
     getLowStock(clinicId),
     // Seven days of takings, today last: the KPI and the week chart both read it.
     supabase.from('payments').select('amount, received_at').eq('clinic_id', clinicId)
-      .gte('received_at', weekStart().toISOString()),
+      .gte('received_at', since.toISOString()),
   ])
   for (const r of [agenda, recall, labs, unscheduled, payments]) if (r.error) throw r.error
 
@@ -49,7 +54,7 @@ export async function getToday(clinicId: string) {
     for (const p of data) titles.set(p.id, p.title)
   }
 
-  const week = byDay(payments.data ?? [])
+  const week = byDay(days, payments.data ?? [])
 
   return {
     agenda: agenda.data ?? [],

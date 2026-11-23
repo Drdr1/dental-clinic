@@ -76,9 +76,12 @@ export function AccountCard({ balances, perSession, onPay, nextInstallment }: {
   nextInstallment: { remaining: number | null; due_date: string | null } | null
 }) {
   const { t, money, date } = useI18n()
+  // Owed: the schedules' remainder plus done work not yet paid for. Work still
+  // to come on a pay-per-session plan is not a debt yet; it shows on its own line.
   const owed = balances.reduce((s, b) => s + (b.outstanding ?? 0), 0) + perSession.reduce((s, b) => s + (b.outstanding ?? 0), 0)
+  const upcomingWork = perSession.reduce((s, b) => s + Math.max(0, (b.plan_remaining ?? 0) - (b.outstanding ?? 0)), 0)
   const paid = balances.reduce((s, b) => s + (b.total_paid ?? 0), 0) + perSession.reduce((s, b) => s + (b.paid ?? 0), 0)
-  const total = owed + paid
+  const total = owed + upcomingWork + paid
   const overdue = balances.reduce((s, b) => s + (b.overdue_amount ?? 0), 0)
 
   return (
@@ -95,6 +98,7 @@ export function AccountCard({ balances, perSession, onPay, nextInstallment }: {
             <span>{t('patient.paidAmount', { amount: money(paid) })}</span>
             <span>{t('patient.totalAmount', { amount: money(total) })}</span>
           </div>
+          {upcomingWork > 0 && <p className="muted small">{t('patient.upcomingWork', { amount: money(upcomingWork) })}</p>}
           {overdue > 0 && <p className="alert-strip">{t('patient.overdueLine', { amount: money(overdue) })}</p>}
           {nextInstallment?.due_date && (
             <div className="next-due">

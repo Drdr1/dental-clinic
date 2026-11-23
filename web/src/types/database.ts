@@ -3104,8 +3104,10 @@ export type Database = {
           outstanding: number | null
           overdue_amount: number | null
           overdue_count: number | null
+          owed_now: number | null
           paid: number | null
           patient_id: string | null
+          plan_remaining: number | null
           sessions_locked: boolean | null
           status: Database["public"]["Enums"]["plan_status"] | null
           title: string | null
@@ -3562,6 +3564,10 @@ export type Database = {
           p_treatment_plan_id?: string
         }
         Returns: string
+      }
+      reopen_cash_day: {
+        Args: { p_clinic: string; p_date: string; p_reason: string }
+        Returns: undefined
       }
       record_doctor_payout: {
         Args: {

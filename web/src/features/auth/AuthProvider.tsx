@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
+import { setClinicTimeZone } from '../../lib/dates'
 
 export type Role = 'owner' | 'doctor' | 'receptionist'
 
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     supabase
       .from('clinic_members')
-      .select('clinic_id, role, display_name, clinics(name, disabled_features, reviews_enabled)')
+      .select('clinic_id, role, display_name, clinics(name, disabled_features, reviews_enabled, timezone)')
       .eq('user_id', userId)
       .eq('active', true)
       .order('created_at')
@@ -75,6 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           // Many-to-one embed: an object with generated types; normalize defensively anyway.
           const clinic = Array.isArray(data.clinics) ? data.clinics[0] : data.clinics
+          // "Today" is the clinic's day, whatever timezone the phone or laptop is set to.
+          setClinicTimeZone(clinic?.timezone)
           setMember({
             userId,
             clinicId: data.clinic_id,

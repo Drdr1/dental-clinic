@@ -20,7 +20,13 @@ import { cancelInstallmentPlan, cancelItem, cancelPlan, deletePlan, getPlan, set
 
 type Dialog = 'installments' | 'revise' | 'decline' | 'cancelInstallments' | 'cancelPlan' | 'session' | 'pay' | 'dictate' | null
 
+// Keyed by plan: moving from one plan to another starts with a clean form.
 export function PlanPage() {
+  const { planId = '' } = useParams()
+  return <PlanView key={planId} />
+}
+
+function PlanView() {
   const { planId = '' } = useParams()
   const { t, money, day } = useI18n()
   const hasInstallments = useFeature('installments')
@@ -305,7 +311,7 @@ export function PlanPage() {
               <div>
                 <dt>{payer && plan.discount > 0 ? t('plan.discountPayer', { name: payer.name, p: payer.discount_percent }) : t('plan.discount')}</dt>
                 <dd>
-                  {editable && !installments ? (
+                  {editable && !installments && isDoctor ? (
                     <input key={plan.discount} type="number" min="0" step="1" dir="ltr" className="inline-number"
                       defaultValue={plan.discount}
                       onBlur={(e) => {

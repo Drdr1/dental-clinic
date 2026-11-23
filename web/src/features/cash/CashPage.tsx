@@ -7,7 +7,7 @@ import type { MessageKey } from '../../i18n/en'
 import { methodKey } from '../payments/labels'
 import { ErrorNote } from '../../components/ErrorNote'
 import { todayLocal } from '../../lib/dates'
-import { closeDay, getClosers, getClosings, getDay } from './api'
+import { closeDay, getClosers, getClosings, getDay, reopenDay } from './api'
 import { Modal } from '../../components/Modal'
 import { AUTO_CATEGORIES, CATEGORIES, addExpense, type ExpenseCategory } from '../finance/api'
 
@@ -21,6 +21,8 @@ export function CashPage() {
   const [note, setNote] = useState('')
   const [showAll, setShowAll] = useState(false)
   const [payingOut, setPayingOut] = useState(false)
+  const [reopening, setReopening] = useState(false)
+  const [reopenWhy, setReopenWhy] = useState('')
   const [out, setOut] = useState<{ note: string; amount: string; category: ExpenseCategory }>({ note: '', amount: '', category: 'other' })
   // Reception holds the drawer and counts it at night, so she gets this
   // screen. The money reports stay owner-only.
@@ -34,6 +36,15 @@ export function CashPage() {
     mutationFn: () => closeDay(clinicId, day, Number(counted), reason, note),
     onSuccess: () => {
       setCounted(''); setReason(''); setNote('')
+      qc.invalidateQueries({ queryKey: ['cash'] })
+      qc.invalidateQueries({ queryKey: ['cash-history'] })
+    },
+  })
+
+  const reopen = useMutation({
+    mutationFn: () => reopenDay(clinicId, day, reopenWhy),
+    onSuccess: () => {
+      setReopening(false); setReopenWhy('')
       qc.invalidateQueries({ queryKey: ['cash'] })
       qc.invalidateQueries({ queryKey: ['cash-history'] })
     },
@@ -170,6 +181,9 @@ export function CashPage() {
                     </div>
                     {s.closing.reason && <p className="muted">{s.closing.reason}</p>}
                     <p className="muted small">{t('cash.closedBy', { name: closers.data?.get(s.closing.closed_by) ?? '', date: fmtDate(s.closing.closed_at) })}</p>
+                    {role === 'owner' && (
+                      <button className="link-btn link-strong" onClick={() => { setReopenWhy(''); setReopening(true) }}>{t('cash.reopen')}</button>
+                    )}
                   </>
                 ) : (
                   <form className="dialog-form" onSubmit={onSubmit}>
@@ -228,6 +242,22 @@ export function CashPage() {
             </aside>
           </div>
         </>
+      )}
+
+      {reopening && (
+        <Modal title={t('cash.reopen')} onClose={() => setReopening(false)}>
+          <form className="dialog-form" onSubmit={(e) => { e.preventDefault(); if (reopenWhy.trim()) reopen.mutate() }}>
+            <p className="muted">{t('cash.reopenHint')}</p>
+            <label className="field"><span>{t('cash.reopenReason')}</span>
+              <input required autoFocus value={reopenWhy} onChange={(e) => setReopenWhy(e.target.value)} maxLength={200}
+                placeholder={t('cash.reopenPlaceholder')} /></label>
+            {reopen.isError && <ErrorNote error={reopen.error} />}
+            <div className="dialog-actions">
+              <button type="submit" className="btn btn-primary" disabled={reopen.isPending || !reopenWhy.trim()}>{t('cash.reopen')}</button>
+              <button type="button" className="btn" onClick={() => setReopening(false)}>{t('common.cancel')}</button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {payingOut && (
