@@ -1854,3 +1854,11 @@ button.chip { cursor: pointer; }
 .rp-low-btns .icon { width: 16px; height: 16px; }
 .rv-foot .btn, .rp-low-btns .btn { gap: 6px; }
 .btn-small .icon { width: 16px; height: 16px; } .btn-small:has(.icon) { gap: 6px; }
+
+/* ---------- Subscription ---------- */
+.sub-banner { margin: 16px clamp(16px, 4vw, 40px) 0; padding: 10px 16px; border-radius: 12px; background: var(--gum-soft); color: var(--navy); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; justify-content: space-between; font-size: 14px; }
+.sub-banner a { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.sub-banner.is-warn { background: #fff4e5; color: #8a4b00; }
+.sub-banner.is-danger { background: var(--danger-soft); color: var(--danger); }
+.st-badge.is-trial { background: #fff4e5; color: #8a4b00; }
+.st-badge.is-past_due, .st-badge.is-suspended { background: var(--danger-soft); color: var(--danger); }

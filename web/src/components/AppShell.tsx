@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { ToothMark } from './ToothMark'
 import { Icon } from './Icon'
 import { QuickSearch } from './QuickSearch'
+import { SubscriptionBanner } from './SubscriptionBanner'
 
 function openQuickSearch() {
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
@@ -118,6 +119,7 @@ export function AppShell() {
             <button className="btn btn-primary" onClick={() => navigate('/appointments?new=1')}>{t('shell.newAppointment')}</button>
           </div>
         </div>}
+        <SubscriptionBanner />
         <Outlet />
       </main>
 

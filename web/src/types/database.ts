@@ -424,6 +424,8 @@ export type Database = {
       }
       clinics: {
         Row: {
+          plan_status: string
+          trial_ends_on: string | null
           google_review_url: string | null
           reviews_enabled: boolean
           assistant_monthly_limit: number
@@ -461,6 +463,8 @@ export type Database = {
           timezone: string
         }
         Insert: {
+          plan_status?: string
+          trial_ends_on?: string | null
           google_review_url?: string | null
           reviews_enabled?: boolean
           assistant_monthly_limit?: number
@@ -498,6 +502,8 @@ export type Database = {
           timezone?: string
         }
         Update: {
+          plan_status?: string
+          trial_ends_on?: string | null
           google_review_url?: string | null
           reviews_enabled?: boolean
           assistant_monthly_limit?: number
@@ -3309,6 +3315,14 @@ export type Database = {
       clinic_report_reviews: {
         Args: { p_clinic: string; p_from: string; p_to: string }
         Returns: Json
+      }
+      clinic_plan_state: {
+        Args: { p_clinic: string }
+        Returns: string
+      }
+      assistant_can_ask: {
+        Args: { p_clinic: string }
+        Returns: undefined
       }
       subscription_status: {
         Args: { p_clinic: string }

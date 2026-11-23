@@ -149,6 +149,17 @@ from Settings → Team.
 This creates the clinic, one chair, the drug catalog, the two ready-made prescriptions,
 and the medical-history and consent forms.
 
+A new clinic starts on a 14-day trial. When it pays, record the payment; that moves its
+renewal date forward. Seven days after a missed renewal the clinic turns read-only
+(everything stays visible, nothing new can be written) until the next payment.
+
+```bash
+server$ bash ~/setup/server/04-record-payment.sh                                  # every clinic's state
+server$ bash ~/setup/server/04-record-payment.sh 'اسم العيادة' 799 1 instapay 'REF'  # 1 month paid
+```
+
+Clinics that existed before subscriptions were added are active with no end date.
+
 ---
 
 ## 6. The app

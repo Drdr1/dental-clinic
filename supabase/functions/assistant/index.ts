@@ -274,6 +274,16 @@ async function serveRequest(req: Request): Promise<Response> {
   if (!question || !clinic) return json({ error: 'bad request' }, 400)
 
   const rest = new Rest(url, anon, jwt)
+
+  // Switched off, over the month's limit, or a suspended clinic: stop before
+  // the model is called. The database decides, under the asker's token.
+  try {
+    await rest.rpc('assistant_can_ask', { p_clinic: clinic })
+  } catch (e) {
+    const code = String((e as Error).message).match(/ASSISTANT_LIMIT|ASSISTANT_OFF|SUBSCRIPTION_SUSPENDED/)?.[0]
+    return json({ error: code ?? 'forbidden' }, code === 'ASSISTANT_LIMIT' ? 429 : 403)
+  }
+
   const names = new Pseudonyms()
   names.seed(seedMap)
   const used: string[] = []
