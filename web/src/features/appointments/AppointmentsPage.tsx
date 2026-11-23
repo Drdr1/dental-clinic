@@ -16,6 +16,9 @@ import { AppointmentDetails } from './AppointmentDetails'
 import { localToIso, minutesOfDay, minutesToTime, shiftDate, timeToMinutes } from './time'
 import { apptStatusKey } from './labels'
 
+/** Booked online and not yet confirmed by reception: the slot is held, but nobody has called the patient yet. */
+const awaiting = (a: DayAppointment) => a.source === 'online' && !a.confirmed_at && a.status === 'booked'
+
 
 type Open =
   | { kind: 'new'; time?: string; chairId?: string; patient?: PickedPatient; planId?: string }
@@ -228,7 +231,9 @@ export function AppointmentsPage() {
                       <td className="muted">{a.planTitle ?? a.notes ?? ''}</td>
                       <td className="muted">{(a.doctor_id && doctorName.get(a.doctor_id)) || ''}</td>
                       <td className="muted">{chairs.find((c) => c.id === a.chair_id)?.name ?? ''}</td>
-                      <td><span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span></td>
+                      <td>{awaiting(a)
+                        ? <span className="badge appt-badge appt-awaiting">{t('book.awaiting')}</span>
+                        : <span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -263,7 +268,7 @@ export function AppointmentsPage() {
                   ))}
                   {day.data.filter((a) => a.chair_id === c.id).map((a) => (
                     <button key={a.id} type="button"
-                      className={`cal-appt appt-${a.status} ${a.status === 'booked' ? 'is-movable' : ''} ${dragging?.id === a.id ? 'is-dragging' : ''}`}
+                      className={`cal-appt appt-${a.status} ${awaiting(a) ? 'is-awaiting' : ''} ${a.status === 'booked' ? 'is-movable' : ''} ${dragging?.id === a.id ? 'is-dragging' : ''}`}
                       style={block(a)}
                       onPointerDown={(e: RPointerEvent<HTMLButtonElement>) => {
                         // Only a live booking can be moved, and only with a mouse:
@@ -277,7 +282,7 @@ export function AppointmentsPage() {
                         {a.alerts && <span className="alert-dot" aria-label={t('patients.alert')} />}
                       </span>
                       <span className="cal-appt-sub">
-                        {[a.planTitle ?? a.notes, time(a.starts_at), a.status !== 'booked' ? t(apptStatusKey(a.status)) : null].filter(Boolean).join(' · ')}
+                        {[awaiting(a) ? t('book.awaiting') : null, a.planTitle ?? a.notes, time(a.starts_at), a.status !== 'booked' ? t(apptStatusKey(a.status)) : null].filter(Boolean).join(' · ')}
                       </span>
                     </button>
                   ))}

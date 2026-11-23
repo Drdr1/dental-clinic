@@ -1011,6 +1011,9 @@ export const ar: Messages = {
 
   'book.pendingTitle': 'حجوزات أونلاين محتاجة تأكيد ({n})',
   'book.confirm': 'تأكيد',
+  'book.reject': 'رفض',
+  'book.rejectSure': 'أيوه، ارفضه',
+  'book.awaiting': 'مستني تأكيد',
   'book.settingsTitle': 'الحجز الأونلاين',
   'book.settingsHint': 'صفحة عامة المريض يختار منها ميعاد فاضي بنفسه. الحجز بيوصل غير مؤكد عشان الاستقبال تكلمه الأول.',
   'book.enable': 'استقبال حجوزات أونلاين',

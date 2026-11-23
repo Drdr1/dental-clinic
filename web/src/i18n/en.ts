@@ -1009,6 +1009,9 @@ export const en = {
 
   'book.pendingTitle': 'Online bookings to confirm ({n})',
   'book.confirm': 'Confirm',
+  'book.reject': 'Turn down',
+  'book.rejectSure': 'Yes, turn it down',
+  'book.awaiting': 'Awaiting confirmation',
   'book.settingsTitle': 'Online booking',
   'book.settingsHint': 'A public page where patients pick a free time themselves. Bookings arrive unconfirmed so reception can call first.',
   'book.enable': 'Accept online bookings',

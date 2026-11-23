@@ -5,7 +5,7 @@ import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
 import { templates, waMessage } from '../../lib/whatsapp'
-import { assignDoctor, getClinicDoctors } from '../appointments/api'
+import { assignDoctor, getClinicDoctors, setAppointmentStatus } from '../appointments/api'
 import { confirmBooking, getPendingBookings } from './api'
 
 /** Online bookings waiting for reception to call and confirm. */
@@ -30,6 +30,19 @@ export function PendingBookings() {
     },
   })
 
+  // Turning a request down frees the slot; a file the request created with nothing else in it is put away.
+  const [rejecting, setRejecting] = useState<string | null>(null)
+  const reject = useMutation({
+    mutationFn: (id: string) => setAppointmentStatus(id, 'cancelled'),
+    onSuccess: () => {
+      setRejecting(null)
+      qc.invalidateQueries({ queryKey: ['pending-bookings'] })
+      qc.invalidateQueries({ queryKey: ['today'] })
+      qc.invalidateQueries({ queryKey: ['day'] })
+      qc.invalidateQueries({ queryKey: ['patients'] })
+    },
+  })
+
   if (!q.data?.length) return null
 
   return (
@@ -39,6 +52,7 @@ export function PendingBookings() {
         <span className="badge badge-new">{t('book.newCount', { n: q.data.length })}</span>
       </div>
       {confirm.isError && <ErrorNote error={confirm.error} />}
+      {reject.isError && <ErrorNote error={reject.error} />}
       <ul className="work-list bookings">
         {q.data.map((b) => (
           <li key={b.id}>
@@ -68,6 +82,14 @@ export function PendingBookings() {
                 aria-label={t('appt.confirmWhatsapp')} title={t('appt.confirmWhatsapp')}>
                 {t('book.whatsapp')}
               </a>
+              {rejecting === b.id ? (
+                <>
+                  <button className="btn btn-small btn-danger" disabled={reject.isPending} onClick={() => reject.mutate(b.id)}>{t('book.rejectSure')}</button>
+                  <button className="btn btn-small" onClick={() => setRejecting(null)}>{t('common.cancel')}</button>
+                </>
+              ) : (
+                <button className="btn btn-small" onClick={() => setRejecting(b.id)}>{t('book.reject')}</button>
+              )}
             </div>
           </li>
         ))}

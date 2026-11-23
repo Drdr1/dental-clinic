@@ -160,14 +160,15 @@ export function BookingPage() {
         <h3>{t('book.step.time')}</h3>
         {slots.isPending && day && <Skeleton rows={1} />}
         {slots.data && slots.data.every((s) => !s.free) && <p className="muted">{t('book.noSlots')}</p>}
-        <div className="bk-times">
-          {slots.data?.map((s) => (
+        {/* A day with nothing left shows the message alone, not a wall of crossed-out times. */}
+        {slots.data?.some((s) => s.free) && <div className="bk-times">
+          {slots.data.map((s) => (
             <button key={s.slot} type="button" disabled={!s.free} className={`bk-time${slot === s.slot ? ' on' : ''}${s.free ? '' : ' taken'}`}
               onClick={() => setSlot(s.slot)}>
               {clock(s.slot)}
             </button>
           ))}
-        </div>
+        </div>}
       </section>
 
       <form className="bk-card bk-side" onSubmit={onSubmit}>

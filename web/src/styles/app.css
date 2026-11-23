@@ -1876,3 +1876,7 @@ button.chip { cursor: pointer; }
   .rail-link { width: 44px; height: 42px; border-radius: 12px; }
   .rail-divider { margin: 3px 0; }
 }
+
+/* Online booking not yet confirmed: dashed, so reception sees it still needs a call. */
+.cal-appt.is-awaiting { border-style: dashed; }
+.badge.appt-awaiting { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); color: var(--warn); }
