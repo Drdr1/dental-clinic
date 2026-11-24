@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
@@ -139,15 +139,63 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
   }).reverse()
   const planned = toothItems.filter((e) => e.status === 'planned' && OPEN_PLAN.has(e.planStatus))
   const [now] = useState(() => Date.now())
+  // The tooth under the pointer (or just tapped): a small card with where its work stands.
+  const [peek, setPeek] = useState<number | null>(null)
+  useEffect(() => {
+    if (peek == null) return
+    const close = (e: PointerEvent) => { if (!(e.target as Element).closest('.tooth3')) setPeek(null) }
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
+  }, [peek])
+
+  const peekCard = (n: number, col: number) => {
+    const list = (byTooth.get(n) ?? []).filter((e) => e.status === 'done' || OPEN_PLAN.has(e.planStatus))
+    const st = state(n)
+    return (
+      <div className={`tooth-peek ${col < 3 ? 'at-start' : col > 12 ? 'at-end' : ''}`} role="tooltip" dir="rtl">
+        <div className="tooth-peek-head">
+          <strong>{t('tooth.toothN', { n })}</strong>
+          <span className={`badge tb3 st-${st.status}`}>{t(`tooth.st.${st.status}`)}</span>
+        </div>
+        {list.length === 0 && <p className="muted small">{t('tooth.noneOnTooth', { n })}</p>}
+        {list.map((e, i) => {
+          const k = e.status === 'done' ? e.sessionsNeeded : e.steps.length
+          return (
+            <div key={i} className="tooth-peek-item">
+              <div className="tooth-peek-row">
+                <span>{e.label}</span>
+                <span className="muted small nowrap">
+                  {e.status === 'done' ? (e.at ? t('tooth.doneOn', { date: day(e.at) }) : t('plan.itemDone'))
+                    : e.sessionsNeeded > 1 ? t('plan.stepsDone', { n: k, of: e.sessionsNeeded })
+                    : t('plan.itemPlanned')}
+                </span>
+              </div>
+              {e.sessionsNeeded > 1 && (
+                <div className="peek-steps" aria-hidden="true">
+                  {Array.from({ length: e.sessionsNeeded }, (_, j) => (
+                    <i key={j} className={j < k ? (e.status === 'done' ? 'on-done' : 'on') : ''} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
   const state = (n: number) => toothState(byTooth.get(n), now)
 
-  const tooth = (n: number, upper: boolean) => {
+  const tooth = (n: number, upper: boolean, col: number) => {
     const st = state(n)
     const label = `${t('plan.tooth', { n })}: ${t(`tooth.st.${st.status}`)}${st.kind !== 'none' ? ` · ${t(`tooth.c.${st.kind}`)}` : ''}`
     const num = <span className={`tf-n st-${st.status}`}>{n}</span>
     return (
       <button key={n} type="button" className={`tooth3 ${upper ? 'is-upper' : 'is-lower'} ${selected === n ? 'is-selected' : ''}`}
-        aria-pressed={selected === n} aria-label={label} title={label} onClick={() => setPicked(n)}>
+        aria-pressed={selected === n} aria-label={label}
+        onMouseEnter={() => setPeek(n)} onMouseLeave={() => setPeek((p) => (p === n ? null : p))}
+        onFocus={() => setPeek(n)} onBlur={() => setPeek((p) => (p === n ? null : p))}
+        onClick={() => { setPicked(n); setPeek(n) }}>
+        {peek === n && peekCard(n, col)}
         {upper ? <><ToothSide n={n} status={st.status} kind={st.kind} /><ToothTop n={n} status={st.status} kind={st.kind} />{num}</>
           : <>{num}<ToothTop n={n} status={st.status} kind={st.kind} /><ToothSide n={n} status={st.status} kind={st.kind} /></>}
       </button>
@@ -166,9 +214,9 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
         {q.data && (
           <div className="tooth-chart3">
             <div className="tooth-scroll">
-              <div className="tooth-row3" dir="ltr">{UPPER.map((n) => tooth(n, true))}</div>
+              <div className="tooth-row3" dir="ltr">{UPPER.map((n, i) => tooth(n, true, i))}</div>
               <div className="jaw-line"><span>{t('tooth.upperJaw')}</span><i /><span>{t('tooth.lowerJaw')}</span></div>
-              <div className="tooth-row3" dir="ltr">{LOWER.map((n) => tooth(n, false))}</div>
+              <div className="tooth-row3" dir="ltr">{LOWER.map((n, i) => tooth(n, false, i))}</div>
             </div>
             <div className="tooth-side" dir="ltr"><span>{t('chart.right')}</span><span>{t('chart.left')}</span></div>
           </div>

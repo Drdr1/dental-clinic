@@ -1199,6 +1199,7 @@ export const en = {
   'tooth.st.existing': 'Existing',
   'tooth.upperJaw': 'Upper jaw',
   'tooth.lowerJaw': 'Lower jaw',
+  'tooth.doneOn': 'Done {date}',
   'tooth.c.healthy': 'Healthy',
   'tooth.c.needs': 'Needs treatment',
   'tooth.c.filling': 'Filling',

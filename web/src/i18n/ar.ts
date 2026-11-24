@@ -1201,6 +1201,7 @@ export const ar: Messages = {
   'tooth.st.existing': 'قائم',
   'tooth.upperJaw': 'الفك العلوي',
   'tooth.lowerJaw': 'الفك السفلي',
+  'tooth.doneOn': 'اتعمل {date}',
   'tooth.c.healthy': 'سليم',
   'tooth.c.needs': 'محتاج علاج',
   'tooth.c.filling': 'حشو',

@@ -1963,3 +1963,19 @@ button.chip { cursor: pointer; }
 .badge.tb3.st-progress { background: #e0ebf6; color: #2f6ea8; }
 .badge.tb3.st-planned { background: var(--danger-soft); color: var(--danger); }
 .badge.tb3.st-existing { background: var(--grey-soft); color: var(--ink); }
+.tooth3 { position: relative; }
+.tooth-peek { position: absolute; z-index: 5; left: 50%; transform: translateX(-50%); width: 240px; padding: 10px 12px; display: grid; gap: 8px;
+  background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(20, 30, 50, .14);
+  text-align: start; color: var(--ink); font-size: 13px; cursor: default; pointer-events: none; }
+.tooth3.is-upper .tooth-peek { top: calc(100% - 4px); }
+.tooth3.is-lower .tooth-peek { bottom: calc(100% - 4px); }
+.tooth-peek.at-start { left: 0; transform: none; }
+.tooth-peek.at-end { left: auto; right: 0; transform: none; }
+.tooth-peek-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tooth-peek-item { display: grid; gap: 5px; padding-top: 8px; border-top: 1px solid var(--line2); }
+.tooth-peek-row { display: flex; justify-content: space-between; gap: 8px; }
+.peek-steps { display: flex; gap: 4px; }
+.peek-steps i { flex: 1; height: 6px; border-radius: 3px; background: var(--grey-soft); }
+.peek-steps i.on { background: #3b82c4; }
+.peek-steps i.on-done { background: #16a34a; }
+.tooth-scroll { padding-block: 4px; }
