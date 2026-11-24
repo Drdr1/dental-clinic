@@ -147,17 +147,19 @@ export async function searchMyPatients(clinicId: string, doctorId: string, q: st
   const rows = (data ?? []) as Array<{
     patient_id: string; full_name: string; phone: string; outstanding: number
   }>
-  const term = cleanSearch(q).toLowerCase()
-  const digits = term.replace(/\D/g, '')
-  return rows
-    .filter((r) => !term
-      || r.full_name.toLowerCase().includes(term)
-      || (digits.length >= 3 && (r.phone ?? '').includes(digits)))
-    .map((r) => ({
-      id: r.patient_id, full_name: r.full_name, phone: r.phone,
-      medical_alerts: null, archived_at: null,
-      outstanding: r.outstanding ?? 0, overdueCount: 0,
-    }))
+  // With nothing typed, the list is the doctor's own patients. A search reaches
+  // every patient in the clinic (a doctor often sees a colleague's patient),
+  // with the doctor's own listed first.
+  if (cleanSearch(q)) {
+    const mine = new Set(rows.map((r) => r.patient_id))
+    const all = await searchPatients(clinicId, q)
+    return [...all.filter((p) => mine.has(p.id)), ...all.filter((p) => !mine.has(p.id))]
+  }
+  return rows.map((r) => ({
+    id: r.patient_id, full_name: r.full_name, phone: r.phone,
+    medical_alerts: null, archived_at: null,
+    outstanding: r.outstanding ?? 0, overdueCount: 0,
+  }))
 }
 
 export type PatientFilter = 'all' | 'overdue' | 'alerts' | 'new' | 'recall'
