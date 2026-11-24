@@ -314,6 +314,7 @@ export const en = {
   'appt.minutes': '{n} min',
   'appt.chair': 'Chair',
   'appt.notes': 'Note',
+  'appt.chairOff': 'switched off',
   'appt.notesHint': 'For example: first visit, bring X-ray',
   'appt.save': 'Save appointment',
   'appt.prevDay': 'Previous',

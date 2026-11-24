@@ -148,7 +148,9 @@ export function AppointmentsPage() {
 
   const error = calendar.error ?? day.error
   const hours = calendar.data?.hours
-  const chairs = calendar.data?.chairs ?? []
+  const allChairs = calendar.data?.chairs ?? []
+  // Columns: the working chairs, plus any switched-off chair that still has appointments this day.
+  const chairs = allChairs.filter((c) => c.active || day.data?.some((a) => a.chair_id === c.id))
   const openMin = hours ? timeToMinutes(hours.opens_at) : 0
   const closeMin = hours ? timeToMinutes(hours.closes_at) : 0
   const slot = hours?.slot_minutes ?? 15
@@ -245,7 +247,7 @@ export function AppointmentsPage() {
               <span />
               {chairs.map((c) => {
                 const docs = [...new Set(day.data!.filter((a) => a.chair_id === c.id && a.doctor_id).map((a) => doctorName.get(a.doctor_id!)).filter(Boolean))]
-                return <span key={c.id}><b>{c.name}</b>{docs.length > 0 && <small> · {docs.join('، ')}</small>}</span>
+                return <span key={c.id}><b>{c.name}</b>{!c.active && <small> · {t('appt.chairOff')}</small>}{docs.length > 0 && <small> · {docs.join('، ')}</small>}</span>
               })}
             </div>
             <div className={`cal-body ${dragging ? 'is-dragging' : ''}`} style={{ height: rows * SLOT_PX }}>

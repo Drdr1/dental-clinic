@@ -125,7 +125,7 @@ export function TodayPage() {
       </div>
 
       <div className="today-grid">
-        <ChairsNow chairs={calendar.data?.chairs ?? []} appointments={appointments} nowMin={nowMin}
+        <ChairsNow chairs={(calendar.data?.chairs ?? []).filter((c) => c.active || appointments.some((a) => a.chair_id === c.id))} appointments={appointments} nowMin={nowMin}
           clock={time(now.toISOString())} doctorName={doctorName} />
         {seesMoney && <WeekChart days={week} />}
       </div>

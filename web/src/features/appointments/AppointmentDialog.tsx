@@ -55,7 +55,8 @@ export function AppointmentDialog({ onClose, appointment, initial }: Props) {
     enabled: !!patient,
   })
 
-  const chairs = calendar.data?.chairs ?? []
+  // New bookings go on working chairs only (the one this appointment already has stays listed).
+  const chairs = (calendar.data?.chairs ?? []).filter((c) => c.active || c.id === appointment?.chair_id)
   const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId) })
   const effectiveChair = chairId || chairs[0]?.id || ''
   const slots = useMemo(() => {

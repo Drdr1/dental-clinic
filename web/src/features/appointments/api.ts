@@ -9,7 +9,8 @@ export type DayAppointment = Appointment & { patientName: string; patientPhone: 
 export async function getClinicCalendar(clinicId: string) {
   const [clinic, chairs] = await Promise.all([
     supabase.from('clinics').select('opens_at, closes_at, slot_minutes').eq('id', clinicId).single(),
-    supabase.from('chairs').select('id, name').eq('clinic_id', clinicId).eq('active', true).order('name'),
+    // Every chair, switched-off ones too: their old appointments still need a name and a column.
+    supabase.from('chairs').select('id, name, active').eq('clinic_id', clinicId).order('name'),
   ])
   if (clinic.error) throw clinic.error
   if (chairs.error) throw chairs.error
