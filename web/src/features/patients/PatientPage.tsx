@@ -143,7 +143,7 @@ export function PatientPage() {
         <dl className="patient-facts">
           <div><dt>{t('patientForm.doctor')}</dt><dd>{doctorName ?? t('common.none')}</dd></div>
           <div><dt>{t('patients.col.lastVisit')}</dt><dd>{lastVisit.data ? date(lastVisit.data) : t('patients.newPatient')}</dd></div>
-          <div><dt>{t('patient.nextVisit')}</dt><dd>{nextAppointment ? `${date(nextAppointment.starts_at)} ${time(nextAppointment.starts_at)}` : t('common.none')}</dd></div>
+          <div><dt>{t('patient.nextVisit')}</dt><dd>{nextAppointment ? <>{date(nextAppointment.starts_at)} <span className="nowrap">{time(nextAppointment.starts_at)}</span></> : t('common.none')}</dd></div>
           <div className={owed > 0 ? '' : 'is-muted'}><dt>{t('patients.col.owed')}</dt><dd className={overdue > 0 ? 'danger-text' : ''}>{owed > 0 ? money(owed) : t('common.none')}</dd></div>
           <div><dt>{t('patient.cameFrom')}</dt><dd>{patient.source ? t(`source.${patient.source}` as Parameters<typeof t>[0]) : t('patientForm.sourceUnknown')}</dd></div>
         </dl>

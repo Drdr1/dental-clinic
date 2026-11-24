@@ -1112,7 +1112,6 @@ export const ar: Messages = {
   'today.kpiAttention': 'محتاج متابعة',
   'today.chipLabs': '{n} معمل',
   'today.chipStock': '{n} خامة قربت تخلص',
-  'today.kpiAttentionSub': 'تحت في الصفحة التفاصيل',
   'today.kpiAttentionNone': 'كله تمام',
   'today.chairs': 'الكراسي دلوقتي',
   'today.clock': 'الساعة {time}',
