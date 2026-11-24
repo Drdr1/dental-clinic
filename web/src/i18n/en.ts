@@ -264,6 +264,11 @@ export const en = {
   'chart.left': 'Patient’s left',
 
   'nav.today': 'Today',
+  'nav.groupClinic': 'Clinic',
+  'nav.groupMoney': 'Money',
+  'nav.groupAdmin': 'Admin',
+  'nav.lookNew': 'Try the new look',
+  'nav.lookClassic': 'Back to the current look',
   'patient.recallPaused': 'Paused during treatment. The count restarts when the treatment is completed.',
   'err.itemsChanged': 'Some of the selected procedures were already marked done. Refresh the page and try again.',
 

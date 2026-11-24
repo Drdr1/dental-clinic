@@ -266,6 +266,11 @@ export const ar: Messages = {
   'chart.left': 'شمال المريض',
 
   'nav.today': 'النهارده',
+  'nav.groupClinic': 'العيادة',
+  'nav.groupMoney': 'الفلوس',
+  'nav.groupAdmin': 'الإدارة',
+  'nav.lookNew': 'جرّب الشكل الجديد',
+  'nav.lookClassic': 'ارجع للشكل الحالي',
   'patient.recallPaused': 'متوقف أثناء العلاج. العد هيبدأ من جديد لما العلاج يخلص.',
   'err.itemsChanged': 'في إجراءات من اللي اخترتها اتعلّم عليها قبل كده. اعمل تحديث للصفحة وحاول تاني.',
 

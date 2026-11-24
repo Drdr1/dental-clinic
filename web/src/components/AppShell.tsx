@@ -8,6 +8,7 @@ import { ToothMark } from './ToothMark'
 import { Icon } from './Icon'
 import { QuickSearch } from './QuickSearch'
 import { SubscriptionBanner } from './SubscriptionBanner'
+import { setLook, useLook } from '../lib/look'
 
 function openQuickSearch() {
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
@@ -15,6 +16,7 @@ function openQuickSearch() {
 
 export function AppShell() {
   const member = useMember()
+  const look = useLook()
   // The clinic's own logo, if one was uploaded in Settings.
   const logo = useQuery({
     queryKey: ['clinic-logo', member.clinicId],
@@ -99,6 +101,54 @@ export function AppShell() {
               <button role="menuitem" onClick={() => { setUserOpen(false); setLang(lang === 'ar' ? 'en' : 'ar') }}>
                 <Icon name="globe" />{t('nav.language')}
               </button>
+              <button role="menuitem" onClick={() => { setUserOpen(false); setLook('new') }}>
+                <Icon name="today" />{t('nav.lookNew')}
+              </button>
+              <button role="menuitem" onClick={signOut}><Icon name="logout" />{t('nav.signOut')}</button>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Desktop: the menu with every page named, grouped by what it is for. */}
+      <aside className="side" aria-label={t('appName')}>
+        <Link to="/today" className="side-brand">
+          {logo.data ? <img src={logo.data} alt="" className="side-logo" /> : <ToothMark className="side-mark" />}
+          <span className="side-brand-text">
+            <b>{member.clinicName || t('appName')}</b>
+            <span>Dentano</span>
+          </span>
+        </Link>
+        <nav className="side-nav">
+          <p className="side-group">{t('nav.groupClinic')}</p>
+          <SideLink to="/today" icon="today" label={t('nav.today')} />
+          <SideLink to="/appointments" icon="calendar" label={t('nav.appointments')} />
+          <SideLink to="/patients" icon="patients" label={t('nav.patients')} />
+          {hasLabs && <SideLink to="/labs" icon="lab" label={t('nav.labs')} />}
+          {hasMaterials && <SideLink to="/materials" icon="materials" label={t('nav.materials')} />}
+          {hasAssistant && <SideLink to="/assistant" icon="assistant" label={t('nav.assistant')} />}
+          {(canCash || isOwner) && <p className="side-group">{t('nav.groupMoney')}</p>}
+          {canCash && <SideLink to="/cash" icon="cash" label={t('nav.cash')} />}
+          {isOwner && <SideLink to="/finance" icon="finance" label={t('nav.finance')} />}
+          {isOwner && <SideLink to="/reports" icon="reports" label={t('nav.reports')} />}
+          {isOwner && <SideLink to="/doctors" icon="doctor" label={t('nav.doctors')} />}
+          {isOwner && <p className="side-group">{t('nav.groupAdmin')}</p>}
+          {isOwner && <SideLink to="/settings" icon="settings" label={t('nav.settings')} />}
+        </nav>
+        {/* Who is signed in, with language and sign out. */}
+        <div className="user-menu side-user">
+          <button className="side-who" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}>
+            <span className="side-avatar" aria-hidden="true">{(member.displayName || '?').replace(/^د\.?\s*/, '').trim().charAt(0)}</span>
+            <span className="side-who-text"><b>{member.displayName}</b><span>{t(`role.${member.role}`)}</span></span>
+          </button>
+          {userOpen && (
+            <div className="user-pop side-pop" role="menu">
+              <button role="menuitem" onClick={() => { setUserOpen(false); setLang(lang === 'ar' ? 'en' : 'ar') }}>
+                <Icon name="globe" />{t('nav.language')}
+              </button>
+              <button role="menuitem" onClick={() => { setUserOpen(false); setLook('classic') }}>
+                <Icon name="today" />{t('nav.lookClassic')}
+              </button>
               <button role="menuitem" onClick={signOut}><Icon name="logout" />{t('nav.signOut')}</button>
             </div>
           )}
@@ -156,6 +206,7 @@ export function AppShell() {
             </nav>
             <div className="sheet-foot">
               <button className="btn" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('nav.language')}</button>
+              <button className="btn" onClick={() => setLook(look === 'new' ? 'classic' : 'new')}>{t(look === 'new' ? 'nav.lookClassic' : 'nav.lookNew')}</button>
               <button className="btn" onClick={signOut}>{t('nav.signOut')}</button>
             </div>
           </div>
@@ -172,6 +223,15 @@ function RailLink({ to, icon, label }: { to: string; icon: string; label: string
     <NavLink to={to} className="rail-link" aria-label={label} title={label}>
       <Icon name={icon} />
       <span className="rail-tip" aria-hidden="true">{label}</span>
+    </NavLink>
+  )
+}
+
+function SideLink({ to, icon, label }: { to: string; icon: string; label: string }) {
+  return (
+    <NavLink to={to} className="side-link">
+      <Icon name={icon} />
+      <span>{label}</span>
     </NavLink>
   )
 }
