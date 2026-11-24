@@ -66,11 +66,15 @@ export function AppointmentsPage() {
   const doctors = useQuery({
     queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId), enabled: !isDoctorRole,
   })
+  // The whole clinic's day is loaded even when one doctor is shown: the grid
+  // still has to show which chairs are taken, or a move lands on a hidden booking.
   const day = useQuery({
-    queryKey: ['day', clinicId, date, doctorFilter],
-    queryFn: () => getDay(clinicId, date, doctorFilter),
+    queryKey: ['day', clinicId, date, null],
+    queryFn: () => getDay(clinicId, date, null),
     refetchInterval: 60_000,
   })
+  const shownDay = day.data && (doctorFilter ? day.data.filter((a) => a.doctor_id === doctorFilter) : day.data)
+  const isShown = (a: DayAppointment) => !doctorFilter || a.doctor_id === doctorFilter
 
   // Accepted plans with work left and nothing booked: the side list reception books from.
   const unscheduled = useQuery({
@@ -175,7 +179,7 @@ export function AppointmentsPage() {
       <header className="page-head">
         <div className="title-line">
           <h1>{t('appt.title')}</h1>
-          <span className="muted">{heading}{day.data ? ` · ${t('appt.count', { n: day.data.length })}` : ''}</span>
+          <span className="muted">{heading}{shownDay ? ` · ${t('appt.count', { n: shownDay.length })}` : ''}</span>
         </div>
         <button className="btn btn-primary" onClick={() => setOpen({ kind: 'new' })}>{t('appt.new')}</button>
       </header>
@@ -217,7 +221,7 @@ export function AppointmentsPage() {
       {hours && day.data && (
         <div className="cal-layout">
         <div className="cal-main">
-          {day.data.length === 0 && <p className="muted">{t('appt.emptyDay')}</p>}
+          {shownDay!.length === 0 && <p className="muted">{t('appt.emptyDay')}</p>}
           {view === 'list' ? (
             <div className="table-wrap">
               <table className="table">
@@ -226,7 +230,7 @@ export function AppointmentsPage() {
                   <th>{t('doc.doctor')}</th><th>{t('appt.col.chair')}</th><th>{t('inst.col.status')}</th>
                 </tr></thead>
                 <tbody>
-                  {day.data.map((a) => (
+                  {shownDay!.map((a) => (
                     <tr key={a.id} className="click-row" onClick={() => setOpen({ kind: 'details', appt: a })}>
                       <td className="strong nowrap">{time(a.starts_at)}</td>
                       <td>{a.patientName}{a.alerts && <span className="alert-dot" aria-label={t('patients.alert')} />}</td>
@@ -268,7 +272,12 @@ export function AppointmentsPage() {
                       aria-label={t('appt.bookAt', { time: time(m), chair: c.name })}
                       onClick={() => setOpen({ kind: 'new', time: minutesToTime(m), chairId: c.id })} />
                   ))}
-                  {day.data.filter((a) => a.chair_id === c.id).map((a) => (
+                  {day.data!.filter((a) => a.chair_id === c.id && !isShown(a)).map((a) => (
+                    <div key={a.id} className="cal-appt is-other" style={block(a)} aria-label={t('appt.chairTaken')}>
+                      <span className="cal-appt-sub">{t('appt.chairTaken')} · {time(a.starts_at)}</span>
+                    </div>
+                  ))}
+                  {day.data!.filter((a) => a.chair_id === c.id && isShown(a)).map((a) => (
                     <button key={a.id} type="button"
                       className={`cal-appt appt-${a.status} ${awaiting(a) ? 'is-awaiting' : ''} ${a.status === 'booked' ? 'is-movable' : ''} ${dragging?.id === a.id ? 'is-dragging' : ''}`}
                       style={block(a)}
@@ -297,7 +306,7 @@ export function AppointmentsPage() {
           {view === 'day' && <p className="muted small drag-hint">{t('appt.dragHint')}</p>}
         </div>
         <aside className="cal-aside">
-          <NowCard appts={day.data} doctorName={doctorName} chairs={chairs} onOpen={(a) => setOpen({ kind: 'details', appt: a })} />
+          <NowCard appts={shownDay ?? []} doctorName={doctorName} chairs={chairs} onOpen={(a) => setOpen({ kind: 'details', appt: a })} />
           {(unscheduled.data?.length ?? 0) > 0 && (
             <section className="panel">
               <h2>{t('appt.needsBooking')}</h2>

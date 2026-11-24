@@ -317,6 +317,7 @@ export const ar: Messages = {
   'appt.chair': 'الكرسي',
   'appt.notes': 'ملاحظة',
   'appt.chairOff': 'مقفول',
+  'appt.chairTaken': 'الكرسي محجوز',
   'appt.notesHint': 'مثلًا: أول زيارة، يجيب الأشعة',
   'appt.save': 'حفظ الميعاد',
   'appt.prevDay': 'السابق',

@@ -315,6 +315,7 @@ export const en = {
   'appt.chair': 'Chair',
   'appt.notes': 'Note',
   'appt.chairOff': 'switched off',
+  'appt.chairTaken': 'Chair taken',
   'appt.notesHint': 'For example: first visit, bring X-ray',
   'appt.save': 'Save appointment',
   'appt.prevDay': 'Previous',
