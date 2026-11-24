@@ -5,7 +5,10 @@ export type NewSession = {
   planId: string | null
   notes: string
   isRecallVisit: boolean
+  /** Finished in this visit (whatever the session count). */
   doneItemIds: string[]
+  /** Worked on in this visit: each gets its next session; the last one finishes it. */
+  stepItemIds: string[]
   /** The doctor who performed the visit — not whoever is typing it in. */
   doctorId: string | null
   override?: { reason: string }
@@ -24,6 +27,7 @@ export async function recordSession(s: NewSession) {
     p_done_item_ids: s.doneItemIds,
     p_override_reason: s.override?.reason.trim() || undefined,
     p_doctor_id: s.doctorId ?? undefined,
+    p_step_item_ids: s.stepItemIds,
   })
   if (error) throw error
   return data as string

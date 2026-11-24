@@ -2310,6 +2310,15 @@ export type Database = {
           },
         ]
       }
+      plan_item_steps: {
+        Row: { clinic_id: string; created_at: string; id: string; item_id: string; session_id: string; step: number }
+        Insert: { clinic_id: string; created_at?: string; id?: string; item_id: string; session_id: string; step: number }
+        Update: { clinic_id?: string; created_at?: string; id?: string; item_id?: string; session_id?: string; step?: number }
+        Relationships: [
+          { foreignKeyName: "plan_item_steps_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "treatment_plan_items"; referencedColumns: ["id"] },
+          { foreignKeyName: "plan_item_steps_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "sessions"; referencedColumns: ["id"] },
+        ]
+      }
       procedures: {
         Row: {
           active: boolean
@@ -2320,6 +2329,7 @@ export type Database = {
           default_price: number
           id: string
           name: string
+          sessions_needed: number
         }
         Insert: {
           active?: boolean
@@ -2330,6 +2340,7 @@ export type Database = {
           default_price: number
           id?: string
           name: string
+          sessions_needed?: number
         }
         Update: {
           active?: boolean
@@ -2340,6 +2351,7 @@ export type Database = {
           default_price?: number
           id?: string
           name?: string
+          sessions_needed?: number
         }
         Relationships: [
           {
@@ -2483,6 +2495,7 @@ export type Database = {
           plan_id: string
           price: number
           procedure_id: string | null
+          sessions_needed: number
           status: Database["public"]["Enums"]["plan_item_status"]
           tooth_number: number | null
         }
@@ -2495,6 +2508,7 @@ export type Database = {
           plan_id: string
           price: number
           procedure_id?: string | null
+          sessions_needed?: number
           status?: Database["public"]["Enums"]["plan_item_status"]
           tooth_number?: number | null
         }
@@ -2507,6 +2521,7 @@ export type Database = {
           plan_id?: string
           price?: number
           procedure_id?: string | null
+          sessions_needed?: number
           status?: Database["public"]["Enums"]["plan_item_status"]
           tooth_number?: number | null
         }
@@ -3610,6 +3625,7 @@ export type Database = {
           p_notes: string
           p_override_reason?: string
           p_patient_id: string
+          p_step_item_ids?: string[]
           p_treatment_plan_id?: string
         }
         Returns: string

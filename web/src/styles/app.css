@@ -449,6 +449,11 @@ button.nav-link { width: 100%; border: 0; background: none; font: inherit; text-
 .checklist legend { font-size: var(--step--1); font-weight: 500; color: var(--ink-soft); padding-inline: 4px; }
 .check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
 .check input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--ink); flex: none; }
+.check-steps { flex-wrap: wrap; cursor: default; }
+.check-steps > span { flex: 1 1 200px; }
+.check-steps select { flex: 1 1 100%; margin-inline-start: 28px; max-width: 320px; }
+.item-sessions { display: inline-flex; gap: 6px; align-items: center; margin-top: 4px; }
+.item-sessions select { padding: 2px 6px; min-height: 0; font-size: inherit; width: auto; }
 .lock-note { display: grid; gap: 10px; }
 
 /* ---------- Today ---------- */
@@ -1883,3 +1888,78 @@ button.chip { cursor: pointer; }
 
 /* Another doctor's booking when one doctor's day is shown: the chair is taken, nothing more. */
 .cal-appt.is-other { background: repeating-linear-gradient(135deg, var(--line) 0 6px, transparent 6px 12px); border-style: dashed; color: var(--muted); pointer-events: none; }
+
+/* ---------- Tooth chart (anatomical) ---------- */
+.tooth-split { grid-template-columns: minmax(0, 1fr); }
+.tooth-chart3 { display: grid; gap: 8px; }
+.tooth-scroll { overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.tooth-row3 { display: grid; grid-template-columns: repeat(16, minmax(44px, 1fr)); min-width: 720px; align-items: end; }
+.tooth-row3 + .jaw-line + .tooth-row3 { align-items: start; }
+.tooth3 { display: grid; justify-items: center; gap: 4px; border: 0; background: none; padding: 6px 0; border-radius: 12px; cursor: pointer; font: inherit; color: var(--ink-soft); }
+.tooth3:hover { background: #faf7f2; }
+.tooth3.is-selected { background: #f1ede6; }
+.tooth3 .tf-side { width: 100%; max-width: 60px; height: 150px; overflow: visible; }
+.tooth3 .tf-top { width: 100%; max-width: 60px; height: 50px; }
+.jaw-line { display: flex; align-items: center; gap: 12px; min-width: 720px; margin: 6px 0; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.jaw-line i { flex: 1; height: 1px; background: var(--line2); }
+.tooth-chart3 .tooth-side { font-size: 12px; }
+
+.tf path, .tf circle { vector-effect: non-scaling-stroke; }
+.tf-body { fill: #f3e7cf; stroke: #cdb68a; stroke-width: 1; }
+.tf-crown, .tf-occ { fill: #fffaf1; stroke: #cdb68a; stroke-width: 1; }
+.tf-pulp { fill: none; stroke: #e3d0aa; stroke-width: .9; }
+.tf-canal { fill: none; stroke: #e3d0aa; stroke-width: 1.2; stroke-linecap: round; }
+.tf-fissure { fill: none; stroke: #e2d2b2; stroke-width: .9; }
+.tf-gum { fill: none; stroke: #f4c7ce; stroke-width: 1.6; opacity: .85; }
+.tf-implant { fill: #d9dde3; stroke: #8b94a1; stroke-width: 1; }
+.tf-thread { fill: none; stroke: #8b94a1; stroke-width: 1; }
+.tf-mark { stroke: none; }
+
+.tf.st-done .tf-body { fill: #cfe8d3; stroke: #6fae7c; }
+.tf.st-done .tf-crown, .tf.st-done .tf-occ { fill: #ddf0e0; stroke: #6fae7c; }
+.tf.st-done .tf-pulp, .tf.st-done .tf-canal { stroke: #9fcca8; }
+.tf.st-progress .tf-body { fill: #d3dde8; stroke: #8199b1; }
+.tf.st-progress .tf-crown, .tf.st-progress .tf-occ { fill: #e3eaf2; stroke: #8199b1; }
+.tf.st-progress .tf-pulp, .tf.st-progress .tf-canal { stroke: #a9bccd; }
+.tf.st-planned .tf-body { fill: #f7cbbf; stroke: #e0806c; }
+.tf.st-planned .tf-crown, .tf.st-planned .tf-occ { fill: #fde1da; stroke: #e0806c; }
+.tf.st-planned .tf-pulp, .tf.st-planned .tf-canal { stroke: #eba697; }
+.tf.st-existing .tf-body { fill: #cdc7bd; stroke: #857d70; }
+.tf.st-existing .tf-crown, .tf.st-existing .tf-occ { fill: #e2ded8; stroke: #857d70; }
+.tf.st-existing .tf-pulp, .tf.st-existing .tf-canal { stroke: #a9a296; }
+
+/* What was (or will be) done, in the status colour. */
+.tf.st-done .tf-mark { fill: #16a34a; }
+.tf.st-progress .tf-mark { fill: #3b82c4; }
+.tf.st-planned .tf-mark { fill: #ef4444; }
+.tf.st-existing .tf-mark { fill: #4b5563; }
+.tf.k-root_canal .tf-canal { stroke-width: 2.4; }
+.tf.st-done.k-root_canal .tf-canal { stroke: #16a34a; }
+.tf.st-progress.k-root_canal .tf-canal { stroke: #3b82c4; }
+.tf.st-planned.k-root_canal .tf-canal { stroke: #ef4444; }
+.tf.st-existing.k-root_canal .tf-canal { stroke: #4b5563; }
+.tf.st-done.k-crown .tf-crown { fill: #a9d8b2; }
+.tf.st-progress.k-crown .tf-crown { fill: #b9cbdd; }
+.tf.st-planned.k-crown .tf-crown { fill: #f8b5a6; }
+.tf.st-existing.k-crown .tf-crown { fill: #bdb6aa; }
+.tf.k-missing .tf-body, .tf.k-missing .tf-crown, .tf.k-missing .tf-occ { fill: none; stroke-dasharray: 3 3; }
+.tf.k-missing { opacity: .5; }
+.tf.k-missing .tf-pulp, .tf.k-missing .tf-canal, .tf.k-missing .tf-fissure { display: none; }
+
+.tf-n { min-width: 30px; padding: 3px 6px; border-radius: 7px; font-size: 13px; font-weight: 700; color: var(--ink-soft); text-align: center; line-height: 1.3; }
+.tf-n.st-done { background: #16a34a; color: #fff; }
+.tf-n.st-progress { background: #3b82c4; color: #fff; }
+.tf-n.st-planned { background: #ef4444; color: #fff; }
+.tf-n.st-existing { background: #4b5563; color: #fff; }
+.tooth3.is-selected .tf-n.st-healthy { color: var(--ink); }
+
+.tooth-legend3 { justify-content: center; margin-top: 10px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.dot.st-done { background: #16a34a; }
+.dot.st-progress { background: #3b82c4; }
+.dot.st-planned { background: #ef4444; }
+.dot.st-existing { background: #4b5563; }
+.badge.tb3.st-done { background: #dcf3e2; color: #15803d; }
+.badge.tb3.st-progress { background: #e0ebf6; color: #2f6ea8; }
+.badge.tb3.st-planned { background: var(--danger-soft); color: var(--danger); }
+.badge.tb3.st-existing { background: var(--grey-soft); color: var(--ink); }

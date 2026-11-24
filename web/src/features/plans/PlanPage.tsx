@@ -16,7 +16,7 @@ import { Icon } from '../../components/Icon'
 import { AddItemsForm } from './AddItemsForm'
 import { DictatePlanDialog } from '../dictation/DictatePlanDialog'
 import { InstallmentSetupDialog } from './InstallmentSetupDialog'
-import { cancelInstallmentPlan, cancelItem, cancelPlan, deletePlan, getPlan, setDiscount, setStatus, type PlanItem, type PlanStatus } from './api'
+import { cancelInstallmentPlan, cancelItem, cancelPlan, deletePlan, getPlan, setDiscount, setItemSessions, setStatus, type PlanItem, type PlanStatus } from './api'
 
 type Dialog = 'installments' | 'revise' | 'decline' | 'cancelInstallments' | 'cancelPlan' | 'session' | 'pay' | 'dictate' | null
 
@@ -87,6 +87,7 @@ function PlanView() {
     onSuccess: () => { setDialog(null); setReason(''); refresh() },
   })
   const removeItem = useMutation({ mutationFn: cancelItem, onSuccess: refresh })
+  const itemSessions = useMutation({ mutationFn: (a: { id: string; n: number }) => setItemSessions(a.id, a.n), onSuccess: refresh })
   const discount = useMutation({
     mutationFn: (a: { value: number; payer?: { id: string; percent: number } | null }) => setDiscount(planId, a.value, a.payer),
     onSuccess: refresh,
@@ -134,15 +135,31 @@ function PlanView() {
   const stepIndex = st === 'completed' ? 4 : st === 'active' ? 3 : st === 'presented' ? 1 : st === 'draft' ? 0 : -1
   const lab = new Map((extra.data?.labs ?? []).filter((l) => !l.cancelled_at).map((l) => [l.plan_item_id, l]))
   const sessionNo = new Map([...sessions].sort((a, b) => a.performed_at.localeCompare(b.performed_at)).map((x, i) => [x.id, i + 1]))
-  // What each session finished, grouped the way it is said: "حشو تجميلي 16 و46".
-  const doneIn = new Map<string, string[]>()
-  for (const sid of new Set(live.map((i) => i.done_in_session_id).filter((x): x is string => !!x))) {
-    const groups = new Map<string, number[]>()
-    for (const i of live.filter((x) => x.done_in_session_id === sid)) {
-      const name = (i.procedure_id && procName.get(i.procedure_id)) || i.description || ''
-      groups.set(name, [...(groups.get(name) ?? []), ...(i.tooth_number ? [i.tooth_number] : [])])
+  // What each session worked on, grouped the way it is said: "حشو تجميلي 16 و46",
+  // with "الجلسة 2 من 3" on work that takes several visits.
+  const stepsOf = (i: PlanItem) => i.plan_item_steps ?? []
+  const doneIn = new Map<string, { text: string; staged: boolean }[]>()
+  {
+    const bySession = new Map<string, Map<string, { name: string; tag: string; teeth: number[] }>>()
+    for (const i of live) {
+      const steps = stepsOf(i).length ? stepsOf(i)
+        : i.done_in_session_id ? [{ session_id: i.done_in_session_id, step: 1 }] : []
+      for (const s of steps) {
+        const name = (i.procedure_id && procName.get(i.procedure_id)) || i.description || ''
+        const tag = i.sessions_needed > 1 ? t('plan.stepOf', { n: s.step, of: i.sessions_needed }) : ''
+        const groups = bySession.get(s.session_id) ?? new Map()
+        const g = groups.get(`${name}|${tag}`) ?? { name, tag, teeth: [] }
+        if (i.tooth_number) g.teeth.push(i.tooth_number)
+        groups.set(`${name}|${tag}`, g)
+        bySession.set(s.session_id, groups)
+      }
     }
-    doneIn.set(sid, [...groups].map(([name, teeth]) => teeth.length ? `${name} ${teeth.join(' و')}` : name))
+    for (const [sid, groups] of bySession) {
+      doneIn.set(sid, [...groups.values()].map((g) => ({
+        text: [g.teeth.length ? `${g.name} ${g.teeth.join(' و')}` : g.name, g.tag && `(${g.tag})`].filter(Boolean).join(' '),
+        staged: !!g.tag,
+      })))
+    }
   }
   const sessionsNewest = [...sessions].sort((a, b) => b.performed_at.localeCompare(a.performed_at))
   const schedule = extra.data?.schedule ?? []
@@ -261,17 +278,30 @@ function PlanView() {
                                 {[i.procedure_id ? i.description : null, l?.shade ? t('plan.shade', { s: l.shade }) : null, l?.lab_name].filter(Boolean).join(' · ')}
                               </div>
                             )}
+                            {i.status === 'planned' && editable && isDoctor ? (
+                              <label className="item-sessions muted small">
+                                {t('plan.sessionsLabel')}
+                                <select value={i.sessions_needed} disabled={itemSessions.isPending}
+                                  onChange={(e) => itemSessions.mutate({ id: i.id, n: Number(e.target.value) })}>
+                                  {Array.from({ length: Math.max(10, i.sessions_needed) }, (_, k) => k + 1)
+                                    .filter((n) => n >= Math.max(1, stepsOf(i).length))
+                                    .map((n) => <option key={n} value={n}>{n}</option>)}
+                                </select>
+                              </label>
+                            ) : i.sessions_needed > 1 && (
+                              <div className="muted small">{t('plan.sessionsCount', { n: i.sessions_needed })}</div>
+                            )}
                           </td>
                           <td className="nowrap">{money(i.price)}</td>
                           <td>
                             {i.status === 'done' ? <span className="badge badge-neutral">{t('plan.itemDone')}</span>
                               : atLab ? <span className="badge badge-info">{t('patient.st.lab')}</span>
-                              : st === 'active' && sessions.length > 0 ? <span className="badge badge-info">{t('plan.itemOngoing')}</span>
+                              : stepsOf(i).length > 0 ? <span className="badge badge-info">{t('plan.stepsDone', { n: stepsOf(i).length, of: i.sessions_needed })}</span>
                               : <span className="badge badge-muted">{t('plan.itemPlanned')}</span>}
                           </td>
                           {editable && (
                             <td className="num">
-                              {i.status === 'planned' && (
+                              {i.status === 'planned' && stepsOf(i).length === 0 && (
                                 <button className="link-btn danger-link row-hover-action" disabled={removeItem.isPending}
                                   onClick={() => removeItem.mutate(i.id)}>{t('plan.remove')}</button>
                               )}
@@ -285,6 +315,7 @@ function PlanView() {
               </div>
             )}
             {removeItem.isError && <ErrorNote error={removeItem.error} />}
+            {itemSessions.isError && <ErrorNote error={itemSessions.error} />}
 
             {editable && !adding && (
               <button className="add-dashed" onClick={() => setAdding(true)}>+ {t('plan.addItem')}</button>
@@ -346,14 +377,17 @@ function PlanView() {
             {sessions.length === 0 && !plan.accepted_at && <p className="muted">{t('plan.noSessions')}</p>}
             <ul className="tooth-log">
               {sessionsNewest.map((x) => {
-                const groups = doneIn.get(x.id) ?? []
-                const what = groups.length === 1 ? groups[0] : ''
+                const entries = doneIn.get(x.id) ?? []
+                const groups = entries.map((e) => e.text)
+                const staged = entries.some((e) => e.staged)
+                const what = groups.length === 1 && !staged ? groups[0] : ''
                 const doc = staffNames.get((x as { doctor_id?: string | null }).doctor_id ?? (x as { performed_by?: string | null }).performed_by ?? '')
                 return (
                   <li key={x.id}>
                     <span className="muted small nowrap">{day(x.performed_at)}</span>
                     <div>
                       <strong>{what ? t('plan.sessionWhat', { what, n: sessionNo.get(x.id) ?? 1 })
+                        : staged ? groups.join(' · ')
                         : [t('plan.sessionN', { n: sessionNo.get(x.id) ?? 1 }), ...groups].join(' · ')}</strong>
                       <p className="muted small">{[x.notes, doc].filter(Boolean).join(' · ')}</p>
                       {x.lock_override && <p className="warn-text small">{t('plan.overridden')}{x.override_reason ? ` · ${x.override_reason}` : ''}</p>}
@@ -475,7 +509,7 @@ function PlanView() {
       )}
       {dialog === 'session' && (
         <SessionDialog patientId={plan.patient_id}
-          plan={{ id: planId, title: plan.title, openItems: openItems.map((i) => ({ id: i.id, label: itemLabel(i) })) }}
+          plan={{ id: planId, title: plan.title, openItems: openItems.map((i) => ({ id: i.id, label: itemLabel(i), sessionsNeeded: i.sessions_needed, stepsDone: stepsOf(i).length })) }}
           onClose={() => setDialog(null)} />
       )}
       {dialog === 'pay' && (

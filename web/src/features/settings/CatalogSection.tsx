@@ -7,7 +7,7 @@ import { saveChair, saveProcedure } from './api'
 
 type Procedure = {
   id?: string; name: string; default_price: number; default_duration_min: number
-  active: boolean; bookable_online?: boolean
+  active: boolean; bookable_online?: boolean; sessions_needed?: number
 }
 type Chair = { id?: string; name: string; active: boolean }
 
@@ -24,7 +24,7 @@ function ProcedureRow({ initial, isNew, onDone }: { initial: Procedure; isNew?: 
   const invalidate = useInvalidate()
   const [p, setP] = useState(initial)
   const dirty = JSON.stringify(p) !== JSON.stringify(initial)
-  const valid = p.name.trim().length > 0 && p.default_price >= 0 && p.default_duration_min > 0
+  const valid = p.name.trim().length > 0 && p.default_price >= 0 && p.default_duration_min > 0 && (p.sessions_needed ?? 1) >= 1 && (p.sessions_needed ?? 1) <= 20
 
   const save = useMutation({
     mutationFn: () => saveProcedure(clinicId, p),
@@ -40,6 +40,8 @@ function ProcedureRow({ initial, isNew, onDone }: { initial: Procedure; isNew?: 
           onChange={(e) => setP({ ...p, default_price: Number(e.target.value) })} aria-label={t('plan.col.price')} /></td>
         <td><input className="cell-input num-input" type="number" min={5} step={5} dir="ltr" value={p.default_duration_min}
           onChange={(e) => setP({ ...p, default_duration_min: Number(e.target.value) })} aria-label={t('appt.duration')} /></td>
+        <td><input className="cell-input num-input" type="number" min={1} max={20} step={1} dir="ltr" value={p.sessions_needed ?? 1}
+          onChange={(e) => setP({ ...p, sessions_needed: Number(e.target.value) })} aria-label={t('settings.sessionsNeeded')} /></td>
         <td>
           <label className="check">
             <input type="checkbox" checked={p.active} onChange={(e) => setP({ ...p, active: e.target.checked })} />
@@ -61,7 +63,7 @@ function ProcedureRow({ initial, isNew, onDone }: { initial: Procedure; isNew?: 
           )}
         </td>
       </tr>
-      {save.isError && <tr><td colSpan={6}><ErrorNote error={save.error} /></td></tr>}
+      {save.isError && <tr><td colSpan={7}><ErrorNote error={save.error} /></td></tr>}
     </>
   )
 }
@@ -80,15 +82,16 @@ export function ProceduresSection({ procedures }: { procedures: Required<Procedu
               <th>{t('plan.procedure')}</th>
               <th>{t('settings.price')}</th>
               <th>{t('settings.durationMin')}</th>
+              <th>{t('settings.sessionsNeeded')}</th>
               <th>{t('plan.col.status')}</th>
               <th>{t('book.bookable')}</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {procedures.map((p) => <ProcedureRow key={`${p.id}-${p.default_price}-${p.name}-${p.active}-${p.default_duration_min}-${p.bookable_online}`} initial={p} />)}
+            {procedures.map((p) => <ProcedureRow key={`${p.id}-${p.default_price}-${p.name}-${p.active}-${p.default_duration_min}-${p.bookable_online}-${p.sessions_needed}`} initial={p} />)}
             <ProcedureRow key={`new-${newKey}`} isNew
-              initial={{ name: '', default_price: 0, default_duration_min: 30, active: true, bookable_online: false }}
+              initial={{ name: '', default_price: 0, default_duration_min: 30, active: true, bookable_online: false, sessions_needed: 1 }}
               onDone={() => setNewKey((k) => k + 1)} />
           </tbody>
         </table>

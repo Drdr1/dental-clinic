@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabase'
 import type { Tables } from '../../types/database'
 
-export type PlanItem = Tables<'treatment_plan_items'>
+export type PlanItem = Tables<'treatment_plan_items'> & { plan_item_steps?: { session_id: string; step: number }[] }
 export type Procedure = Pick<Tables<'procedures'>, 'id' | 'name' | 'default_price'>
 export type PlanStatus = 'draft' | 'presented' | 'declined' | 'active' | 'completed' | 'cancelled'
 
@@ -13,7 +13,7 @@ export async function getPlan(planId: string) {
   if (!plan) return null
 
   const [items, patient, summary, procedures, sessions, payments, staff] = await Promise.all([
-    supabase.from('treatment_plan_items').select('*').eq('plan_id', planId).order('created_at'),
+    supabase.from('treatment_plan_items').select('*, plan_item_steps(session_id, step)').eq('plan_id', planId).order('created_at'),
     supabase.from('patients').select('id, full_name, phone, whatsapp_phone, medical_alerts, payer_id, payers(id, name, discount_percent)')
       .eq('id', plan.patient_id).single(),
     supabase.from('installment_plan_summary').select('*').eq('treatment_plan_id', planId).eq('status', 'active').maybeSingle(),
@@ -39,6 +39,13 @@ export async function getPlan(planId: string) {
     planPayments: payments.data ?? [],
     staffNames: new Map((staff.data ?? []).map((m) => [m.user_id, m.display_name])),
   }
+}
+
+/** How many visits an item still open on the plan takes. */
+export async function setItemSessions(itemId: string, n: number) {
+  const { error } = await supabase.from('treatment_plan_items')
+    .update({ sessions_needed: Math.min(20, Math.max(1, Math.round(n))) }).eq('id', itemId)
+  if (error) throw error
 }
 
 export async function createPlan(clinicId: string, patientId: string, title: string) {

@@ -12,7 +12,9 @@ import { DictateBox } from '../dictation/DictateBox'
 import { draftSession } from '../dictation/api'
 import { Icon } from '../../components/Icon'
 
-export type OpenItem = { id: string; label: string }
+/** An item still to do; work that takes several visits says how far it has got. */
+export type OpenItem = { id: string; label: string; sessionsNeeded?: number; stepsDone?: number }
+type Work = 'step' | 'done'
 
 type Props = {
   /** Open with the voice box already showing (the patient file's 'تسجيل بالصوت'). */
@@ -28,12 +30,12 @@ type PlanChoice = { id: string; title: string; openItems: OpenItem[] }
 async function openPlans(patientId: string, toothLabel: (n: number) => string): Promise<PlanChoice[]> {
   const { data, error } = await supabase
     .from('treatment_plans')
-    .select('id, title, status, accepted_at, treatment_plan_items(id, status, tooth_number, description, procedures(name))')
+    .select('id, title, status, accepted_at, treatment_plan_items(id, status, tooth_number, description, sessions_needed, procedures(name), plan_item_steps(step))')
     .eq('patient_id', patientId)
     .in('status', ['active', 'presented'])
     .order('accepted_at', { ascending: false, nullsFirst: false })
   if (error) throw error
-  type Row = { id: string; title: string; status: string; treatment_plan_items: { id: string; status: string; tooth_number: number | null; description: string | null; procedures: { name: string } | null }[] }
+  type Row = { id: string; title: string; status: string; treatment_plan_items: { id: string; status: string; tooth_number: number | null; description: string | null; sessions_needed: number; procedures: { name: string } | null; plan_item_steps: { step: number }[] | null }[] }
   return ((data ?? []) as unknown as Row[])
     // Plans under way first, then ones only proposed.
     .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
@@ -43,6 +45,8 @@ async function openPlans(patientId: string, toothLabel: (n: number) => string): 
       openItems: p.treatment_plan_items.filter((i) => i.status === 'planned').map((i) => ({
         id: i.id,
         label: [i.procedures?.name, i.description, i.tooth_number ? toothLabel(i.tooth_number) : null].filter(Boolean).join(' — '),
+        sessionsNeeded: i.sessions_needed,
+        stepsDone: i.plan_item_steps?.length ?? 0,
       })),
     }))
     .filter((p) => p.openItems.length > 0)
@@ -53,7 +57,8 @@ export function SessionDialog({ patientId, plan: givenPlan, onClose, dictate = f
   const { clinicId, userId, role } = useMember()
   const { t } = useI18n()
   const queryClient = useQueryClient()
-  const [done, setDone] = useState<Set<string>>(new Set())
+  // What this visit did to each open item: one more session, or finished it.
+  const [work, setWork] = useState<Map<string, Work>>(new Map())
   const [notes, setNotes] = useState('')
   // From the patient file no plan is given: offer the plans that still have
   // work, the one under way picked first, so done items get ticked off.
@@ -80,7 +85,10 @@ export function SessionDialog({ patientId, plan: givenPlan, onClose, dictate = f
   const understand = useMutation({
     mutationFn: () => draftSession(clinicId, spoken, plan?.openItems ?? []),
     onSuccess: (d) => {
-      if (d.doneItemIds.length) setDone(new Set(d.doneItemIds))
+      if (d.doneItemIds.length) {
+        const multi = new Set((plan?.openItems ?? []).filter((i) => (i.sessionsNeeded ?? 1) > 1).map((i) => i.id))
+        setWork(new Map(d.doneItemIds.map((id) => [id, multi.has(id) ? 'step' : 'done'] as [string, Work])))
+      }
       const parts = [d.note.trim(), d.next.trim() && `${t('dict.next')}: ${d.next.trim()}`].filter(Boolean)
       if (parts.length) setNotes((n) => [n.trim(), ...parts].filter(Boolean).join('\n'))
       setFilled(true)
@@ -102,7 +110,8 @@ export function SessionDialog({ patientId, plan: givenPlan, onClose, dictate = f
         planId: plan?.id ?? null,
         notes,
         isRecallVisit: isRecall,
-        doneItemIds: [...done],
+        doneItemIds: [...work].filter(([, w]) => w === 'done').map(([id]) => id),
+        stepItemIds: [...work].filter(([, w]) => w === 'step').map(([id]) => id),
         doctorId: doctorId || null,
         override: locked ? { reason: overrideReason } : undefined,
       }),
@@ -121,11 +130,11 @@ export function SessionDialog({ patientId, plan: givenPlan, onClose, dictate = f
     },
   })
 
-  function toggle(id: string) {
-    setDone((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+  function setItem(id: string, w: Work | null) {
+    setWork((prev) => {
+      const next = new Map(prev)
+      if (w) next.set(id, w)
+      else next.delete(id)
       return next
     })
   }
@@ -163,7 +172,7 @@ export function SessionDialog({ patientId, plan: givenPlan, onClose, dictate = f
         {!givenPlan && (plans.data?.length ?? 0) > 0 && (
           <label className="field">
             <span>{t('session.plan')}</span>
-            <select value={plan?.id ?? ''} onChange={(e) => { setPickedPlanId(e.target.value); setDone(new Set()) }}>
+            <select value={plan?.id ?? ''} onChange={(e) => { setPickedPlanId(e.target.value); setWork(new Map()) }}>
               {plans.data!.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
               <option value="">{t('session.noPlan')}</option>
             </select>
@@ -172,12 +181,37 @@ export function SessionDialog({ patientId, plan: givenPlan, onClose, dictate = f
         {plan && plan.openItems.length > 0 && (
           <fieldset className="checklist">
             <legend>{t('session.whatWasDone')}</legend>
-            {plan.openItems.map((item) => (
-              <label key={item.id} className="check">
-                <input type="checkbox" checked={done.has(item.id)} onChange={() => toggle(item.id)} />
-                <span>{item.label}</span>
-              </label>
-            ))}
+            {plan.openItems.map((item) => {
+              const total = item.sessionsNeeded ?? 1
+              if (total <= 1) {
+                return (
+                  <label key={item.id} className="check">
+                    <input type="checkbox" checked={work.has(item.id)} onChange={(e) => setItem(item.id, e.target.checked ? 'done' : null)} />
+                    <span>{item.label}</span>
+                  </label>
+                )
+              }
+              // Work over several visits: this visit is the next session, or it finished early.
+              const next = (item.stepsDone ?? 0) + 1
+              const last = next >= total
+              return (
+                <div key={item.id} className="check check-steps">
+                  <input type="checkbox" checked={work.has(item.id)} aria-label={item.label}
+                    onChange={(e) => setItem(item.id, e.target.checked ? 'step' : null)} />
+                  <span>
+                    {item.label}
+                    <small className="muted"> · {t('session.stepProgress', { n: item.stepsDone ?? 0, of: total })}</small>
+                  </span>
+                  {work.has(item.id) && (
+                    <select value={work.get(item.id)} onChange={(e) => setItem(item.id, e.target.value as Work)}
+                      aria-label={t('session.stepPick')}>
+                      <option value="step">{last ? t('session.stepLast', { n: next, of: total }) : t('session.stepN', { n: next, of: total })}</option>
+                      {!last && <option value="done">{t('session.stepFinish')}</option>}
+                    </select>
+                  )}
+                </div>
+              )
+            })}
           </fieldset>
         )}
 

@@ -5,11 +5,17 @@ import { supabase } from '../../lib/supabase'
 import { useI18n } from '../../i18n'
 import { ErrorNote } from '../../components/ErrorNote'
 import { Skeleton } from '../../components/Skeleton'
+import { ToothSide, ToothTop, type ToothKind, type ToothStatus } from '../../components/ToothFigure'
 
 const UPPER = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28]
 const LOWER = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38]
 
-type ToothEntry = { tooth: number; label: string; procedure: string; status: 'done' | 'planned'; at: string | null; planId: string; planTitle: string; planStatus: string }
+type ToothEntry = {
+  tooth: number; label: string; procedure: string; status: 'done' | 'planned'; at: string | null
+  planId: string; planTitle: string; planStatus: string
+  /** Work over several visits: how many it takes and which session each visit was. */
+  sessionsNeeded: number; steps: { sessionId: string; step: number }[]
+}
 
 /** What the chart paints a tooth as. Read from the procedures done on it, so nothing extra has to be recorded. */
 export type ToothCondition = 'healthy' | 'needs' | 'filling' | 'root_canal' | 'crown' | 'implant' | 'missing'
@@ -26,15 +32,31 @@ const RANK: ToothCondition[] = ['implant', 'missing', 'crown', 'root_canal', 'fi
 // draft the doctor is still writing, nor a plan that was turned down or closed.
 const OPEN_PLAN = new Set(['presented', 'active'])
 
-function conditionOf(list: ToothEntry[] | undefined): ToothCondition {
-  if (!list?.length) return 'healthy'
+// Finished work stays green for a month; after that it is simply what the
+// mouth has (قائم).
+const RECENT_MS = 30 * 24 * 3600 * 1000
+
+function kindOf(list: ToothEntry[]): Exclude<ToothCondition, 'healthy' | 'needs'> | null {
+  const kinds = list.map((e) => KIND.find(([, re]) => re.test(e.procedure))?.[0]).filter((k): k is ToothCondition => !!k)
+  return (RANK.find((k) => kinds.includes(k)) ?? null) as Exclude<ToothCondition, 'healthy' | 'needs'> | null
+}
+
+/** Where the tooth stands (the colour) and what was or will be done (the mark). */
+function toothState(list: ToothEntry[] | undefined, now: number): { status: ToothStatus; kind: ToothKind; cond: ToothCondition } {
+  if (!list?.length) return { status: 'healthy', kind: 'none', cond: 'healthy' }
+  const open = list.filter((e) => e.status === 'planned' && OPEN_PLAN.has(e.planStatus))
+  const started = open.filter((e) => e.steps.length > 0)
+  const done = list.filter((e) => e.status === 'done')
   // Anything still to do on the tooth comes first: that is what the doctor needs to see.
-  if (list.some((e) => e.status === 'planned' && OPEN_PLAN.has(e.planStatus))) return 'needs'
-  const kinds = list.filter((e) => e.status === 'done')
-    .map((e) => KIND.find(([, re]) => re.test(e.procedure))?.[0])
-    .filter((k): k is ToothCondition => !!k)
+  if (open.length) {
+    const k = kindOf(started.length ? started : open)
+    return { status: started.length ? 'progress' : 'planned', kind: k ?? 'none', cond: 'needs' }
+  }
+  const k = kindOf(done)
   // Done work that leaves no mark (a cleaning, say) keeps the tooth healthy.
-  return RANK.find((k) => kinds.includes(k)) ?? 'healthy'
+  if (!done.length || !k) return { status: 'healthy', kind: 'none', cond: 'healthy' }
+  const recent = done.some((e) => e.at && now - new Date(e.at).getTime() < RECENT_MS)
+  return { status: recent ? 'done' : 'existing', kind: k, cond: k }
 }
 
 type ToothSession = { id: string; at: string; planId: string | null; doctor: string; notes: string }
@@ -52,7 +74,7 @@ async function getToothHistory(patientId: string): Promise<ToothData> {
   const clinicId = plans[0]?.clinic_id
   const [items, procedures, staff] = await Promise.all([
     plans.length
-      ? supabase.from('treatment_plan_items').select('plan_id, procedure_id, tooth_number, description, status, done_in_session_id')
+      ? supabase.from('treatment_plan_items').select('plan_id, procedure_id, tooth_number, description, status, done_in_session_id, sessions_needed, plan_item_steps(session_id, step)')
         .in('plan_id', plans.map((p) => p.id)).not('tooth_number', 'is', null).neq('status', 'cancelled')
       : Promise.resolve({ data: [], error: null }),
     supabase.from('procedures').select('id, name'),
@@ -76,6 +98,8 @@ async function getToothHistory(patientId: string): Promise<ToothData> {
       planId: i.plan_id,
       planTitle: titles.get(i.plan_id) ?? '',
       planStatus: statuses.get(i.plan_id) ?? '',
+      sessionsNeeded: i.sessions_needed ?? 1,
+      steps: (i.plan_item_steps ?? []).map((x) => ({ sessionId: x.session_id, step: x.step })),
     })),
     sessions: (sessions.data ?? []).map((s) => ({
       id: s.id, at: s.performed_at, planId: s.treatment_plan_id,
@@ -84,9 +108,6 @@ async function getToothHistory(patientId: string): Promise<ToothData> {
     })),
   }
 }
-
-// The design's tooth: one outline, flipped for the lower jaw.
-const TOOTH_PATH = 'M6 22 Q6 4 14 3 Q22 4 22 22 Q26 24 25 31 Q24 38 14 38 Q4 38 3 31 Q2 24 6 22 Z'
 
 /** Chart and per-tooth history side by side, like the paper chart: tap a tooth to see what was done on it. */
 export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; onAddForTooth?: (tooth: number) => void }) {
@@ -106,24 +127,32 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
   const planIds = new Set(toothItems.map((e) => e.planId))
   const visits = (q.data?.sessions ?? []).filter((s) => s.planId && planIds.has(s.planId)).map((s) => {
     const inPlan = (q.data?.sessions ?? []).filter((x) => x.planId === s.planId)
+    // Work over several visits says its own session: "تاج زيركون، الجلسة 2 من 3".
+    const staged = toothItems.filter((e) => e.sessionsNeeded > 1)
+      .map((e) => ({ e, step: e.steps.find((x) => x.sessionId === s.id)?.step }))
+      .filter((x) => x.step)
+    if (staged.length) {
+      return { ...s, title: staged.map(({ e, step }) => t('tooth.stepOf', { what: e.label, n: step!, of: e.sessionsNeeded })).join(' · ') }
+    }
     const what = [...new Set(toothItems.filter((e) => e.planId === s.planId).map((e) => e.label))].join('، ')
     return { ...s, title: inPlan.length > 1 ? t('tooth.sessionN', { what, n: inPlan.indexOf(s) + 1 }) : what }
   }).reverse()
   const planned = toothItems.filter((e) => e.status === 'planned' && OPEN_PLAN.has(e.planStatus))
-  const cond = (n: number) => conditionOf(byTooth.get(n))
+  const [now] = useState(() => Date.now())
+  const state = (n: number) => toothState(byTooth.get(n), now)
 
-  const tooth = (n: number, upper: boolean) => (
-    <button key={n} type="button" className={`tooth2 c-${cond(n)} ${selected === n ? 'is-selected' : ''}`}
-      aria-pressed={selected === n} aria-label={`${t('plan.tooth', { n })}: ${t(`tooth.c.${cond(n)}`)}`}
-      onClick={() => setPicked(n)}>
-      {!upper && <span className="tooth2-n">{n}</span>}
-      <svg viewBox="0 0 28 40" aria-hidden="true">
-        <rect x="0" y="0" width="28" height="40" rx="6" className="tooth2-bg" />
-        <path d={TOOTH_PATH} transform={upper ? undefined : 'translate(0 40) scale(1 -1)'} />
-      </svg>
-      {upper && <span className="tooth2-n">{n}</span>}
-    </button>
-  )
+  const tooth = (n: number, upper: boolean) => {
+    const st = state(n)
+    const label = `${t('plan.tooth', { n })}: ${t(`tooth.st.${st.status}`)}${st.kind !== 'none' ? ` · ${t(`tooth.c.${st.kind}`)}` : ''}`
+    const num = <span className={`tf-n st-${st.status}`}>{n}</span>
+    return (
+      <button key={n} type="button" className={`tooth3 ${upper ? 'is-upper' : 'is-lower'} ${selected === n ? 'is-selected' : ''}`}
+        aria-pressed={selected === n} aria-label={label} title={label} onClick={() => setPicked(n)}>
+        {upper ? <><ToothSide n={n} status={st.status} kind={st.kind} /><ToothTop n={n} status={st.status} kind={st.kind} />{num}</>
+          : <>{num}<ToothTop n={n} status={st.status} kind={st.kind} /><ToothSide n={n} status={st.status} kind={st.kind} /></>}
+      </button>
+    )
+  }
 
   return (
     <div className="tooth-split">
@@ -135,15 +164,18 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
         {q.isPending && <Skeleton rows={2} />}
         {q.isError && <ErrorNote error={q.error} onRetry={() => q.refetch()} />}
         {q.data && (
-          <div className="tooth-chart2" dir="ltr">
-            <div className="tooth-side"><span>{t('chart.right')}</span><span>{t('chart.left')}</span></div>
-            <div className="tooth-row2">{UPPER.map((n) => tooth(n, true))}</div>
-            <div className="tooth-row2 is-lower">{LOWER.map((n) => tooth(n, false))}</div>
+          <div className="tooth-chart3">
+            <div className="tooth-scroll">
+              <div className="tooth-row3" dir="ltr">{UPPER.map((n) => tooth(n, true))}</div>
+              <div className="jaw-line"><span>{t('tooth.upperJaw')}</span><i /><span>{t('tooth.lowerJaw')}</span></div>
+              <div className="tooth-row3" dir="ltr">{LOWER.map((n) => tooth(n, false))}</div>
+            </div>
+            <div className="tooth-side" dir="ltr"><span>{t('chart.right')}</span><span>{t('chart.left')}</span></div>
           </div>
         )}
-        <div className="tooth-legend">
-          {(['healthy', 'needs', 'filling', 'root_canal', 'crown', 'implant', 'missing'] as const).map((c) => (
-            <span key={c}><i className={`swatch c-${c}`} />{t(`tooth.c.${c}`)}</span>
+        <div className="tooth-legend tooth-legend3">
+          {(['done', 'progress', 'planned', 'existing'] as const).map((c) => (
+            <span key={c}><i className={`dot st-${c}`} />{t(`tooth.st.${c}`)}</span>
           ))}
         </div>
       </section>
@@ -151,7 +183,15 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
       <section className="panel">
         <div className="panel-head">
           <h2>{selected ? t('tooth.toothN', { n: selected }) : t('tooth.allWork')}</h2>
-          {selected && cond(selected) !== 'healthy' && <span className={`badge tb-${cond(selected)}`}>{t(`tooth.c.${cond(selected)}`)}</span>}
+          {selected && (() => {
+            const sel = state(selected)
+            if (sel.status === 'healthy') return null
+            return (
+              <span className={`badge tb3 st-${sel.status}`}>
+                {[t(`tooth.st.${sel.status}`), sel.kind !== 'none' ? t(`tooth.c.${sel.kind}`) : null].filter(Boolean).join(' · ')}
+              </span>
+            )
+          })()}
         </div>
         {q.data && entries.length === 0 && <p className="muted">{t('tooth.empty')}</p>}
         {selected && visits.length === 0 && planned.length === 0 && <p className="muted">{t('tooth.noneOnTooth', { n: selected })}</p>}
