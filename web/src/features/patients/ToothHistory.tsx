@@ -157,7 +157,9 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
           <strong>{t('tooth.toothN', { n })}</strong>
           <span className={`badge tb3 st-${st.status}`}>{t(`tooth.st.${st.status}`)}</span>
         </div>
-        {list.length === 0 && <p className="muted small">{t('tooth.noneOnTooth', { n })}</p>}
+        {list.length === 0 && (
+          <p className="muted small">{onAddForTooth && !byTooth.has(n) ? t('tooth.tapToAdd') : t('tooth.noneOnTooth', { n })}</p>
+        )}
         {list.map((e, i) => {
           const k = e.status === 'done' ? e.sessionsNeeded : e.steps.length
           return (
@@ -194,7 +196,11 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
         aria-pressed={selected === n} aria-label={label}
         onMouseEnter={() => setPeek(n)} onMouseLeave={() => setPeek((p) => (p === n ? null : p))}
         onFocus={() => setPeek(n)} onBlur={() => setPeek((p) => (p === n ? null : p))}
-        onClick={() => { setPicked(n); setPeek(n) }}>
+        onClick={() => {
+          // Nothing on this tooth yet: the click means "add work here".
+          if (onAddForTooth && !byTooth.has(n)) { onAddForTooth(n); return }
+          setPicked(n); setPeek(n)
+        }}>
         {peek === n && peekCard(n, col)}
         {upper ? <><ToothSide n={n} status={st.status} kind={st.kind} /><ToothTop n={n} status={st.status} kind={st.kind} />{num}</>
           : <>{num}<ToothTop n={n} status={st.status} kind={st.kind} /><ToothSide n={n} status={st.status} kind={st.kind} /></>}

@@ -1202,6 +1202,7 @@ export const ar: Messages = {
   'tooth.upperJaw': 'الفك العلوي',
   'tooth.lowerJaw': 'الفك السفلي',
   'tooth.doneOn': 'اتعمل {date}',
+  'tooth.tapToAdd': 'مفيش حاجة عليه. دوس عشان تضيف إجراء.',
   'tooth.c.healthy': 'سليم',
   'tooth.c.needs': 'محتاج علاج',
   'tooth.c.filling': 'حشو',

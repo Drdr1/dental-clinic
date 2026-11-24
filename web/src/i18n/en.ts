@@ -1200,6 +1200,7 @@ export const en = {
   'tooth.upperJaw': 'Upper jaw',
   'tooth.lowerJaw': 'Lower jaw',
   'tooth.doneOn': 'Done {date}',
+  'tooth.tapToAdd': 'Nothing on it yet. Click to add work.',
   'tooth.c.healthy': 'Healthy',
   'tooth.c.needs': 'Needs treatment',
   'tooth.c.filling': 'Filling',
