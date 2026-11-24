@@ -1963,12 +1963,13 @@ button.chip { cursor: pointer; }
 .badge.tb3.st-progress { background: #e0ebf6; color: #2f6ea8; }
 .badge.tb3.st-planned { background: var(--danger-soft); color: var(--danger); }
 .badge.tb3.st-existing { background: var(--grey-soft); color: var(--ink); }
-.tooth3 { position: relative; }
+.tooth3-wrap { position: relative; display: grid; }
+.tooth3-wrap.is-lower { align-content: start; }
 .tooth-peek { position: absolute; z-index: 5; left: 50%; transform: translateX(-50%); width: 240px; padding: 10px 12px; display: grid; gap: 8px;
   background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(20, 30, 50, .14);
-  text-align: start; color: var(--ink); font-size: 13px; cursor: default; pointer-events: none; }
-.tooth3.is-upper .tooth-peek { top: calc(100% - 4px); }
-.tooth3.is-lower .tooth-peek { bottom: calc(100% - 4px); }
+  text-align: start; color: var(--ink); font-size: 13px; cursor: default; }
+.tooth3-wrap.is-upper .tooth-peek { top: calc(100% - 6px); }
+.tooth3-wrap.is-lower .tooth-peek { bottom: calc(100% - 6px); }
 .tooth-peek.at-start { left: 0; transform: none; }
 .tooth-peek.at-end { left: auto; right: 0; transform: none; }
 .tooth-peek-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
@@ -1979,3 +1980,4 @@ button.chip { cursor: pointer; }
 .peek-steps i.on { background: #3b82c4; }
 .peek-steps i.on-done { background: #16a34a; }
 .tooth-scroll { padding-block: 4px; }
+.tooth-peek-add { width: 100%; }

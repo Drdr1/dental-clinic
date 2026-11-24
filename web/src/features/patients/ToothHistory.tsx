@@ -143,7 +143,7 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
   const [peek, setPeek] = useState<number | null>(null)
   useEffect(() => {
     if (peek == null) return
-    const close = (e: PointerEvent) => { if (!(e.target as Element).closest('.tooth3')) setPeek(null) }
+    const close = (e: PointerEvent) => { if (!(e.target as Element).closest('.tooth3-wrap')) setPeek(null) }
     document.addEventListener('pointerdown', close)
     return () => document.removeEventListener('pointerdown', close)
   }, [peek])
@@ -158,7 +158,7 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
           <span className={`badge tb3 st-${st.status}`}>{t(`tooth.st.${st.status}`)}</span>
         </div>
         {list.length === 0 && (
-          <p className="muted small">{onAddForTooth && !byTooth.has(n) ? t('tooth.tapToAdd') : t('tooth.noneOnTooth', { n })}</p>
+          <p className="muted small">{t('tooth.noneOnTooth', { n })}</p>
         )}
         {list.map((e, i) => {
           const k = e.status === 'done' ? e.sessionsNeeded : e.steps.length
@@ -182,6 +182,11 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
             </div>
           )
         })}
+        {onAddForTooth && (
+          <button type="button" className="btn btn-small btn-primary tooth-peek-add" onClick={() => onAddForTooth(n)}>
+            + {t('tooth.addForTooth')}
+          </button>
+        )}
       </div>
     )
   }
@@ -192,19 +197,18 @@ export function ToothHistory({ patientId, onAddForTooth }: { patientId: string; 
     const label = `${t('plan.tooth', { n })}: ${t(`tooth.st.${st.status}`)}${st.kind !== 'none' ? ` · ${t(`tooth.c.${st.kind}`)}` : ''}`
     const num = <span className={`tf-n st-${st.status}`}>{n}</span>
     return (
-      <button key={n} type="button" className={`tooth3 ${upper ? 'is-upper' : 'is-lower'} ${selected === n ? 'is-selected' : ''}`}
-        aria-pressed={selected === n} aria-label={label}
+      <div key={n} className={`tooth3-wrap ${upper ? 'is-upper' : 'is-lower'}`}
         onMouseEnter={() => setPeek(n)} onMouseLeave={() => setPeek((p) => (p === n ? null : p))}
-        onFocus={() => setPeek(n)} onBlur={() => setPeek((p) => (p === n ? null : p))}
-        onClick={() => {
-          // Nothing on this tooth yet: the click means "add work here".
-          if (onAddForTooth && !byTooth.has(n)) { onAddForTooth(n); return }
-          setPicked(n); setPeek(n)
-        }}>
+        onFocus={() => setPeek(n)}
+        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPeek((p) => (p === n ? null : p)) }}>
+        <button type="button" className={`tooth3 ${selected === n ? 'is-selected' : ''}`}
+          aria-pressed={selected === n} aria-label={label}
+          onClick={() => { setPicked(n); setPeek(n) }}>
+          {upper ? <><ToothSide n={n} status={st.status} kind={st.kind} /><ToothTop n={n} status={st.status} kind={st.kind} />{num}</>
+            : <>{num}<ToothTop n={n} status={st.status} kind={st.kind} /><ToothSide n={n} status={st.status} kind={st.kind} /></>}
+        </button>
         {peek === n && peekCard(n, col)}
-        {upper ? <><ToothSide n={n} status={st.status} kind={st.kind} /><ToothTop n={n} status={st.status} kind={st.kind} />{num}</>
-          : <>{num}<ToothTop n={n} status={st.status} kind={st.kind} /><ToothSide n={n} status={st.status} kind={st.kind} /></>}
-      </button>
+      </div>
     )
   }
 
