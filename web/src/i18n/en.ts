@@ -1237,6 +1237,7 @@ export const en = {
   'session.stepN': 'Session {n} of {of}',
   'session.stepLast': 'Session {n} of {of} (last, finishes it)',
   'session.stepFinish': 'Finished in this visit',
+  'plan.moreTeeth': 'Other teeth',
   'plan.itemOngoing': 'In progress',
   'plan.addItem': 'Add procedure',
   'plan.discountPayer': 'Discount ({name} {p}%)',

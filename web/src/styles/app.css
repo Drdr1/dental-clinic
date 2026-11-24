@@ -1981,3 +1981,13 @@ button.chip { cursor: pointer; }
 .peek-steps i.on-done { background: #16a34a; }
 .tooth-scroll { padding-block: 4px; }
 .tooth-peek-add { width: 100%; }
+.tooth-pick { display: grid; gap: 6px; }
+.tooth-pick-row { display: grid; grid-template-columns: repeat(16, minmax(34px, 1fr)); min-width: 560px; align-items: end; }
+.tooth-pick-row.is-lower { border-top: 1px solid var(--line2); padding-top: 4px; margin-top: 4px; align-items: start; }
+.tooth4 { display: grid; justify-items: center; gap: 2px; border: 0; background: none; padding: 4px 0; border-radius: 10px; cursor: pointer; font: inherit; }
+.tooth4:hover { background: #faf7f2; }
+.tooth4.is-selected { background: #e8eff8; }
+.tooth4 .tf-side { width: 100%; max-width: 40px; height: 84px; }
+.tooth4 .tf-n { font-size: 12px; min-width: 26px; padding: 2px 4px; }
+.tf-n.st-pick { background: var(--ink); color: #fff; }
+.teeth-picked { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

@@ -1239,6 +1239,7 @@ export const ar: Messages = {
   'session.stepN': 'الجلسة {n} من {of}',
   'session.stepLast': 'الجلسة {n} من {of} (آخر جلسة، يخلص)',
   'session.stepFinish': 'خلص في الزيارة دي',
+  'plan.moreTeeth': 'أسنان تانية',
   'plan.itemOngoing': 'شغال',
   'plan.addItem': 'إضافة إجراء',
   'plan.discountPayer': 'خصم ({name} {p}%)',

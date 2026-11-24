@@ -20,6 +20,7 @@ export function AddItemsForm({ planId, procedures, markedTeeth, initialTeeth }: 
   // Opened from a tooth in the patient file: bring the form into view.
   const formRef = useRef<HTMLFormElement>(null)
   const cameWithTooth = (initialTeeth?.length ?? 0) > 0
+  const [pickOpen, setPickOpen] = useState(!cameWithTooth)
   useEffect(() => {
     if (cameWithTooth) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [cameWithTooth])
@@ -87,8 +88,18 @@ export function AddItemsForm({ planId, procedures, markedTeeth, initialTeeth }: 
 
       <div className="field">
         <span>{t('plan.teeth')}</span>
-        <ToothChart selected={teeth} onToggle={toggle} marked={markedTeeth} />
-        <small className="hint">{t('plan.teethHint')}</small>
+        {pickOpen ? (
+          <>
+            <ToothChart selected={teeth} onToggle={toggle} marked={markedTeeth} />
+            <small className="hint">{t('plan.teethHint')}</small>
+          </>
+        ) : (
+          // Came from a tooth in the chart: that tooth is the answer; more only if asked.
+          <div className="teeth-picked">
+            {[...teeth].sort((a, b) => a - b).map((n) => <span key={n} className="tf-n st-pick">{n}</span>)}
+            <button type="button" className="link-btn" onClick={() => setPickOpen(true)}>{t('plan.moreTeeth')}</button>
+          </div>
+        )}
       </div>
 
       <label className="field">
