@@ -67,39 +67,35 @@ export function AppShell() {
         </button>
       </header>
 
-      {/* Desktop: the menu with every page named, grouped by what it is for. */}
-      <aside className="side" aria-label={t('appName')}>
-        <Link to="/today" className="side-brand">
-          {logo.data ? <img src={logo.data} alt="" className="side-logo" /> : <ToothMark className="side-mark" />}
-          <span className="side-brand-text">
-            <b>{member.clinicName || t('appName')}</b>
-            <span>Dentano</span>
-          </span>
+      {/* Desktop: a narrow icon rail. Every icon carries its name as a tooltip
+          and for screen readers, so nothing is guessed from the picture alone. */}
+      <aside className="rail" aria-label={t('appName')}>
+        <Link to="/today" className="rail-logo" aria-label={member.clinicName || t('appName')} title={member.clinicName || t('appName')}>
+          {logo.data ? <img src={logo.data} alt="" /> : <ToothMark className="rail-mark" />}
         </Link>
-        <nav className="side-nav">
-          <p className="side-group">{t('nav.groupClinic')}</p>
-          <SideLink to="/today" icon="today" label={t('nav.today')} />
-          <SideLink to="/appointments" icon="calendar" label={t('nav.appointments')} />
-          <SideLink to="/patients" icon="patients" label={t('nav.patients')} />
-          {hasLabs && <SideLink to="/labs" icon="lab" label={t('nav.labs')} />}
-          {hasMaterials && <SideLink to="/materials" icon="materials" label={t('nav.materials')} />}
-          {hasAssistant && <SideLink to="/assistant" icon="assistant" label={t('nav.assistant')} />}
-          {(canCash || isOwner) && <p className="side-group">{t('nav.groupMoney')}</p>}
-          {canCash && <SideLink to="/cash" icon="cash" label={t('nav.cash')} />}
-          {isOwner && <SideLink to="/finance" icon="finance" label={t('nav.finance')} />}
-          {isOwner && <SideLink to="/reports" icon="reports" label={t('nav.reports')} />}
-          {isOwner && <SideLink to="/doctors" icon="doctor" label={t('nav.doctors')} />}
-          {isOwner && <p className="side-group">{t('nav.groupAdmin')}</p>}
-          {isOwner && <SideLink to="/settings" icon="settings" label={t('nav.settings')} />}
+        <nav className="rail-nav">
+          <RailLink to="/today" icon="today" label={t('nav.today')} />
+          <RailLink to="/appointments" icon="calendar" label={t('nav.appointments')} />
+          <RailLink to="/patients" icon="patients" label={t('nav.patients')} />
+          {hasLabs && <RailLink to="/labs" icon="lab" label={t('nav.labs')} />}
+          {hasMaterials && <RailLink to="/materials" icon="materials" label={t('nav.materials')} />}
+          {hasAssistant && <RailLink to="/assistant" icon="assistant" label={t('nav.assistant')} />}
+          {(canCash || isOwner) && <span className="rail-divider" aria-hidden="true" />}
+          {canCash && <RailLink to="/cash" icon="cash" label={t('nav.cash')} />}
+          {isOwner && <RailLink to="/finance" icon="finance" label={t('nav.finance')} />}
+          {isOwner && <RailLink to="/reports" icon="reports" label={t('nav.reports')} />}
+          {isOwner && <RailLink to="/doctors" icon="doctor" label={t('nav.doctors')} />}
+          {isOwner && <RailLink to="/settings" icon="settings" label={t('nav.settings')} />}
         </nav>
-        {/* Who is signed in, with language and sign out. */}
-        <div className="user-menu side-user">
-          <button className="side-who" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}>
-            <span className="side-avatar" aria-hidden="true">{(member.displayName || '?').replace(/^د\.?\s*/, '').trim().charAt(0)}</span>
-            <span className="side-who-text"><b>{member.displayName}</b><span>{t(`role.${member.role}`)}</span></span>
+        {/* Who is signed in, with language and sign out, at the foot of the rail. */}
+        <div className="user-menu rail-user">
+          <button className="rail-link" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}
+            aria-label={member.displayName} title={`${member.displayName} · ${t(`role.${member.role}`)}`}>
+            <Icon name="patients" />
           </button>
           {userOpen && (
-            <div className="user-pop side-pop" role="menu">
+            <div className="user-pop rail-pop" role="menu">
+              <div className="rail-pop-who"><b>{member.displayName}</b><span>{t(`role.${member.role}`)}</span></div>
               <button role="menuitem" onClick={() => { setUserOpen(false); setLang(lang === 'ar' ? 'en' : 'ar') }}>
                 <Icon name="globe" />{t('nav.language')}
               </button>
@@ -171,11 +167,11 @@ export function AppShell() {
   )
 }
 
-function SideLink({ to, icon, label }: { to: string; icon: string; label: string }) {
+function RailLink({ to, icon, label }: { to: string; icon: string; label: string }) {
   return (
-    <NavLink to={to} className="side-link">
+    <NavLink to={to} className="rail-link" aria-label={label} title={label}>
       <Icon name={icon} />
-      <span>{label}</span>
+      <span className="rail-tip" aria-hidden="true">{label}</span>
     </NavLink>
   )
 }
