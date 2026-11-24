@@ -1,11 +1,13 @@
 import { Link } from 'react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMember } from '../auth/AuthProvider'
 import { useI18n } from '../../i18n'
 import { Modal } from '../../components/Modal'
 import { ErrorNote } from '../../components/ErrorNote'
 import { templates, waMessage } from '../../lib/whatsapp'
-import { setAppointmentStatus, type AppointmentStatus, type DayAppointment } from './api'
+import { assignDoctor, getClinicDoctors, setAppointmentStatus, type AppointmentStatus, type DayAppointment } from './api'
+import { confirmBooking } from '../booking/api'
 import { apptStatusKey } from './labels'
 
 type Props = { appointment: DayAppointment; onClose: () => void; onEdit: () => void }
@@ -20,7 +22,7 @@ const NEXT: Record<string, AppointmentStatus[]> = {
 }
 
 export function AppointmentDetails({ appointment: a, onClose, onEdit }: Props) {
-  const { clinicName } = useMember()
+  const { clinicName, clinicId } = useMember()
   const { t, lang } = useI18n()
   const queryClient = useQueryClient()
   const fmt = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-EG', {
@@ -37,11 +39,33 @@ export function AppointmentDetails({ appointment: a, onClose, onEdit }: Props) {
     },
   })
 
+  // An online booking nobody has confirmed yet: the only choices are to confirm it
+  // (saying which doctor takes it, if none is set) or to turn it down.
+  const awaiting = a.source === 'online' && !a.confirmed_at && a.status === 'booked'
+  const doctors = useQuery({ queryKey: ['clinic-doctors', clinicId], queryFn: () => getClinicDoctors(clinicId), enabled: awaiting })
+  const [doctorId, setDoctorId] = useState(a.doctor_id ?? '')
+  const [rejecting, setRejecting] = useState(false)
+  const confirm = useMutation({
+    mutationFn: async () => {
+      if (doctorId && doctorId !== a.doctor_id) await assignDoctor(a.id, doctorId)
+      await confirmBooking(a.id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['day'] })
+      queryClient.invalidateQueries({ queryKey: ['pending-bookings'] })
+      queryClient.invalidateQueries({ queryKey: ['today'] })
+      onClose()
+    },
+  })
+  const needsDoctor = (doctors.data?.length ?? 0) > 0 && !doctorId
+
   return (
     <Modal title={a.patientName} onClose={onClose}>
       <div className="dialog-form">
         <p className="appt-when">{fmt.format(new Date(a.starts_at))}</p>
-        <p><span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span></p>
+        <p>{awaiting
+          ? <span className="badge appt-badge appt-awaiting">{t('book.awaiting')}</span>
+          : <span className={`badge appt-badge appt-${a.status}`}>{t(apptStatusKey(a.status))}</span>}</p>
 
         {a.alerts && (
           <div className="medical-alert compact" role="note">
@@ -54,6 +78,25 @@ export function AppointmentDetails({ appointment: a, onClose, onEdit }: Props) {
         )}
         {a.notes && <p className="muted">{a.notes}</p>}
 
+        {awaiting ? (
+          <div className="status-actions">
+            {(doctors.data?.length ?? 0) > 0 && (
+              <select className="cell-select" aria-label={t('doc.doctor')} value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
+                <option value="" disabled>{t('doc.pick')}</option>
+                {doctors.data!.map((d) => <option key={d.user_id} value={d.user_id}>{d.display_name}</option>)}
+              </select>
+            )}
+            <button className="btn btn-primary" disabled={confirm.isPending || needsDoctor} onClick={() => confirm.mutate()}>{t('book.confirm')}</button>
+            {rejecting ? (
+              <>
+                <button className="btn btn-danger" disabled={status.isPending} onClick={() => status.mutate('cancelled')}>{t('book.rejectSure')}</button>
+                <button className="btn" onClick={() => setRejecting(false)}>{t('common.cancel')}</button>
+              </>
+            ) : (
+              <button className="btn" onClick={() => setRejecting(true)}>{t('book.reject')}</button>
+            )}
+          </div>
+        ) : (
         <div className="status-actions">
           {(NEXT[a.status] ?? []).map((s, i) => (
             <button key={s} className={`btn ${i === 0 ? 'btn-primary' : ''}`}
@@ -62,6 +105,8 @@ export function AppointmentDetails({ appointment: a, onClose, onEdit }: Props) {
             </button>
           ))}
         </div>
+        )}
+        {confirm.isError && <ErrorNote error={confirm.error} />}
         {status.isError && <ErrorNote error={status.error} />}
 
         <div className="row-actions">
