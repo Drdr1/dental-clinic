@@ -14,14 +14,12 @@ import { installmentStatusKey } from '../payments/labels'
 import { getClinicCalendar, getClinicDoctors, setAppointmentStatus, type DayAppointment } from '../appointments/api'
 import { apptStatusKey } from '../appointments/labels'
 import { getToday, type DayTotal } from './api'
-import { useLook } from '../../lib/look'
 
 const agendaOrder = ['overdue', 'in_grace', 'due', 'upcoming']
 const minutes = (iso: string) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes() }
 
 export function TodayPage() {
   const member = useMember()
-  const look = useLook()
   const { clinicId, clinicName, role } = member
   // Clinic-wide money belongs to whoever handles it: the owner and reception.
   // Doctors still see each patient's own balance, which the session lock depends on.
@@ -75,105 +73,56 @@ export function TodayPage() {
 
   return (
     <section className="page today">
-      {look === 'new' ? (
-        <>
-          <header className="today-head">
-            <div>
-              <h1>{t('nav.today')}</h1>
-              <p className="muted">{date(now.toISOString())}</p>
-            </div>
-          </header>
+      <header className="today-head">
+        <div>
+          <h1>{t(greeting, { name: firstName })}</h1>
+          <p className="muted">{t('today.subtitle', { date: date(now.toISOString()), n: live.length, left })}</p>
+        </div>
+      </header>
 
-          <div className="tstats">
-            <div className="tstat">
-              <span className="tstat-label">{t('today.kpiAppointments')}</span>
-              <strong className="tstat-value">{live.length}</strong>
-              <span className="tstat-sub">{t('today.kpiAppointmentsSub', { done, here, left })}</span>
+      <div className="kpis">
+        <article className="kpi">
+          <div className="kpi-top"><span>{t('today.kpiAppointments')}</span><span className="kpi-icon"><Icon name="calendar" /></span></div>
+          <strong className="kpi-value">{live.length}</strong>
+          <div className="kpi-bar"><span style={{ width: `${live.length ? (done / live.length) * 100 : 0}%` }} /></div>
+          <p className="kpi-sub">{t('today.kpiAppointmentsSub', { done, here, left })}</p>
+        </article>
+
+        {seesMoney && (
+          <article className="kpi">
+            <div className="kpi-top"><span>{t('today.kpiCollected')}</span><span className="kpi-icon"><Icon name="cash" /></span></div>
+            <strong className="kpi-value">{money(collectedToday)}</strong>
+            <Sparkline days={week} />
+            <p className="kpi-sub">
+              {diff === 0 ? t('today.sameAsYesterday')
+                : t(diff > 0 ? 'today.aboveYesterday' : 'today.belowYesterday', { amount: money(Math.abs(diff)) })}
+            </p>
+          </article>
+        )}
+
+        {seesMoney && (
+          <article className="kpi">
+            <div className="kpi-top"><span>{t('today.kpiOverdue')}</span><span className="kpi-icon"><Icon name="clock" /></span></div>
+            <strong className={`kpi-value${overdueAmount > 0 ? ' is-danger' : ''}`}>{money(overdueAmount)}</strong>
+            <div className="kpi-segs">
+              {[0, 1, 2].map((i) => <span key={i} className={overdue.length > i * 2 ? 'on' : ''} />)}
             </div>
-            {seesMoney && (
-              <div className="tstat">
-                <span className="tstat-label">{t('today.kpiCollected')}</span>
-                <strong className="tstat-value">{money(collectedToday)}</strong>
-                <span className={`tstat-sub${diff > 0 ? ' is-up' : ''}`}>
-                  {diff === 0 ? t('today.sameAsYesterday')
-                    : t(diff > 0 ? 'today.aboveYesterday' : 'today.belowYesterday', { amount: money(Math.abs(diff)) })}
-                </span>
-              </div>
-            )}
-            {seesMoney && (
-              <div className="tstat">
-                <span className="tstat-label">{t('today.kpiOverdue')}</span>
-                <strong className={`tstat-value${overdueAmount > 0 ? ' is-danger' : ''}`}>{money(overdueAmount)}</strong>
-                <span className="tstat-sub">
-                  {overdue.length ? t('today.kpiOverdueSub', { n: overdue.length, p: overduePatients, d: oldest }) : t('today.kpiOverdueNone')}
-                </span>
-              </div>
-            )}
-            <div className="tstat">
-              <span className="tstat-label">{t('today.kpiAttention')}</span>
-              <strong className="tstat-value">{labs.length + lowStock.length}</strong>
-              <span className="tstat-sub">
-                {labs.length + lowStock.length
-                  ? [labs.length > 0 && t('today.chipLabs', { n: labs.length }), lowStock.length > 0 && t('today.chipStock', { n: lowStock.length })].filter(Boolean).join('، ')
-                  : t('today.kpiAttentionNone')}
-              </span>
-            </div>
+            <p className="kpi-sub">
+              {overdue.length ? t('today.kpiOverdueSub', { n: overdue.length, p: overduePatients, d: oldest }) : t('today.kpiOverdueNone')}
+            </p>
+          </article>
+        )}
+
+        <article className="kpi">
+          <div className="kpi-top"><span>{t('today.kpiAttention')}</span><span className="kpi-icon"><Icon name="alert" /></span></div>
+          <strong className="kpi-value">{labs.length + lowStock.length}</strong>
+          <div className="kpi-chips">
+            {labs.length > 0 && <span className="chip">{t('today.chipLabs', { n: labs.length })}</span>}
+            {lowStock.length > 0 && <span className="chip">{t('today.chipStock', { n: lowStock.length })}</span>}
           </div>
-        </>
-      ) : (
-        <>
-          <header className="today-head">
-            <div>
-              <h1>{t(greeting, { name: firstName })}</h1>
-              <p className="muted">{t('today.subtitle', { date: date(now.toISOString()), n: live.length, left })}</p>
-            </div>
-          </header>
-
-          <div className="kpis">
-            <article className="kpi">
-              <div className="kpi-top"><span>{t('today.kpiAppointments')}</span><span className="kpi-icon"><Icon name="calendar" /></span></div>
-              <strong className="kpi-value">{live.length}</strong>
-              <div className="kpi-bar"><span style={{ width: `${live.length ? (done / live.length) * 100 : 0}%` }} /></div>
-              <p className="kpi-sub">{t('today.kpiAppointmentsSub', { done, here, left })}</p>
-            </article>
-
-            {seesMoney && (
-              <article className="kpi">
-                <div className="kpi-top"><span>{t('today.kpiCollected')}</span><span className="kpi-icon"><Icon name="cash" /></span></div>
-                <strong className="kpi-value">{money(collectedToday)}</strong>
-                <Sparkline days={week} />
-                <p className="kpi-sub">
-                  {diff === 0 ? t('today.sameAsYesterday')
-                    : t(diff > 0 ? 'today.aboveYesterday' : 'today.belowYesterday', { amount: money(Math.abs(diff)) })}
-                </p>
-              </article>
-            )}
-
-            {seesMoney && (
-              <article className="kpi">
-                <div className="kpi-top"><span>{t('today.kpiOverdue')}</span><span className="kpi-icon"><Icon name="clock" /></span></div>
-                <strong className={`kpi-value${overdueAmount > 0 ? ' is-danger' : ''}`}>{money(overdueAmount)}</strong>
-                <div className="kpi-segs">
-                  {[0, 1, 2].map((i) => <span key={i} className={overdue.length > i * 2 ? 'on' : ''} />)}
-                </div>
-                <p className="kpi-sub">
-                  {overdue.length ? t('today.kpiOverdueSub', { n: overdue.length, p: overduePatients, d: oldest }) : t('today.kpiOverdueNone')}
-                </p>
-              </article>
-            )}
-
-            <article className="kpi">
-              <div className="kpi-top"><span>{t('today.kpiAttention')}</span><span className="kpi-icon"><Icon name="alert" /></span></div>
-              <strong className="kpi-value">{labs.length + lowStock.length}</strong>
-              <div className="kpi-chips">
-                {labs.length > 0 && <span className="chip">{t('today.chipLabs', { n: labs.length })}</span>}
-                {lowStock.length > 0 && <span className="chip">{t('today.chipStock', { n: lowStock.length })}</span>}
-              </div>
-              <p className="kpi-sub">{labs.length + lowStock.length ? t('today.kpiAttentionSub') : t('today.kpiAttentionNone')}</p>
-            </article>
-          </div>
-        </>
-      )}
+          <p className="kpi-sub">{labs.length + lowStock.length ? t('today.kpiAttentionSub') : t('today.kpiAttentionNone')}</p>
+        </article>
+      </div>
 
       <div className="today-grid">
         <ChairsNow chairs={(calendar.data?.chairs ?? []).filter((c) => c.active || appointments.some((a) => a.chair_id === c.id))} appointments={appointments} nowMin={nowMin}
@@ -408,7 +357,7 @@ function ChairsNow({ chairs, appointments, nowMin, clock, doctorName }: {
             const pct = Math.min(100, Math.max(0, ((nowMin - start) / Math.max(1, end - start)) * 100))
             return (
               <article key={c.id} className="chair is-busy">
-                <div className="chair-top"><span>{label}</span><b className="chair-state">{t('today.chairBusy')}</b><span className="badge appt-badge appt-in_session chair-badge">{t('today.chairBusy')}</span></div>
+                <div className="chair-top"><span>{label}</span><b>{t('today.chairBusy')}</b></div>
                 <Link to={`/patients/${inSession.patient_id}`} className="chair-name">{inSession.patientName}</Link>
                 {inSession.planTitle && <p>{inSession.planTitle}</p>}
                 <div className="chair-bar"><span style={{ width: `${pct}%` }} /></div>
@@ -419,7 +368,7 @@ function ChairsNow({ chairs, appointments, nowMin, clock, doctorName }: {
           if (arrived) {
             return (
               <article key={c.id} className="chair">
-                <div className="chair-top"><span>{label}</span><b className="chair-state">{t('today.chairArrived')}</b><span className="badge appt-badge appt-arrived chair-badge">{t('today.chairArrived')}</span></div>
+                <div className="chair-top"><span>{label}</span><b>{t('today.chairArrived')}</b></div>
                 <Link to={`/patients/${arrived.patient_id}`} className="chair-name">{arrived.patientName}</Link>
                 <p>{[arrived.planTitle, t('today.at', { time: time(arrived.starts_at) })].filter(Boolean).join(' · ')}</p>
                 <button className="btn chair-btn" disabled={admit.isPending} onClick={() => admit.mutate(arrived.id)}>
@@ -430,7 +379,7 @@ function ChairsNow({ chairs, appointments, nowMin, clock, doctorName }: {
           }
           return (
             <article key={c.id} className="chair is-free">
-              <div className="chair-top"><span>{label}</span><b className="chair-state">{t('today.chairFree')}</b><span className="badge badge-neutral chair-badge">{t('today.chairFree')}</span></div>
+              <div className="chair-top"><span>{label}</span><b>{t('today.chairFree')}</b></div>
               <strong className="chair-name">
                 {next ? t('today.freeUntil', { time: time(next.starts_at) }) : t('today.freeAllDay')}
               </strong>
