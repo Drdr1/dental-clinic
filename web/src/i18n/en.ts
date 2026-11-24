@@ -251,6 +251,8 @@ export const en = {
   'session.doctorHint': 'Not whoever is typing this in \u2014 this is who the commission counts for.',
   'session.titleVisit': 'Record visit',
   'session.whatWasDone': 'Finished today',
+  'session.plan': 'Treatment plan',
+  'session.noPlan': 'A visit outside any plan',
   'session.notes': 'Notes',
   'session.isRecall': 'This was a routine checkup or cleaning (resets the next checkup date)',
   'session.lockedDoctor': 'This plan has overdue installments past the limit. To continue anyway, write the reason.',

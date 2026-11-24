@@ -7,6 +7,7 @@ import { ErrorNote } from '../../components/ErrorNote'
 import { errorKey } from '../../lib/errors'
 import { getClinicDoctors, getPatientDoctor } from '../appointments/api'
 import { recordSession } from './api'
+import { supabase } from '../../lib/supabase'
 import { DictateBox } from '../dictation/DictateBox'
 import { draftSession } from '../dictation/api'
 import { Icon } from '../../components/Icon'
@@ -21,14 +22,53 @@ type Props = {
   onClose: () => void
 }
 
-export function SessionDialog({ patientId, plan, onClose, dictate = false }: Props) {
+type PlanChoice = { id: string; title: string; openItems: OpenItem[] }
+
+/** The patient's plans that still have work to do, for a visit recorded from the patient file. */
+async function openPlans(patientId: string, toothLabel: (n: number) => string): Promise<PlanChoice[]> {
+  const { data, error } = await supabase
+    .from('treatment_plans')
+    .select('id, title, status, accepted_at, treatment_plan_items(id, status, tooth_number, description, procedures(name))')
+    .eq('patient_id', patientId)
+    .in('status', ['active', 'presented'])
+    .order('accepted_at', { ascending: false, nullsFirst: false })
+  if (error) throw error
+  type Row = { id: string; title: string; status: string; treatment_plan_items: { id: string; status: string; tooth_number: number | null; description: string | null; procedures: { name: string } | null }[] }
+  return ((data ?? []) as unknown as Row[])
+    // Plans under way first, then ones only proposed.
+    .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
+    .map((p) => ({
+      id: p.id,
+      title: p.title,
+      openItems: p.treatment_plan_items.filter((i) => i.status === 'planned').map((i) => ({
+        id: i.id,
+        label: [i.procedures?.name, i.description, i.tooth_number ? toothLabel(i.tooth_number) : null].filter(Boolean).join(' — '),
+      })),
+    }))
+    .filter((p) => p.openItems.length > 0)
+}
+
+export function SessionDialog({ patientId, plan: givenPlan, onClose, dictate = false }: Props) {
   const { isDoctor } = useAuth()
   const { clinicId, userId, role } = useMember()
   const { t } = useI18n()
   const queryClient = useQueryClient()
   const [done, setDone] = useState<Set<string>>(new Set())
   const [notes, setNotes] = useState('')
-  const [isRecall, setIsRecall] = useState(!plan)
+  // From the patient file no plan is given: offer the plans that still have
+  // work, the one under way picked first, so done items get ticked off.
+  const plans = useQuery({
+    queryKey: ['open-plans', patientId],
+    queryFn: () => openPlans(patientId, (n) => t('plan.tooth', { n })),
+    enabled: !givenPlan,
+  })
+  const [pickedPlanId, setPickedPlanId] = useState<string | null>(null)
+  const plan = givenPlan
+    ?? (pickedPlanId === '' ? null : plans.data?.find((p) => p.id === pickedPlanId) ?? plans.data?.[0] ?? null)
+  const [recallTouched, setRecallTouched] = useState(false)
+  const [isRecallChoice, setIsRecall] = useState(false)
+  // A visit without a plan is usually a check-up; one on a plan is treatment.
+  const isRecall = recallTouched ? isRecallChoice : !plan
   const [overrideReason, setOverrideReason] = useState('')
   const [locked, setLocked] = useState(false)
   const [speaking, setSpeaking] = useState(dictate)
@@ -70,6 +110,10 @@ export function SessionDialog({ patientId, plan, onClose, dictate = false }: Pro
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] })
       queryClient.invalidateQueries({ queryKey: ['today'] })
       if (plan) queryClient.invalidateQueries({ queryKey: ['plan', plan.id] })
+      queryClient.invalidateQueries({ queryKey: ['open-plans', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['tooth-history', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['last-visit', patientId] })
+      queryClient.invalidateQueries({ queryKey: ['plan'] })
       onClose()
     },
     onError: (error) => {
@@ -116,6 +160,15 @@ export function SessionDialog({ patientId, plan, onClose, dictate = false }: Pro
             {filled && <p className="hint">{t('dict.filled')}</p>}
           </div>
         )}
+        {!givenPlan && (plans.data?.length ?? 0) > 0 && (
+          <label className="field">
+            <span>{t('session.plan')}</span>
+            <select value={plan?.id ?? ''} onChange={(e) => { setPickedPlanId(e.target.value); setDone(new Set()) }}>
+              {plans.data!.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+              <option value="">{t('session.noPlan')}</option>
+            </select>
+          </label>
+        )}
         {plan && plan.openItems.length > 0 && (
           <fieldset className="checklist">
             <legend>{t('session.whatWasDone')}</legend>
@@ -145,7 +198,7 @@ export function SessionDialog({ patientId, plan, onClose, dictate = false }: Pro
         </label>
 
         <label className="check">
-          <input type="checkbox" checked={isRecall} onChange={(e) => setIsRecall(e.target.checked)} />
+          <input type="checkbox" checked={isRecall} onChange={(e) => { setRecallTouched(true); setIsRecall(e.target.checked) }} />
           <span>{t('session.isRecall')}</span>
         </label>
 

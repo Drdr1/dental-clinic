@@ -253,6 +253,8 @@ export const ar: Messages = {
   'session.doctorHint': 'مش اللي بيسجّل الزيارة — ده اللي بتتحسب له نسبته.',
   'session.titleVisit': 'تسجيل زيارة',
   'session.whatWasDone': 'اللي خلص النهارده',
+  'session.plan': 'خطة العلاج',
+  'session.noPlan': 'زيارة من غير خطة',
   'session.notes': 'ملاحظات',
   'session.isRecall': 'دي كانت كشف دوري أو تنظيف (بتحدد ميعاد الكشف الجاي)',
   'session.lockedDoctor': 'الخطة دي عليها أقساط متأخرة أكتر من الحد. لو هتكمل، اكتب السبب.',
