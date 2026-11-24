@@ -16,7 +16,6 @@ export function CurrentPlanCard({ plans }: { plans: PlanOverview[] }) {
     queryFn: () => getPlan(current!.treatment_plan_id!),
     enabled: !!current?.treatment_plan_id,
   })
-  if (!current) return null
   const labs = useQuery({
     queryKey: ['plan-labs', current?.treatment_plan_id],
     queryFn: async () => {
@@ -27,6 +26,8 @@ export function CurrentPlanCard({ plans }: { plans: PlanOverview[] }) {
     },
     enabled: !!current?.patient_id,
   })
+  // After every hook: a patient's first plan appearing must not change how many hooks run.
+  if (!current) return null
   const items = (q.data?.items ?? []).filter((i) => i.status !== 'cancelled')
   // A tooth with sessions already done on its plan but this item still open is being worked on.
   const started = (q.data?.sessions ?? []).length > 0
