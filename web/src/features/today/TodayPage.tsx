@@ -54,6 +54,8 @@ export function TodayPage() {
   const overdueAmount = overdue.reduce((sum, a) => sum + (a.remaining ?? 0), 0)
   const overduePatients = new Set(overdue.map((a) => a.patient_id)).size
   const oldest = Math.max(0, ...overdue.map((a) => a.days_overdue ?? 0))
+  // The bar is the late share of everything due on the installment list.
+  const dueAmount = agenda.reduce((sum, a) => sum + (a.remaining ?? 0), 0)
   const yesterday = week.length > 1 ? week[week.length - 2].total : 0
   const diff = collectedToday - yesterday
 
@@ -104,9 +106,7 @@ export function TodayPage() {
           <article className="kpi">
             <div className="kpi-top"><span>{t('today.kpiOverdue')}</span><span className="kpi-icon"><Icon name="clock" /></span></div>
             <strong className={`kpi-value${overdueAmount > 0 ? ' is-danger' : ''}`}>{money(overdueAmount)}</strong>
-            <div className="kpi-segs">
-              {[0, 1, 2].map((i) => <span key={i} className={overdue.length > i * 2 ? 'on' : ''} />)}
-            </div>
+            <div className="kpi-bar is-bad"><span style={{ width: `${dueAmount ? (overdueAmount / dueAmount) * 100 : 0}%` }} /></div>
             <p className="kpi-sub">
               {overdue.length ? t('today.kpiOverdueSub', { n: overdue.length, p: overduePatients, d: oldest }) : t('today.kpiOverdueNone')}
             </p>
@@ -117,10 +117,10 @@ export function TodayPage() {
           <div className="kpi-top"><span>{t('today.kpiAttention')}</span><span className="kpi-icon"><Icon name="alert" /></span></div>
           <strong className="kpi-value">{labs.length + lowStock.length}</strong>
           <div className="kpi-chips">
-            {labs.length > 0 && <span className="chip">{t('today.chipLabs', { n: labs.length })}</span>}
-            {lowStock.length > 0 && <span className="chip">{t('today.chipStock', { n: lowStock.length })}</span>}
+            {labs.length > 0 && <Link to="/labs" className="chip chip-link">{t('today.chipLabs', { n: labs.length })}</Link>}
+            {lowStock.length > 0 && <Link to="/materials" className="chip chip-link">{t('today.chipStock', { n: lowStock.length })}</Link>}
           </div>
-          <p className="kpi-sub">{labs.length + lowStock.length ? t('today.kpiAttentionSub') : t('today.kpiAttentionNone')}</p>
+          {labs.length + lowStock.length === 0 && <p className="kpi-sub">{t('today.kpiAttentionNone')}</p>}
         </article>
       </div>
 

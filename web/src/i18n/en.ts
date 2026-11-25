@@ -1112,7 +1112,6 @@ export const en = {
   'today.kpiAttention': 'Needs attention',
   'today.chipLabs': '{n} lab',
   'today.chipStock': '{n} low stock',
-  'today.kpiAttentionSub': 'Details further down',
   'today.kpiAttentionNone': 'All clear',
   'today.chairs': 'Chairs now',
   'today.clock': '{time}',
